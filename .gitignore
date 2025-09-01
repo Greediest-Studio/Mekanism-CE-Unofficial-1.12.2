@@ -4,6 +4,7 @@ output
 *.ipr
 *.iws
 out
+run
 
 Mekanism*.jar
 MDK.zip
@@ -12,6 +13,7 @@ MDK.zip
 *.project
 /.settings
 /eclipse
+/.idea
 *.txt
 *.launch
 

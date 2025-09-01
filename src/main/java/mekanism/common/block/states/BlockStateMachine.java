@@ -17,6 +17,7 @@ import mekanism.common.tile.laser.TileEntityLaserAmplifier;
 import mekanism.common.tile.laser.TileEntityLaserTractorBeam;
 import mekanism.common.tile.machine.*;
 import mekanism.common.util.LangUtils;
+import mekanism.common.util.ModelKey;
 import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyBool;
@@ -43,6 +44,9 @@ public class BlockStateMachine extends ExtendedBlockState {
     public static final PropertyBool activeProperty = PropertyBool.create("active");
     public static final PropertyEnum<BaseTier> tierProperty = PropertyEnum.create("tier", BaseTier.class);
     public static final PropertyEnum<RecipeType> recipeProperty = PropertyEnum.create("recipe", RecipeType.class);
+
+    private static final Map<String, ResourceLocation> RESOURCE_CACHE = new HashMap<>();
+    private static final Map<ModelKey, ModelResourceLocation> MODEL_CACHE = new WeakHashMap<>();
 
     public BlockStateMachine(BlockMachine block, PropertyEnum<?> typeProperty) {
         super(block, new IProperty[]{BlockStateFacing.facingProperty, typeProperty, activeProperty, tierProperty, recipeProperty}, new IUnlistedProperty[]{});
@@ -388,38 +392,57 @@ public class BlockStateMachine extends ExtendedBlockState {
         protected ModelResourceLocation getModelResourceLocation(@Nonnull IBlockState state) {
             BlockMachine block = (BlockMachine) state.getBlock();
             MachineType type = state.getValue(block.getTypeProperty());
-            StringBuilder builder = new StringBuilder();
-            String nameOverride = null;
 
-            if (type.hasActiveTexture()) {
-                builder.append(activeProperty.getName());
-                builder.append("=");
-                builder.append(state.getValue(activeProperty));
-            }
-
+            Boolean activeState = type.hasActiveTexture() ? state.getValue(activeProperty) : null;
+            EnumFacing facingState = null;
             if (type.hasRotations()) {
-                EnumFacing facing = state.getValue(BlockStateFacing.facingProperty);
-                if (!type.canRotateTo(facing)) {
-                    facing = EnumFacing.NORTH;
+                facingState = state.getValue(BlockStateFacing.facingProperty);
+                if (!type.canRotateTo(facingState)) {
+                    facingState = EnumFacing.NORTH;
                 }
-                if (builder.length() > 0) {
-                    builder.append(",");
-                }
-                builder.append(BlockStateFacing.facingProperty.getName());
-                builder.append("=");
-                builder.append(facing.getName());
+            }
+            RecipeType recipeState = null;
+            if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY ||
+                    type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY ||
+                    type == MachineType.CREATIVE_FACTORY) {
+                recipeState = state.getValue(recipeProperty);
             }
 
-            if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
-                RecipeType recipe = state.getValue(recipeProperty);
-                nameOverride = type.getName() + "_" + recipe.getName();
+            ModelKey key = new ModelKey(type, activeState, facingState, recipeState);
+
+            ModelResourceLocation cachedModel = MODEL_CACHE.get(key);
+            if (cachedModel != null) {
+                return cachedModel;
             }
 
-            if (builder.length() == 0) {
-                builder.append("normal");
+            StringBuilder variantBuilder = new StringBuilder();
+            if (activeState != null) {
+                variantBuilder.append(activeProperty.getName())
+                        .append("=")
+                        .append(activeState);
             }
-            ResourceLocation baseLocation = new ResourceLocation(Mekanism.MODID, nameOverride != null ? nameOverride : type.getName());
-            return new ModelResourceLocation(baseLocation, builder.toString());
+            if (facingState != null) {
+                if (variantBuilder.length() > 0) variantBuilder.append(",");
+                variantBuilder.append(BlockStateFacing.facingProperty.getName())
+                        .append("=")
+                        .append(facingState.getName());
+            }
+            if (variantBuilder.length() == 0) {
+                variantBuilder.append("normal");
+            }
+            String variantString = variantBuilder.toString();
+
+            String locationKey = null;
+            if (recipeState != null) {
+                locationKey = type.getName() + "_" + recipeState.getName();
+            }
+            ResourceLocation baseLocation = RESOURCE_CACHE.computeIfAbsent(
+                    locationKey != null ? locationKey : type.getName(),
+                    k -> new ResourceLocation(Mekanism.MODID, k)
+            );
+
+            ModelResourceLocation model = new ModelResourceLocation(baseLocation, variantString);
+            MODEL_CACHE.put(key, model);
+            return model;
         }
-    }
-}
+}}
