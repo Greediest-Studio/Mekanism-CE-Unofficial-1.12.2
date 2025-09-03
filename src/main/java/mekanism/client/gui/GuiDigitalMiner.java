@@ -144,13 +144,13 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
             drawTexturedModalRect(64, 21, SlotOverlay.CHECK.textureX, SlotOverlay.CHECK.textureY, 18, 18);
         }
 
-    // Shift labels 9px to the right to align with moved switches
-    renderText(LangUtils.localize("gui.on"), 26, 37.5F);
-    renderText(LangUtils.localize("gui.on"), 38.75F, 37.5F);
-    renderText(LangUtils.localize("gui.on"), 51.5F, 37.5F);
-    renderText(LangUtils.localize("gui.off"), 26, 43.5F);
-    renderText(LangUtils.localize("gui.off"), 38.75F, 43.5F);
-    renderText(LangUtils.localize("gui.off"), 51.5F, 43.5F);
+    // Shift labels 9px to the right and 4px down to align with moved switches
+    renderText(LangUtils.localize("gui.on"), 26, 41.5F);
+    renderText(LangUtils.localize("gui.on"), 38.75F, 41.5F);
+    renderText(LangUtils.localize("gui.on"), 51.5F, 41.5F);
+    renderText(LangUtils.localize("gui.off"), 26, 47.5F);
+    renderText(LangUtils.localize("gui.off"), 38.75F, 47.5F);
+    renderText(LangUtils.localize("gui.off"), 51.5F, 47.5F);
 
         int xAxis = mouseX - guiLeft;
         int yAxis = mouseY - guiTop;
@@ -183,17 +183,17 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
     protected void drawGuiContainerBackgroundLayer(int xAxis, int yAxis) {
         super.drawGuiContainerBackgroundLayer(xAxis, yAxis);
     mc.renderEngine.bindTexture(MekanismUtils.getResource(ResourceType.SWITCH, "switch_icon.png"));
-    // Shift switches 9px to the right (half a slot)
-    drawTexturedModalRect(guiLeft + 28, guiTop + 56, 0, tileEntity.doEject ? 0 : 8, 15, 8);
-    drawTexturedModalRect(guiLeft + 28, guiTop + 56 + 8 + 1, 0, !tileEntity.doEject ? 0 : 8, 15, 8);
-    drawTexturedModalRect(guiLeft + 47, guiTop + 56, 0, tileEntity.doPull ? 0 : 8, 15, 8);
-    drawTexturedModalRect(guiLeft + 47, guiTop + 56 + 8 + 1, 0, !tileEntity.doPull ? 0 : 8, 15, 8);
-    drawTexturedModalRect(guiLeft + 66, guiTop + 56, 0, tileEntity.silkTouch ? 0 : 8, 15, 8);
-    drawTexturedModalRect(guiLeft + 66, guiTop + 56 + 8 + 1, 0, !tileEntity.silkTouch ? 0 : 8, 15, 8);
+    // Shift switches 9px to the right and 4px down
+    drawTexturedModalRect(guiLeft + 28, guiTop + 60, 0, tileEntity.doEject ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 28, guiTop + 60 + 8 + 1, 0, !tileEntity.doEject ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 47, guiTop + 60, 0, tileEntity.doPull ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 47, guiTop + 60 + 8 + 1, 0, !tileEntity.doPull ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 66, guiTop + 60, 0, tileEntity.silkTouch ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 66, guiTop + 60 + 8 + 1, 0, !tileEntity.silkTouch ? 0 : 8, 15, 8);
     // Indicator dots shifted accordingly
-    drawTexturedModalRect(guiLeft + 33, guiTop + 77, 17, 0, 5, 5);
-    drawTexturedModalRect(guiLeft + 52, guiTop + 77, 24, 0, 5, 5);
-    drawTexturedModalRect(guiLeft + 71, guiTop + 77, 31, 0, 5, 5);
+    drawTexturedModalRect(guiLeft + 33, guiTop + 81, 17, 0, 5, 5);
+    drawTexturedModalRect(guiLeft + 52, guiTop + 81, 24, 0, 5, 5);
+    drawTexturedModalRect(guiLeft + 71, guiTop + 81, 31, 0, 5, 5);
         boolean energy = tileEntity.getEnergy() < tileEntity.energyUsage || tileEntity.getEnergy() == 0;
         for (int slotY = 0; slotY < 3; slotY++) {
             for (int slotX = 0; slotX < 9; slotX++) {
@@ -212,16 +212,16 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
 
 
     protected boolean silkTouchButtoninBounds(int xAxis, int yAxis) {
-        // Shift hitbox 9px to the right
-        return xAxis > 66 && xAxis < 66 + 15 && yAxis > 52 && yAxis < 52 + 28;
+        // Shift hitbox 9px to the right and 4px down
+        return xAxis > 66 && xAxis < 66 + 15 && yAxis > 56 && yAxis < 56 + 28;
     }
 
     protected boolean autoEjectButtoninBounds(int xAxis, int yAxis) {
-        return xAxis > 28 && xAxis < 28 + 15 && yAxis > 52 && yAxis < 52 + 28;
+        return xAxis > 28 && xAxis < 28 + 15 && yAxis > 56 && yAxis < 56 + 28;
     }
 
     protected boolean autoPullButtoninBounds(int xAxis, int yAxis) {
-        return xAxis > 47 && xAxis < 47 + 15 && yAxis > 52 && yAxis < 52 + 28;
+        return xAxis > 47 && xAxis < 47 + 15 && yAxis > 56 && yAxis < 56 + 28;
     }
 
     @Override
