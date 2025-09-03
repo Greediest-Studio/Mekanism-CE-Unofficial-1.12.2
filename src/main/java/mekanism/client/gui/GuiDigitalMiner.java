@@ -69,7 +69,9 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
             return ret;
         }, this, resource));
         addGuiElement(new GuiEnergySlot(this, resource, 151, 19, tileEntity));
-        addGuiElement(new GuiInnerScreen(this, resource, 7, 19, 78, 69));
+    addGuiElement(new GuiInnerScreen(this, resource, 25, 19, 60, 69));
+    // Add a new slot visual for the pickaxe slot at (7,19)
+    addGuiElement(new GuiNormalSlot(this, resource, 7, 19));
         addGuiElement(new GuiPlayerSlot(this, resource, 7, 159));
         for (int y = 0; y < 3; y++) {
             for (int x = 0; x < 9; x++) {
@@ -130,9 +132,10 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
         } else {
             runningType = LangUtils.localize("gui.idle");
         }
-        fontRenderer.drawString(runningType, 9, 21, 0xFF3CFE9A);
-        fontRenderer.drawString(tileEntity.searcher.state.localize(), 9, 31, 0xFF3CFE9A);
-        fontRenderer.drawString(LangUtils.localize("gui.digitalMiner.toMine") + ":" + " " + tileEntity.clientToMine, 9, 41, 0xFF3CFE9A);
+    fontRenderer.drawString(runningType, 29, 21, 0xFF3CFE9A);
+    fontRenderer.drawString(tileEntity.searcher.state.localize(), 29, 31, 0xFF3CFE9A);
+    fontRenderer.drawString(LangUtils.localize("gui.digitalMiner.toMine") + ":" + " " + tileEntity.clientToMine, 29, 41, 0xFF3CFE9A);
+    fontRenderer.drawString("Level: " + tileEntity.level, 29, 51, 0xFF3CFE9A);
         if (!tileEntity.missingStack.isEmpty()) {
             drawColorIcon(64, 21, EnumColor.DARK_RED, 0.8F);
             renderItem(tileEntity.missingStack, 64, 21);
@@ -141,12 +144,13 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
             drawTexturedModalRect(64, 21, SlotOverlay.CHECK.textureX, SlotOverlay.CHECK.textureY, 18, 18);
         }
 
-        renderText(LangUtils.localize("gui.on"), 17, 37.5F);
-        renderText(LangUtils.localize("gui.on"), 29.75F, 37.5F);
-        renderText(LangUtils.localize("gui.on"), 42.5F, 37.5F);
-        renderText(LangUtils.localize("gui.off"), 17, 43.5F);
-        renderText(LangUtils.localize("gui.off"), 29.75F, 43.5F);
-        renderText(LangUtils.localize("gui.off"), 42.5F, 43.5F);
+    // Shift labels 9px to the right to align with moved switches
+    renderText(LangUtils.localize("gui.on"), 26, 37.5F);
+    renderText(LangUtils.localize("gui.on"), 38.75F, 37.5F);
+    renderText(LangUtils.localize("gui.on"), 51.5F, 37.5F);
+    renderText(LangUtils.localize("gui.off"), 26, 43.5F);
+    renderText(LangUtils.localize("gui.off"), 38.75F, 43.5F);
+    renderText(LangUtils.localize("gui.off"), 51.5F, 43.5F);
 
         int xAxis = mouseX - guiLeft;
         int yAxis = mouseY - guiTop;
@@ -178,16 +182,18 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
     @Override
     protected void drawGuiContainerBackgroundLayer(int xAxis, int yAxis) {
         super.drawGuiContainerBackgroundLayer(xAxis, yAxis);
-        mc.renderEngine.bindTexture(MekanismUtils.getResource(ResourceType.SWITCH, "switch_icon.png"));
-        drawTexturedModalRect(guiLeft + 19, guiTop + 56, 0, tileEntity.doEject ? 0 : 8, 15, 8);
-        drawTexturedModalRect(guiLeft + 19, guiTop + 56 + 8 + 1, 0, !tileEntity.doEject ? 0 : 8, 15, 8);
-        drawTexturedModalRect(guiLeft + 38, guiTop + 56, 0, tileEntity.doPull ? 0 : 8, 15, 8);
-        drawTexturedModalRect(guiLeft + 38, guiTop + 56 + 8 + 1, 0, !tileEntity.doPull ? 0 : 8, 15, 8);
-        drawTexturedModalRect(guiLeft + 57, guiTop + 56, 0, tileEntity.silkTouch ? 0 : 8, 15, 8);
-        drawTexturedModalRect(guiLeft + 57, guiTop + 56 + 8 + 1, 0, !tileEntity.silkTouch ? 0 : 8, 15, 8);
-        drawTexturedModalRect(guiLeft + 24, guiTop + 77, 17, 0, 5, 5);
-        drawTexturedModalRect(guiLeft + 43, guiTop + 77, 24, 0, 5, 5);
-        drawTexturedModalRect(guiLeft + 62, guiTop + 77, 31, 0, 5, 5);
+    mc.renderEngine.bindTexture(MekanismUtils.getResource(ResourceType.SWITCH, "switch_icon.png"));
+    // Shift switches 9px to the right (half a slot)
+    drawTexturedModalRect(guiLeft + 28, guiTop + 56, 0, tileEntity.doEject ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 28, guiTop + 56 + 8 + 1, 0, !tileEntity.doEject ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 47, guiTop + 56, 0, tileEntity.doPull ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 47, guiTop + 56 + 8 + 1, 0, !tileEntity.doPull ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 66, guiTop + 56, 0, tileEntity.silkTouch ? 0 : 8, 15, 8);
+    drawTexturedModalRect(guiLeft + 66, guiTop + 56 + 8 + 1, 0, !tileEntity.silkTouch ? 0 : 8, 15, 8);
+    // Indicator dots shifted accordingly
+    drawTexturedModalRect(guiLeft + 33, guiTop + 77, 17, 0, 5, 5);
+    drawTexturedModalRect(guiLeft + 52, guiTop + 77, 24, 0, 5, 5);
+    drawTexturedModalRect(guiLeft + 71, guiTop + 77, 31, 0, 5, 5);
         boolean energy = tileEntity.getEnergy() < tileEntity.energyUsage || tileEntity.getEnergy() == 0;
         for (int slotY = 0; slotY < 3; slotY++) {
             for (int slotX = 0; slotX < 9; slotX++) {
@@ -206,15 +212,16 @@ public class GuiDigitalMiner extends GuiMekanismTile<TileEntityDigitalMiner> {
 
 
     protected boolean silkTouchButtoninBounds(int xAxis, int yAxis) {
-        return xAxis > 57 && xAxis < 57 + 15 && yAxis > 52 && yAxis < 52 + 28;
+        // Shift hitbox 9px to the right
+        return xAxis > 66 && xAxis < 66 + 15 && yAxis > 52 && yAxis < 52 + 28;
     }
 
     protected boolean autoEjectButtoninBounds(int xAxis, int yAxis) {
-        return xAxis > 19 && xAxis < 19 + 15 && yAxis > 52 && yAxis < 52 + 28;
+        return xAxis > 28 && xAxis < 28 + 15 && yAxis > 52 && yAxis < 52 + 28;
     }
 
     protected boolean autoPullButtoninBounds(int xAxis, int yAxis) {
-        return xAxis > 38 && xAxis < 38 + 15 && yAxis > 52 && yAxis < 52 + 28;
+        return xAxis > 47 && xAxis < 47 + 15 && yAxis > 52 && yAxis < 52 + 28;
     }
 
     @Override

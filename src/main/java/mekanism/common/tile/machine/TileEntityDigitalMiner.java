@@ -73,7 +73,7 @@ import java.util.stream.IntStream;
 
 public class TileEntityDigitalMiner extends TileEntityElectricBlock implements IUpgradeTile, IRedstoneControl, IActiveState, ISustainedData, IChunkLoader, IAdvancedBoundingBlock, IHasVisualization,IMachineSlotTip {
 
-    private static final int[] INV_SLOTS = IntStream.range(0, 28).toArray();
+    private static final int[] INV_SLOTS = IntStream.range(0, 28).toArray(); // 0..26 storage, 27 energy; pickaxe at 28 is not exposed for automation
 
     public Map<Chunk3D, BitSet> oresToMine = new HashMap<>();
     public Int2ObjectMap<MinerFilter> replaceMap = new Int2ObjectOpenHashMap<>();
@@ -121,6 +121,10 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
 
     private Set<ChunkPos> chunkSet;
 
+    // Mining level constraint for this machine. Only blocks with harvest level <= level can be mined.
+    // Persisted via NBT key "level". Initialized to 0 when first placed.
+    public int level = 0;
+
     /**
      * This machine's current RedstoneControl type.
      */
@@ -154,6 +158,12 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
     @Override
     public void onUpdateServer() {
         super.onUpdateServer();
+        // Update mining level from pickaxe slot (index 28)
+        int computedLevel = getPickaxeHarvestLevel();
+        if (computedLevel != level) {
+            level = computedLevel;
+            MekanismUtils.saveChunk(this);
+        }
         if (!initCalc) {
             if (searcher.state == State.FINISHED) {
                 boolean prevRunning = running;
@@ -367,10 +377,33 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
             return false;
         }
 
+        // Check block harvest level against machine level; skip if too high
+        try {
+            int blockHarvestLevel = state.getBlock().getHarvestLevel(state);
+            if (blockHarvestLevel > level) {
+                return false;
+            }
+        } catch (Throwable ignored) {
+            // Be permissive on exceptions from modded blocks
+        }
+
         EntityPlayer dummy = Objects.requireNonNull(Mekanism.proxy.getDummyPlayer((WorldServer) world, pos).get());
         BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(world, coord.getPos(), state, dummy);
         MinecraftForge.EVENT_BUS.post(event);
         return !event.isCanceled();
+    }
+
+    private int getPickaxeHarvestLevel() {
+        try {
+            if (inventory.size() <= 28) return 0;
+            ItemStack tool = inventory.get(28);
+            if (tool.isEmpty()) return 0;
+            if (!tool.getItem().getToolClasses(tool).contains("pickaxe")) return 0;
+            int hv = tool.getItem().getHarvestLevel(tool, "pickaxe", null, null);
+            return Math.max(hv, 0);
+        } catch (Throwable ignored) {
+            return 0;
+        }
     }
 
     public ItemStack getReplace(int index) {
@@ -550,6 +583,12 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         searcher.state = State.values()[nbtTags.getInteger("state")];
         controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
         setConfigurationData(nbtTags);
+        // Load level (default 0 if not present)
+        if (nbtTags.hasKey("level")) {
+            level = nbtTags.getInteger("level");
+        } else {
+            level = 0;
+        }
     }
 
     @Override
@@ -565,6 +604,8 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         nbtTags.setInteger("state", searcher.state.ordinal());
         nbtTags.setInteger("controlType", controlType.ordinal());
         getConfigurationData(nbtTags);
+    // Persist machine level
+    nbtTags.setInteger("level", level);
     }
 
     private void readBasicData(ByteBuf dataStream) {
@@ -586,6 +627,8 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         } else {
             missingStack = ItemStack.EMPTY;
         }
+    // Sync machine mining level
+    level = dataStream.readInt();
     }
 
     @Override
@@ -651,6 +694,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 } else {
                     missingStack = ItemStack.EMPTY;
                 }
+                level = dataStream.readInt();
             }
             if (clientActive != isActive) {
                 isActive = clientActive;
@@ -686,6 +730,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         } else {
             data.add(false);
         }
+    data.add(level);
     }
 
     @Override
@@ -718,6 +763,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         } else {
             data.add(false);
         }
+    data.add(level);
         return data;
     }
 
@@ -817,6 +863,9 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
 
     @Override
     public void onPlace() {
+    // Initialize custom mining level when the machine is first placed
+    this.level = 0;
+    MekanismUtils.saveChunk(this);
         for (int x = -1; x <= +1; x++) {
             for (int y = 0; y <= +1; y++) {
                 for (int z = -1; z <= +1; z++) {
@@ -856,7 +905,12 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
 
     @Override
     public boolean isItemValidForSlot(int slotID, @Nonnull ItemStack stack) {
-        return slotID != 27 || ChargeUtils.canBeDischarged(stack);
+        if (slotID == 27) {
+            return ChargeUtils.canBeDischarged(stack);
+        } else if (slotID == 28) {
+            return !stack.isEmpty() && stack.getItem().getToolClasses(stack).contains("pickaxe");
+        }
+        return true;
     }
 
     public TileEntity getEjectTile() {
@@ -873,6 +927,9 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         if (side == EnumFacing.UP) {
             if (slotID == 27) {
                 return ChargeUtils.canBeDischarged(itemstack);
+            } else if (slotID == 28) {
+                // Disallow automation insertion for the pickaxe marker slot
+                return false;
             }
             return !itemstack.isEmpty() && isReplaceStack(itemstack);
         }
@@ -884,6 +941,9 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         if (side == facing.getOpposite()) {
             if (slotID == 27) {
                 return !ChargeUtils.canBeDischarged(itemstack);
+            } else if (slotID == 28) {
+                // Disallow automation extraction for the pickaxe marker slot
+                return false;
             }
             return itemstack.isEmpty() || !isReplaceStack(itemstack);
         }
