@@ -8,7 +8,10 @@ public class EnergyAcceptorTarget extends Target<EnergyAcceptorWrapper, Double, 
 
     @Override
     protected void acceptAmount(EnumFacing side, SplitInfo<Double> splitInfo, Double amount) {
-        splitInfo.send(handlers.get(side).acceptEnergy(side, amount, false));
+        EnergyAcceptorWrapper wrapper = handlers.get(side);
+        if (wrapper != null) {
+            splitInfo.send(wrapper.acceptEnergy(side, amount, false));
+        }
     }
 
     @Override
