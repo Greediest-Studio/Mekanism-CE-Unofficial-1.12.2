@@ -36,10 +36,10 @@ public abstract class GuiTankGauge<T, TANK> extends GuiGauge<T> {
     public void mouseClicked(int xAxis, int yAxis, int button) {
         if (inBounds(xAxis, yAxis)) {
             ItemStack stack = GuiElement.mc.player.inventory.getItemStack();
-            if (guiObj instanceof GuiMekanismTile && !stack.isEmpty() && stack.getItem() instanceof ItemGaugeDropper) {
-                TileEntity tile = ((GuiMekanismTile<?>) guiObj).getTileEntity();
-                if (tile instanceof ITankManager && ((ITankManager) tile).getTanks() != null) {
-                    int index = Arrays.asList(((ITankManager) tile).getTanks()).indexOf(infoHandler.getTank());
+            if (guiObj instanceof GuiMekanismTile<?> guiTile && !stack.isEmpty() && stack.getItem() instanceof ItemGaugeDropper) {
+                TileEntity tile = guiTile.getTileEntity();
+                if (tile instanceof ITankManager iTankManager && iTankManager.getTanks() != null) {
+                    int index = Arrays.asList(iTankManager.getTanks()).indexOf(infoHandler.getTank());
                     if (index != -1) {
                         if (button == 0 && Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
                             button = 2;

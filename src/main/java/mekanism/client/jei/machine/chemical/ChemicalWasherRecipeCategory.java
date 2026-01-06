@@ -12,13 +12,11 @@ import mekanism.client.jei.BaseRecipeCategory;
 import mekanism.client.jei.MekanismJEI;
 import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.machines.WasherRecipe;
-import mekanism.common.tile.machine.TileEntityChemicalWasher;
 import mezz.jei.api.IGuiHelper;
 import mezz.jei.api.gui.IGuiFluidStackGroup;
 import mezz.jei.api.gui.IGuiIngredientGroup;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.ingredients.IIngredients;
-import mezz.jei.api.ingredients.VanillaTypes;
 
 public class ChemicalWasherRecipeCategory<WRAPPER extends ChemicalWasherRecipeWrapper<WasherRecipe>> extends BaseRecipeCategory<WRAPPER> {
 
@@ -39,17 +37,17 @@ public class ChemicalWasherRecipeCategory<WRAPPER extends ChemicalWasherRecipeWr
             public double getProgress() {
                 return (float) timer.getValue() / 20F;
             }
-        }, progressBar, this, guiLocation, 62, 38,false));
+        }, progressBar, this, guiLocation, 62, 38, false));
     }
 
     @Override
     public void setRecipe(IRecipeLayout recipeLayout, WRAPPER recipeWrapper, IIngredients ingredients) {
         WasherRecipe tempRecipe = recipeWrapper.getRecipe();
         IGuiFluidStackGroup fluidStacks = recipeLayout.getFluidStacks();
-        fluidStacks.init(0, true, 6 - xOffset, 14 - yOffset, 16, 58, TileEntityChemicalWasher.WATER_USAGE, false, fluidOverlayLarge);
-        fluidStacks.set(0, ingredients.getInputs(VanillaTypes.FLUID).get(0));
+        fluidStacks.init(0, true, 6 - xOffset, 14 - yOffset, 16, 58, tempRecipe.getInput().ingredientFluid.amount, false, fluidOverlayLarge);
+        fluidStacks.set(0, tempRecipe.recipeInput.ingredientFluid);
         IGuiIngredientGroup<GasStack> gasStacks = recipeLayout.getIngredientsGroup(MekanismJEI.TYPE_GAS);
-        initGas(gasStacks, 0, true, 27 - xOffset, 14 - yOffset, 16, 58, tempRecipe.getInput().ingredient, true);
+        initGas(gasStacks, 0, true, 27 - xOffset, 14 - yOffset, 16, 58, tempRecipe.getInput().ingredientGas, true);
         initGas(gasStacks, 1, false, 134 - xOffset, 14 - yOffset, 16, 58, tempRecipe.getOutput().output, true);
     }
 }

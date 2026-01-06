@@ -7,6 +7,7 @@ import mekanism.client.jei.machine.*;
 import mekanism.client.jei.machine.chemical.*;
 import mekanism.client.jei.machine.other.*;
 import mekanism.common.Mekanism;
+import mekanism.common.MekanismBlocks;
 import mekanism.common.MekanismFluids;
 import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.block.states.BlockStateBasic.BasicBlockType;
@@ -19,12 +20,15 @@ import mekanism.common.recipe.inputs.MachineInput;
 import mekanism.common.recipe.machines.MachineRecipe;
 import mekanism.common.recipe.machines.SmeltingRecipe;
 import mekanism.common.recipe.outputs.MachineOutput;
+import mekanism.common.tier.EnergyCubeTier;
 import mekanism.common.tier.FactoryTier;
 import mekanism.common.util.MekanismUtils;
 import mezz.jei.api.IModRegistry;
 import mezz.jei.api.recipe.IRecipeWrapperFactory;
 import mezz.jei.api.recipe.VanillaRecipeCategoryUid;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
+import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -392,6 +396,20 @@ public class RecipeRegistryHelper {
      * ADD END
      */
 
+    public static void registerItemStackToEnergyRecipe(IModRegistry registry) {
+        addRecipes(registry, Recipe.ENERGY_RECIPE, ItemStackToEnergyRecipeWrapper::new);
+        for (EnergyCubeTier tier : EnergyCubeTier.values()) {
+            if (tier == EnergyCubeTier.CREATIVE) {
+                continue;
+            }
+            ItemStack stack = new ItemStack(MekanismBlocks.EnergyCube);
+            if (!stack.hasTagCompound()) {
+                stack.setTagCompound(new NBTTagCompound());
+            }
+            stack.getTagCompound().setInteger("tier", tier.ordinal());
+            registry.addRecipeCatalyst(stack, Recipe.ENERGY_RECIPE.getJEICategory());
+        }
+    }
 
     private static <INPUT extends MachineInput<INPUT>, OUTPUT extends MachineOutput<OUTPUT>, RECIPE extends MachineRecipe<INPUT, OUTPUT, RECIPE>>
     void addRecipes(IModRegistry registry, Recipe<INPUT, OUTPUT, RECIPE> type, IRecipeWrapperFactory<RECIPE> factory) {

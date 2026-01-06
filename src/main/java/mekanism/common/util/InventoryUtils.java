@@ -106,6 +106,29 @@ public final class InventoryUtils {
         return null;
     }
 
+    public static ItemStack takeDefinedItem(TileEntity tile, EnumFacing side) {
+        InvStack ret = new InvStack(tile, side.getOpposite());
+        if (!isItemHandler(tile, side.getOpposite())) {
+            return ItemStack.EMPTY;
+        }
+        IItemHandler inventory = getItemHandler(tile, side.getOpposite());
+        for (int i = inventory.getSlots() - 1; i >= 0; i--) {
+            ItemStack stack = inventory.extractItem(i, inventory.getStackInSlot(i).getCount(), true);
+            int current = ret.getStack().getCount();
+            if (current + stack.getCount() <= stack.getMaxStackSize()) {
+                ret.appendStack(i, stack.copy());
+            }else {
+                ItemStack copy = stack.copy();
+                copy.setCount(stack.getMaxStackSize() - current);
+                ret.appendStack(i, copy);
+            }
+            if (!ret.getStack().isEmpty()) {
+                return ret.getStack();
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
     public static boolean canInsert(TileEntity tileEntity, EnumColor color, ItemStack itemStack, EnumFacing side, boolean force) {
         if (force && tileEntity instanceof TileEntityLogisticalSorter sorter) {
             return sorter.canSendHome(itemStack);

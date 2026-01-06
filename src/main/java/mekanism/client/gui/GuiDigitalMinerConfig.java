@@ -153,6 +153,8 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
         String prevMin = minField != null ? minField.getText() : "";
         String prevMax = maxField != null ? maxField.getText() : "";
 
+        int lengthY = Math.max(Integer.toString(MekanismConfig.current().mekce.DigitalMinerMinY.val()).length(), Integer.toString(MekanismConfig.current().mekce.DigitalMinerMaxY.val()).length());
+
         radiusField = new GuiTextColorField(1, fontRenderer, guiLeft + 12, guiTop + 67, 38, 11);
         radiusField.setMaxStringLength(Integer.toString(MekanismConfig.current().general.digitalMinerMaxRadius.val()).length());
         radiusField.setFocusedboxbordercolor(0xFF24985C);
@@ -161,14 +163,14 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
         radiusField.setText(prevRad);
 
         minField = new GuiTextColorField(2, fontRenderer, guiLeft + 12, guiTop + 92, 38, 11);
-        minField.setMaxStringLength(3);
+        minField.setMaxStringLength(lengthY);
         minField.setFocusedboxbordercolor(0xFF24985C);
         minField.setBoxbordercolor(0xFF3CFE9A);
         minField.setTextColor(0xFF3CFE9A);
         minField.setText(prevMin);
 
         maxField = new GuiTextColorField(3, fontRenderer, guiLeft + 12, guiTop + 117, 38, 11);
-        maxField.setMaxStringLength(3);
+        maxField.setMaxStringLength(lengthY);
         maxField.setFocusedboxbordercolor(0xFF24985C);
         maxField.setBoxbordercolor(0xFF3CFE9A);
         maxField.setTextColor(0xFF3CFE9A);
@@ -258,10 +260,13 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
                 setMaxY();
             }
         }
-        if (Character.isDigit(c) || isTextboxKey(c, i)) {
-            radiusField.textboxKeyTyped(c, i);
+        if (Character.isDigit(c) || isTextboxKey(c, i) || i == Keyboard.KEY_MINUS || i == Keyboard.KEY_SUBTRACT) {
             minField.textboxKeyTyped(c, i);
             maxField.textboxKeyTyped(c, i);
+        }
+        if (Character.isDigit(c) || isTextboxKey(c, i)) {
+            radiusField.textboxKeyTyped(c, i);
+
         }
     }
 
@@ -275,7 +280,9 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
 
     private void setMinY() {
         if (!minField.getText().isEmpty()) {
-            int toUse = Math.max(0, Math.min(Integer.parseInt(minField.getText()), tileEntity.maxY));
+            int Max = MekanismConfig.current().mekce.DigitalMinerMaxY.val() == 255 ? tileEntity.maxY : MekanismConfig.current().mekce.DigitalMinerMaxY.val();
+            int Min = Math.min(Integer.parseInt(minField.getText()), Max);
+            int toUse = Math.max(MekanismConfig.current().mekce.DigitalMinerMinY.val(), Min);
             Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(7, toUse)));
             minField.setText("");
         }
@@ -283,7 +290,9 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
 
     private void setMaxY() {
         if (!maxField.getText().isEmpty()) {
-            int toUse = Math.max(tileEntity.minY, Math.min(Integer.parseInt(maxField.getText()), 255));
+            int Max = Math.min(Integer.parseInt(maxField.getText()), MekanismConfig.current().mekce.DigitalMinerMaxY.val());
+            int Min = MekanismConfig.current().mekce.DigitalMinerMinY.val() == 0 ? tileEntity.minY : MekanismConfig.current().mekce.DigitalMinerMinY.val();
+            int toUse = Math.max(Min, Max);
             Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(8, toUse)));
             maxField.setText("");
         }

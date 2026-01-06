@@ -23,11 +23,19 @@ public class NutritionalRecipe extends MachineRecipe<ItemStackInput, GasOutput, 
     }
 
     public boolean canOperate(NonNullList<ItemStack> inventory, GasTank outputTank) {
-        return getInput().useItemStackFromInventory(inventory, 0, false) && getOutput().applyOutputs(outputTank, false, 1);
+        return canOperate(inventory, 0, outputTank);
+    }
+
+    public boolean canOperate(NonNullList<ItemStack> inventory, int inputIndex, GasTank outputTank) {
+        return getInput().useItemStackFromInventory(inventory, inputIndex, false) && getOutput().applyOutputs(outputTank, false, 1);
     }
 
     public void operate(NonNullList<ItemStack> inventory, GasTank outputTank) {
-        if (getInput().useItemStackFromInventory(inventory, 0, true)) {
+        operate(inventory, 0, outputTank);
+    }
+
+    public void operate(NonNullList<ItemStack> inventory, int inputIndex, GasTank outputTank) {
+        if (getInput().useItemStackFromInventory(inventory, inputIndex, true)) {
             getOutput().applyOutputs(outputTank, true, 1);
         }
     }

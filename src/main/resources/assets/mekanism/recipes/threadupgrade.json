@@ -1,0 +1,27 @@
+{
+  "result": {
+    "item": "mekanism:threadupgrade"
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "ABA"
+  ],
+  "type": "forge:ore_shaped",
+  "key": {
+    "A": {
+      "item": "mekanism:cosmicmatter"
+    },
+    "B": {
+      "ore": "blockGlass",
+      "type": "forge:ore_dict"
+    },
+    "C": {
+      "item": "mekanism:atomicalloy"
+    },
+    "D": {
+      "item": "mekanism:machineblock4",
+      "data": 10
+    }
+  }
+}

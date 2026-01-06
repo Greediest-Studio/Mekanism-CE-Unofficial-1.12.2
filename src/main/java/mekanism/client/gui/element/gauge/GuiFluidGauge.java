@@ -1,5 +1,6 @@
 package mekanism.client.gui.element.gauge;
 
+import mekanism.api.math.MathUtils;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.render.MekanismRenderer;
@@ -41,8 +42,12 @@ public class GuiFluidGauge extends GuiTankGauge<FluidStack, FluidTank> {
         if (infoHandler.getTank().getFluidAmount() == Integer.MAX_VALUE) {
             return height - 2;
         }
-        float scale = (float) infoHandler.getTank().getFluidAmount() / (float) infoHandler.getTank().getCapacity();
-        return Math.round(scale * (height - 2));
+        double scale = Math.max(Math.min((double) infoHandler.getTank().getFluidAmount() / infoHandler.getTank().getCapacity(), 1.0D), 0.0D);
+        if (vertical) {
+            return MathUtils.clampToInt(Math.round(scale * (height - 2)));
+        } else {
+            return MathUtils.clampToInt(Math.round(scale * (width - 2)));
+        }
     }
 
     @Override

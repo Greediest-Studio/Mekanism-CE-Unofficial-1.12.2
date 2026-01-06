@@ -4,6 +4,8 @@ import crafttweaker.CraftTweakerAPI;
 import crafttweaker.mc1120.commands.CraftTweakerCommand;
 import crafttweaker.mc1120.commands.SpecialMessagesChat;
 import mekanism.common.integration.crafttweaker.helpers.RecipeInfoHelper;
+import mekanism.common.recipe.GasStackFuelToEnergyRecipe;
+import mekanism.common.recipe.ItemStackToEnergyRecipe;
 import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.machines.*;
 import net.minecraft.command.ICommandSender;
@@ -55,7 +57,9 @@ public class MekRecipesCommand extends CraftTweakerCommand {
                 "cellseparator",
                 "recycler",
                 "fusioncooling",
-                "ambientaccumulator"
+                "ambientaccumulator",
+                "itemstacktoenergy",
+                "gastoenergy"
         ).collect(Collectors.toList());
     }
 
@@ -125,8 +129,9 @@ public class MekRecipesCommand extends CraftTweakerCommand {
             case "washer" -> {
                 type = Recipe.CHEMICAL_WASHER;
                 for (WasherRecipe recipe : Recipe.CHEMICAL_WASHER.get().values()) {
-                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.chemical.washer.addRecipe(%s, %s)",
-                            RecipeInfoHelper.getGasName(recipe.getInput().ingredient),
+                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.chemical.washer.addRecipe(%s,%s,%s)",
+                            RecipeInfoHelper.getGasName(recipe.getInput().ingredientGas),
+                            RecipeInfoHelper.getFluidName(recipe.getInput().ingredientFluid),
                             RecipeInfoHelper.getGasName(recipe.getOutput().output)
                     ));
                 }
@@ -393,6 +398,24 @@ public class MekRecipesCommand extends CraftTweakerCommand {
                             recipe.recipeInput.ingredient,
                             RecipeInfoHelper.getGasName(recipe.getOutput().output),
                             recipe.getOutput().primaryChance
+                    ));
+                }
+            }
+            case "itemstacktoenergy" -> {
+                type = Recipe.ENERGY_RECIPE;
+                for (ItemStackToEnergyRecipe recipe : Recipe.ENERGY_RECIPE.get().values()) {
+                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.ItemStackToEnergy.addRecipe(%s, %s)",
+                            RecipeInfoHelper.getItemName(recipe.getInput().ingredient),
+                            recipe.getOutput().energyOutput
+                    ));
+                }
+            }
+            case "gastoenergy" -> {
+                type = Recipe.GAS_FUEL_TO_ENERGY_RECIPE;
+                for (GasStackFuelToEnergyRecipe recipe : Recipe.GAS_FUEL_TO_ENERGY_RECIPE.get().values()) {
+                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.GasToEnergy.addRecipe(%s, %s)",
+                            RecipeInfoHelper.getGasName(recipe.getInput().ingredient),
+                            recipe.getOutput().energyOutput
                     ));
                 }
             }

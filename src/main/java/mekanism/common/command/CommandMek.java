@@ -2,12 +2,7 @@ package mekanism.common.command;
 
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import mekanism.api.Coord4D;
-import mekanism.api.EnumColor;
 import mekanism.api.MekanismAPI;
-import mekanism.common.MekanismLang;
-import mekanism.common.lib.radiation.RadiationManager;
-import mekanism.common.util.UnitDisplayUtils;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -17,13 +12,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.server.command.CommandTreeBase;
 

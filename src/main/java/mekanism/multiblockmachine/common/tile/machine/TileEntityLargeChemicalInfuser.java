@@ -6,20 +6,23 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
 import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
+import mekanism.common.Upgrade.IUpgradeInfoHandler;
 import mekanism.common.base.IAdvancedBoundingBlock;
-import mekanism.common.base.IMachineSlotTip;
+import mekanism.common.base.IGuiProvider;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
+import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.ChemicalPairInput;
 import mekanism.common.recipe.machines.ChemicalInfuserRecipe;
 import mekanism.common.recipe.outputs.GasOutput;
+import mekanism.common.tile.prefab.TileEntityBasicMachine;
 import mekanism.common.util.*;
-import mekanism.multiblockmachine.client.render.bloom.machine.BloomRenderLargeChemicalInfuser;
-import mekanism.multiblockmachine.common.block.states.BlockStateMultiblockMachine;
-import mekanism.multiblockmachine.common.tile.machine.prefab.TileEntityMultiblockBasicMachine;
+import mekanism.multiblockmachine.client.render.block.machine.bloom.BloomRenderLargeChemicalInfuser;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -35,26 +38,38 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.Nonnull;
 import java.util.*;
 
-public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMachine<ChemicalPairInput, GasOutput, ChemicalInfuserRecipe>
-        implements IGasHandler, ISustainedData, Upgrade.IUpgradeInfoHandler, ITankManager, IAdvancedBoundingBlock, IMachineSlotTip {
+public class TileEntityLargeChemicalInfuser extends TileEntityBasicMachine<ChemicalPairInput, GasOutput, ChemicalInfuserRecipe> implements IGasHandler, ISustainedData, IUpgradeInfoHandler,
+        ITankManager, IAdvancedBoundingBlock {
 
-    public GasTank leftTank = new GasTank(8192000);
-    public GasTank rightTank = new GasTank(8192000);
-    public GasTank centerTank = new GasTank(8192000);
-    public int gasOutput = 256;
+    public static final int MAX_GAS = 8192000;
+    public GasTank leftTank = new GasTank(MAX_GAS);
+    public GasTank rightTank = new GasTank(MAX_GAS);
+    public GasTank centerTank = new GasTank(MAX_GAS);
+    private final EjectSpeedController gasSpeedController = new EjectSpeedController();
     public ChemicalInfuserRecipe cachedRecipe;
-    public int updateDelay;
-    public boolean needsPacket;
-    public int numPowering;
+
     public double clientEnergyUsed;
     private int currentRedstoneLevel;
-    private boolean rendererInitialized = false;
-    private final EjectSpeedController gasSpeedController = new EjectSpeedController();
+    public int processes = MekanismConfig.current().multiblock.LargeChemicalInfuserProcesses.val();
+    public int numPowering;
+    public int updateDelay;
+    public boolean needsPacket;
 
     public TileEntityLargeChemicalInfuser() {
-        super("cheminfuser", BlockStateMultiblockMachine.MultiblockMachineType.LARGE_CHEMICAL_INFUSER, 1, 4);
+        super("cheminfuser", "LargeChemicalInfuser", 0, MachineType.CHEMICAL_INFUSER.getUsage(), 4, 1);
         inventory = NonNullListSynchronized.withSize(5, ItemStack.EMPTY);
         upgradeComponent.setSupported(Upgrade.THREAD);
+    }
+
+    @Override
+    public void onUpdateClient() {
+        super.onUpdateClient();
+        if (updateDelay > 0) {
+            updateDelay--;
+            if (updateDelay == 0) {
+                MekanismUtils.updateBlock(world, getPos());
+            }
+        }
     }
 
     @Override
@@ -71,32 +86,57 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         TileUtils.receiveGasItem(inventory.get(1), rightTank);
         TileUtils.drawGas(inventory.get(2), centerTank);
         ChemicalInfuserRecipe recipe = getRecipe();
-        double energy = recipe != null ? energyPerTick * getUpgradedUsage(recipe) * Thread() : 0;
+        double energy = recipe != null ? energyPerTick * getUpgradedUsage(recipe) : energyPerTick;
         getProcess(recipe, true, energy, true, false);
         prevEnergy = getEnergy();
         if (needsPacket) {
             Mekanism.packetHandler.sendUpdatePacket(this);
+            needsPacket = false;
         }
-        needsPacket = false;
 
     }
 
     @Override
-    public void onUpdateClient() {
-        super.onUpdateClient();
-        if (updateDelay > 0) {
-            updateDelay--;
-            if (updateDelay == 0) {
-                MekanismUtils.updateBlock(world, getPos());
-            }
+    protected void setUpOtherActions() {
+        double prev = getEnergy();
+        if (getRecipe() != null) {
+            setEnergy(getEnergy() - energyPerTick * getUpgradedUsage(getRecipe()));
         }
+        clientEnergyUsed = prev - getEnergy();
     }
+
+    public int getUpgradedUsage(ChemicalInfuserRecipe recipe) {
+        int possibleProcess = Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val());
+        possibleProcess *= processes;
+        possibleProcess *= getThread();
+        if (leftTank.getGasType() == recipe.recipeInput.leftGas.getGas()) {
+            possibleProcess = Math.min(leftTank.getStored() / recipe.recipeInput.leftGas.amount, possibleProcess);
+            possibleProcess = Math.min(rightTank.getStored() / recipe.recipeInput.rightGas.amount, possibleProcess);
+        } else {
+            possibleProcess = Math.min(leftTank.getStored() / recipe.recipeInput.rightGas.amount, possibleProcess);
+            possibleProcess = Math.min(rightTank.getStored() / recipe.recipeInput.leftGas.amount, possibleProcess);
+        }
+        possibleProcess = Math.min(centerTank.getNeeded() / recipe.recipeOutput.output.amount, possibleProcess);
+        possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
+        //不能为0
+        possibleProcess = Math.max(possibleProcess, 1);
+        return possibleProcess;
+    }
+
+
+    public int getThread() {
+        int thread = 1;
+        if (upgradeComponent.isUpgradeInstalled(Upgrade.THREAD)) {
+            thread += upgradeComponent.getUpgrades(Upgrade.THREAD);
+        }
+        return thread;
+    }
+
 
     @Override
     public void addTileSyncTask() {
         this.gasSpeedController.ensureSize(1, () -> Collections.singletonList(new TankProvider.Gas(centerTank)));
-        handleTank(centerTank, getLeftTankside());
-        handleTank(centerTank, getRightTankside());
+        handleTank(centerTank, getTankside());
         int newRedstoneLevel = getRedstoneLevel();
         if (newRedstoneLevel != currentRedstoneLevel) {
             world.updateComparatorOutputLevel(pos, getBlockType());
@@ -104,27 +144,13 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         }
     }
 
-    @Override
-    protected void setUpOtherActions() {
-        double prev = getEnergy();
-        if (getRecipe() != null) {
-            setEnergy(getEnergy() - energyPerTick * getUpgradedUsage(getRecipe()) * Thread());
-        }
-        clientEnergyUsed = prev - getEnergy();
-    }
-
-    private TileEntity getLeftTankside() {
-        BlockPos pos = getPos().offset(facing).offset(MekanismUtils.getLeft(facing));
-        if (world.getTileEntity(pos) != null) {
-            return world.getTileEntity(pos);
-        }
-        return null;
-    }
-
-    private TileEntity getRightTankside() {
-        BlockPos pos = getPos().offset(facing).offset(MekanismUtils.getRight(facing));
-        if (world.getTileEntity(pos) != null) {
-            return world.getTileEntity(pos);
+    private TileEntity getTankside() {
+        BlockPos left = getPos().offset(facing).offset(MekanismUtils.getLeft(facing));
+        BlockPos right = getPos().offset(facing).offset(MekanismUtils.getRight(facing));
+        if (world.getTileEntity(left) != null) {
+            return world.getTileEntity(left);
+        } else if (world.getTileEntity(right) != null) {
+            return world.getTileEntity(right);
         }
         return null;
     }
@@ -152,24 +178,12 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         tank.draw(emitted, true);
     }
 
-    public int getUpgradedUsage(ChemicalInfuserRecipe recipe) {
-        int possibleProcess = Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val());
-        if (leftTank.getGasType() == recipe.recipeInput.leftGas.getGas()) {
-            possibleProcess = Math.min(leftTank.getStored() / recipe.recipeInput.leftGas.amount, possibleProcess);
-            possibleProcess = Math.min(rightTank.getStored() / recipe.recipeInput.rightGas.amount, possibleProcess);
-        } else {
-            possibleProcess = Math.min(leftTank.getStored() / recipe.recipeInput.rightGas.amount, possibleProcess);
-            possibleProcess = Math.min(rightTank.getStored() / recipe.recipeInput.leftGas.amount, possibleProcess);
-        }
-        possibleProcess = Math.min(centerTank.getNeeded() / recipe.recipeOutput.output.amount, possibleProcess);
-        possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
-        return possibleProcess;
-    }
-
+    @Override
     public ChemicalPairInput getInput() {
         return new ChemicalPairInput(leftTank.getGas(), rightTank.getGas());
     }
 
+    @Override
     public ChemicalInfuserRecipe getRecipe() {
         ChemicalPairInput input = getInput();
         if (cachedRecipe == null || !input.testEquality(cachedRecipe.getInput())) {
@@ -178,13 +192,16 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         return cachedRecipe;
     }
 
+    @Override
     public boolean canOperate(ChemicalInfuserRecipe recipe) {
         return recipe != null && recipe.canOperate(leftTank, rightTank, centerTank);
     }
 
-
+    @Override
     public void operate(ChemicalInfuserRecipe recipe) {
-        recipe.operate(leftTank, rightTank, centerTank, getUpgradedUsage(recipe));
+        int operations = getUpgradedUsage(recipe);
+        recipe.operate(leftTank, rightTank, centerTank, operations);
+        markNoUpdateSync();
     }
 
     @Override
@@ -237,7 +254,6 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         nbtTags.setInteger("numPowering", numPowering);
     }
 
-
     @Nonnull
     @Override
     public GasTankInfo[] getTankInfo() {
@@ -252,10 +268,6 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         return false;
     }
 
-    @Override
-    public boolean canDrawGas(EnumFacing side, Gas type) {
-        return centerTank.canDraw(type) && side == facing;
-    }
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
@@ -281,6 +293,12 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
     }
 
     @Override
+    public boolean canDrawGas(EnumFacing side, Gas type) {
+        return centerTank.canDraw(type) && side == facing;
+    }
+
+
+    @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing side) {
         if (isCapabilityDisabled(capability, side)) {
             return false;
@@ -303,9 +321,9 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         return slotID == 3 && ChargeUtils.canBeDischarged(itemstack);
     }
 
-    @NotNull
+    @Nonnull
     @Override
-    public int[] getSlotsForFace(@NotNull EnumFacing side) {
+    public int[] getSlotsForFace(@Nonnull EnumFacing side) {
         return InventoryUtils.EMPTY;
     }
 
@@ -351,14 +369,13 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         return new Object[]{leftTank, rightTank, centerTank};
     }
 
-
     @Override
-    public void setActive(boolean active) {
-        super.setActive(active);
-        if (updateDelay == 0) {
-            Mekanism.packetHandler.sendUpdatePacket(this);
-            updateDelay = 10;
-        }
+    public double getMaxEnergy() {
+        return upgradeComponent.isUpgradeInstalled(Upgrade.ENERGY) ? MekanismUtils.getMaxEnergy(this, getTierEnergy()) : getTierEnergy();
+    }
+
+    public double getTierEnergy() {
+        return MachineType.CHEMICAL_INFUSER.getStorage() * processes * getThread();
     }
 
     @Override
@@ -371,16 +388,17 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         return new Object[0];
     }
 
+
     public double getScaledLeftTankGasLevel() {
-        return (double) leftTank.getStored() / leftTank.getMaxGas();
+        return Math.max(Math.min((double) leftTank.getStored() / leftTank.getMaxGas(), 1.0D), 0.0D);
     }
 
     public double getScaledRightTankGasLevel() {
-        return (double) rightTank.getStored() / rightTank.getMaxGas();
+        return Math.max(Math.min((double) rightTank.getStored() / rightTank.getMaxGas(), 1.0D), 0.0D);
     }
 
     public double getScaledGasTankLevel() {
-        return (double) centerTank.getStored() / centerTank.getMaxGas();
+        return Math.max(Math.min((double) centerTank.getStored() / centerTank.getMaxGas(), 1.0D), 0.0D);
     }
 
     @Override
@@ -393,6 +411,36 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         return redstone || numPowering > 0;
     }
 
+    @Override
+    public boolean getEnergySlot() {
+        return inventory.get(3).isEmpty();
+    }
+
+    @Override
+    public boolean getInputSlot() {
+        return false;
+    }
+
+    @Override
+    public boolean getOuputSlot() {
+        return false;
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return 1;
+    }
+
+    @Override
+    public IGuiProvider guiProvider() {
+        return MekanismMultiblockMachine.proxy;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return LangUtils.localize("tile.LargeChemicalInfuser.name");
+    }
 
     @Override
     public boolean canBoundReceiveEnergy(BlockPos coord, EnumFacing side) {
@@ -401,6 +449,11 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
             return side == back;
         }
         return false;
+    }
+
+    @Override
+    public boolean sideIsConsumer(EnumFacing side) {
+        return side == MekanismUtils.getBack(this.facing);
     }
 
     @Override
@@ -430,7 +483,7 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
 
     @Override
     public String getDataType() {
-        return getBlockType().getTranslationKey() + "." + fullName + ".name";
+        return getName();
     }
 
     @Override
@@ -464,7 +517,6 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         }
     }
 
-
     @Override
     public boolean hasOffsetCapability(@NotNull Capability<?> capability, @Nullable EnumFacing side, @NotNull Vec3i offset) {
         if (isOffsetCapabilityDisabled(capability, side, offset)) {
@@ -477,6 +529,7 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         }
         return hasCapability(capability, side);
     }
+
 
     @Nullable
     @Override
@@ -571,32 +624,26 @@ public class TileEntityLargeChemicalInfuser extends TileEntityMultiblockBasicMac
         } else if (isStrictEnergy(capability) || capability == CapabilityEnergy.ENERGY || isTesla(capability, side)) {
             return true;
         }
-        return super.isCapabilityDisabled(capability, side);
+        return false;
     }
 
     @Override
     public void validate() {
         super.validate();
-        if (isRemote() && !rendererInitialized) {
-            rendererInitialized = true;
+        if (isRemote()) {
             if (Mekanism.hooks.Bloom && MekanismConfig.current().client.enableBloom.val()) {
                 new BloomRenderLargeChemicalInfuser(this);
             }
         }
     }
 
-    @Override
-    public boolean getEnergySlot() {
-        return inventory.get(3).isEmpty();
-    }
 
     @Override
-    public boolean getInputSlot() {
-        return false;
-    }
-
-    @Override
-    public boolean getOuputSlot() {
-        return false;
+    public void setActive(boolean active) {
+        super.setActive(active);
+        if (updateDelay == 0) {
+            Mekanism.packetHandler.sendUpdatePacket(this);
+            updateDelay = 10;
+        }
     }
 }

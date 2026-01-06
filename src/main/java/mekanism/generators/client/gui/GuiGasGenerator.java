@@ -1,6 +1,7 @@
 package mekanism.generators.client.gui;
 
 import mekanism.client.gui.GuiMekanismTile;
+import mekanism.client.gui.IJeiNoShowRecipe;
 import mekanism.client.gui.element.GuiEnergyInfo;
 import mekanism.client.gui.element.GuiPlayerSlot;
 import mekanism.client.gui.element.GuiPowerBar;
@@ -23,7 +24,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.util.Arrays;
 
 @SideOnly(Side.CLIENT)
-public class GuiGasGenerator extends GuiMekanismTile<TileEntityGasGenerator> {
+public class GuiGasGenerator extends GuiMekanismTile<TileEntityGasGenerator> implements IJeiNoShowRecipe {
 
     public GuiGasGenerator(InventoryPlayer inventory, TileEntityGasGenerator tile) {
         super(tile, new ContainerGasGenerator(inventory, tile));
@@ -31,7 +32,7 @@ public class GuiGasGenerator extends GuiMekanismTile<TileEntityGasGenerator> {
         addGuiElement(new GuiRedstoneControl(this, tileEntity, resource));
         addGuiElement(new GuiSecurityTab(this, tileEntity, resource));
         addGuiElement(new GuiEnergyInfo(() -> Arrays.asList(
-                LangUtils.localize("gui.producing") + ": " + MekanismUtils.getEnergyDisplay(tileEntity.generationRate * tileEntity.clientUsed) + "/t",
+                LangUtils.localize("gui.producing") + ": " + MekanismUtils.getEnergyDisplay(tileEntity.generationRate * tileEntity.getUsed() * tileEntity.getMaxBurnTicks()) + "/t",
                 LangUtils.localize("gui.maxOutput") + ": " + MekanismUtils.getEnergyDisplay(tileEntity.getMaxOutput()) + "/t"), this, resource));
         addGuiElement(new GuiGasGauge(() -> tileEntity.fuelTank, Type.WIDE, this, resource, 55, 18));
         addGuiElement(new GuiPowerBar(this, tileEntity, resource, 164, 15));
@@ -44,7 +45,7 @@ public class GuiGasGenerator extends GuiMekanismTile<TileEntityGasGenerator> {
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         fontRenderer.drawString(tileEntity.getName(), (xSize / 2) - (fontRenderer.getStringWidth(tileEntity.getName()) / 2), 6, 0x404040);
         fontRenderer.drawString(LangUtils.localize("container.inventory"), 8, (ySize - 96) + 2, 0x404040);
-        String s = LangUtils.localize("gui.burnRate") + ": " + tileEntity.clientUsed;
+        String s = LangUtils.localize("gui.burnRate") + ": " + tileEntity.getUsed();
         fontRenderer.drawString(s, xSize - 8 - fontRenderer.getStringWidth(s), (ySize - 96) + 2, 0x404040);
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
     }

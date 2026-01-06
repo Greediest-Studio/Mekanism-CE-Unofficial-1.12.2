@@ -14,6 +14,7 @@ import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.IMachineSlotTip;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IUpgradeTile;
+import mekanism.common.block.states.BlockStateMachine;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.chunkloading.IChunkLoader;
 import mekanism.common.config.MekanismConfig;
@@ -31,6 +32,7 @@ import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.ChargeUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.NonNullListSynchronized;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -596,5 +598,11 @@ public class TileEntityTeleporter extends TileEntityElectricBlock implements ICo
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
     }
 }

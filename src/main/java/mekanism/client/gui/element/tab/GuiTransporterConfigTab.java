@@ -22,6 +22,10 @@ public class GuiTransporterConfigTab extends GuiTabElement<TileEntity> {
         this.y = y;
     }
 
+    public GuiTransporterConfigTab(IGuiWrapper gui, TileEntity tile, ResourceLocation def) {
+        this(gui, 34, tile, def);
+    }
+
     @Override
     public void buttonClicked() {
         Mekanism.packetHandler.sendToServer(new SimpleGuiMessage(Coord4D.get(tileEntity), 0, 51));

@@ -1,5 +1,6 @@
 package mekanism.client.gui.element.gauge;
 
+import mekanism.api.math.MathUtils;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.client.gui.IGuiWrapper;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -7,10 +8,8 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static java.lang.Math.min;
-
 @SideOnly(Side.CLIENT)
-public class GuiNumberGauge extends GuiGauge {
+public class GuiNumberGauge extends GuiGauge<Void> {
 
     private final INumberInfoHandler infoHandler;
 
@@ -26,7 +25,12 @@ public class GuiNumberGauge extends GuiGauge {
 
     @Override
     public int getScaledLevel() {
-        return (int) ((height - 2) * min(infoHandler.getLevel() / infoHandler.getMaxLevel(), 1));
+        double scale = Math.max(Math.min(infoHandler.getLevel() / infoHandler.getMaxLevel(), 1.0D), 0.0D);
+        if (vertical) {
+            return MathUtils.clampToInt(Math.round(scale * (height - 2)));
+        } else {
+            return MathUtils.clampToInt(Math.round(scale * (width - 2)));
+        }
     }
 
     @Override

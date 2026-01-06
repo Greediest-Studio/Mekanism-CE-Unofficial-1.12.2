@@ -68,10 +68,10 @@ public class GuiOredictionificatorFilter extends GuiTextFilterBase<Oredictionifi
     public void setText() {
         String newFilter = text.getText();
         if (TileEntityOredictionificator.possibleFilters.stream().anyMatch(newFilter::startsWith)) {
-            filter.filter = newFilter;
-            filter.index = 0;
-            text.setText("");
-            updateRenderStack();
+                filter.filter = newFilter;
+                filter.index = 0;
+                text.setText("");
+                updateRenderStack();
         }
         updateButtons();
     }

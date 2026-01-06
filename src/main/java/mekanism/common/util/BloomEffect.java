@@ -42,7 +42,7 @@ public abstract class BloomEffect<T extends TileEntityBasicBlock> implements IBl
 
     @Override
     public void renderBloomEffect(@NotNull final BufferBuilder bufferBuilder, @NotNull final EffectRenderContext effectRenderContext) {
-        if (tile != null) {
+        if (tile != null && !tile.isInvalid()) {
             GlStateManager.pushMatrix();
             BlockPos pos = tile.getPos();
             int x = pos.getX();
@@ -67,7 +67,7 @@ public abstract class BloomEffect<T extends TileEntityBasicBlock> implements IBl
         double entityX = Minecraft.getMinecraft().getRenderViewEntity().lastTickPosX + (Minecraft.getMinecraft().getRenderViewEntity().posX - Minecraft.getMinecraft().getRenderViewEntity().lastTickPosX) * Minecraft.getMinecraft().getRenderPartialTicks();
         double entityY = Minecraft.getMinecraft().getRenderViewEntity().lastTickPosY + (Minecraft.getMinecraft().getRenderViewEntity().posY - Minecraft.getMinecraft().getRenderViewEntity().lastTickPosY) * Minecraft.getMinecraft().getRenderPartialTicks();
         double entityZ = Minecraft.getMinecraft().getRenderViewEntity().lastTickPosZ + (Minecraft.getMinecraft().getRenderViewEntity().posZ - Minecraft.getMinecraft().getRenderViewEntity().lastTickPosZ) * Minecraft.getMinecraft().getRenderPartialTicks();
-        return tile.getDistanceSq(entityX, entityY, entityZ) < tile.getMaxRenderDistanceSquared();
+        return tile.getDistanceSq(entityX, entityY, entityZ) < tile.getMaxRenderDistanceSquared() && !tile.isInvalid();
     }
 
 

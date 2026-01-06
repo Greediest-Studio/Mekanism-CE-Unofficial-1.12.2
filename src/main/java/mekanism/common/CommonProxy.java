@@ -27,7 +27,6 @@ import mekanism.common.tile.multiblock.TileEntityInductionCasing;
 import mekanism.common.tile.multiblock.TileEntityThermalEvaporationController;
 import mekanism.common.tile.prefab.*;
 import mekanism.common.voice.VoiceServerManager;
-import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -351,17 +350,6 @@ public class CommonProxy implements IGuiProvider {
         if (player instanceof EntityPlayerMP) {
             ((WorldServer) player.world).addScheduledTask(runnable);
         }
-    }
-
-    public int getGuiId(Block block, int metadata) {
-        if (MachineType.get(block, metadata) != null) {
-            return MachineType.get(block, metadata).guiId;
-        } else if (block == MekanismBlocks.GasTank) {
-            return 10;
-        } else if (block == MekanismBlocks.EnergyCube) {
-            return 8;
-        }
-        return -1;
     }
 
     public void renderLaser(World world, Pos3D from, Pos3D to, EnumFacing direction, double energy) {

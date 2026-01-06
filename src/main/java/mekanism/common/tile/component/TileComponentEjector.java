@@ -426,6 +426,10 @@ public class TileComponentEjector implements ITileComponent {
     }
 
     private boolean getEjecting(TransmissionType type) {
-        return ((ISideConfiguration) tileEntity).getConfig().isEjecting(type);
+        if (tileEntity instanceof ISideConfiguration configuration) {
+            return configuration.getConfig() != null && configuration.getConfig().isEjecting(type);
+        } else {
+            return false;
+        }
     }
 }

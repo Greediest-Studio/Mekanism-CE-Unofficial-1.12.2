@@ -14,18 +14,15 @@ import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
-import mekanism.multiblockmachine.common.inventory.container.machine.ContainerLargeChemicalInfuser;
+import mekanism.multiblockmachine.common.inventory.container.ContainerLargeChemicalInfuser;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeChemicalInfuser;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@SideOnly(Side.CLIENT)
 public class GuiLargeChemicalInfuser extends GuiMekanismTile<TileEntityLargeChemicalInfuser> implements IJeiNoShowRecipe {
 
     protected Timeticks time;
@@ -47,8 +44,8 @@ public class GuiLargeChemicalInfuser extends GuiMekanismTile<TileEntityLargeChem
         addGuiElement(new GuiGasGauge(() -> tileEntity.centerTank, GuiGauge.Type.STANDARD, this, resource, 79, 4 + 11).withColor(GuiGauge.TypeColor.BLUE));
         addGuiElement(new GuiGasGauge(() -> tileEntity.rightTank, GuiGauge.Type.STANDARD, this, resource, 133, 13 + 11).withColor(GuiGauge.TypeColor.ORANGE));
         addGuiElement(new GuiEnergySlot(this, resource, 154, 4 + 11, tileEntity));
-        addGuiElement(new GuiExtraSlot(this, resource, 154, 55 + 11,tileEntity).with(GuiSlot.SlotOverlay.MINUS));
-        addGuiElement(new GuiInputSlot( this, resource, 4, 55 + 11, tileEntity).with(GuiSlot.SlotOverlay.MINUS));
+        addGuiElement(new GuiExtraSlot(this, resource, 154, 55 + 11, tileEntity).with(GuiSlot.SlotOverlay.MINUS));
+        addGuiElement(new GuiInputSlot(this, resource, 4, 55 + 11, tileEntity).with(GuiSlot.SlotOverlay.MINUS));
         addGuiElement(new GuiOutputSlot(this, resource, 79, 64 + 11, tileEntity).with(GuiSlot.SlotOverlay.PLUS));
         addGuiElement(new GuiProgress(new GuiProgress.IProgressInfoHandler() {
             @Override
@@ -64,6 +61,7 @@ public class GuiLargeChemicalInfuser extends GuiMekanismTile<TileEntityLargeChem
         }, GuiProgress.ProgressBar.SMALL_LEFT, this, resource, 99, 38 + 11));
         addGuiElement(new GuiPlayerSlot(this, resource, 7, 94));
     }
+
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
@@ -86,11 +84,6 @@ public class GuiLargeChemicalInfuser extends GuiMekanismTile<TileEntityLargeChem
             }
         }
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-    }
-
-    @Override
-    public void updateScreen() {
-        super.updateScreen();
     }
 
     @Override

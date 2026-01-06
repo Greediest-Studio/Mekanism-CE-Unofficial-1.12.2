@@ -33,7 +33,7 @@ public final class InvStack {
      * A map associating the slot IDs in consideration to the amount of items in those slots we care about. Note that the associated item counts may not be the full count
      * of items in the actual inventory slots.
      */
-    private Int2IntOpenHashMap itemMap;
+    private Int2IntOpenHashMap itemMap = new Int2IntOpenHashMap();
 
     /**
      * The item type of this InvStack. Will be null until we have an insertion via appendStack.

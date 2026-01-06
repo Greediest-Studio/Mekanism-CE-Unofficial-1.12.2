@@ -1,8 +1,8 @@
 package mekanism.client.newgui.element.scroll;
 
 import mekanism.api.text.TextComponentGroup;
-import mekanism.client.newgui.element.GuiElement;
 import mekanism.client.newgui.IGuiWrapper;
+import mekanism.client.newgui.element.GuiElement;
 import mekanism.client.newgui.element.GuiInnerScreen;
 
 import javax.annotation.Nullable;

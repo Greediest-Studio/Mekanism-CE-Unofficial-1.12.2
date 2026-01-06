@@ -248,7 +248,7 @@ public class MekanismItems {
 
         registry.register(initModule(MODULE_ENERGY));
         registry.register(initModule(MODULE_MAGNETIC));
-        
+
         // registry.register(initModule(MODULE_COLOR_MODULATION));
         registry.register(initModule(MODULE_LASER_DISSIPATION));
         registry.register(initModule(MODULE_RADIATION_SHIELDING));

@@ -16,7 +16,7 @@ import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.RecipeHandler.Recipe;
-import mekanism.common.recipe.inputs.GasInput;
+import mekanism.common.recipe.inputs.GasAndFluidInput;
 import mekanism.common.recipe.machines.WasherRecipe;
 import mekanism.common.recipe.outputs.GasOutput;
 import mekanism.common.tile.component.TileComponentConfig;
@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 
-public class TileEntityChemicalWasher extends TileEntityUpgradeableMachine<GasInput, GasOutput, WasherRecipe> implements IGasHandler, IFluidHandlerWrapper, ISustainedData, IUpgradeInfoHandler, ITankManager {
+public class TileEntityChemicalWasher extends TileEntityUpgradeableMachine<GasAndFluidInput, GasOutput, WasherRecipe> implements IGasHandler, IFluidHandlerWrapper, ISustainedData, IUpgradeInfoHandler, ITankManager {
 
     public static final int MAX_GAS = 10000;
     public static final int MAX_FLUID = 10000;
@@ -46,7 +46,6 @@ public class TileEntityChemicalWasher extends TileEntityUpgradeableMachine<GasIn
     public FluidTank fluidTank = new FluidTankSync(MAX_FLUID);
     public GasTank inputTank = new GasTank(MAX_GAS);
     public GasTank outputTank = new GasTank(MAX_GAS);
-    public int gasOutput = 256;
 
     public WasherRecipe cachedRecipe;
     public double clientEnergyUsed;
@@ -109,33 +108,38 @@ public class TileEntityChemicalWasher extends TileEntityUpgradeableMachine<GasIn
     @Override
     protected void setUpOtherActions() {
         double prev = getEnergy();
-        setEnergy(getEnergy() - energyPerTick * getUpgradedUsage());
+        if (getRecipe() != null) {
+            setEnergy(getEnergy() - energyPerTick * getUpgradedUsage(getRecipe()));
+        }
         clientEnergyUsed = prev - getEnergy();
     }
 
-
+    @Override
     public WasherRecipe getRecipe() {
-        GasInput input = getInput();
+        GasAndFluidInput input = getInput();
         if (cachedRecipe == null || !input.testEquality(cachedRecipe.getInput())) {
             cachedRecipe = RecipeHandler.getChemicalWasherRecipe(getInput());
         }
         return cachedRecipe;
     }
 
-    public GasInput getInput() {
-        return new GasInput(inputTank.getGas());
+    @Override
+    public GasAndFluidInput getInput() {
+        return new GasAndFluidInput(inputTank.getGas(), fluidTank.getFluid());
     }
 
+    @Override
     public boolean canOperate(WasherRecipe recipe) {
         return recipe != null && recipe.canOperate(inputTank, fluidTank, outputTank);
     }
 
+    @Override
     public void operate(WasherRecipe recipe) {
-        recipe.operate(inputTank, fluidTank, outputTank, getUpgradedUsage());
+        recipe.operate(inputTank, fluidTank, outputTank, getUpgradedUsage(recipe));
     }
 
     @Override
-    public Map<GasInput, WasherRecipe> getRecipes() {
+    public Map<GasAndFluidInput, WasherRecipe> getRecipes() {
         return Recipe.CHEMICAL_WASHER.get();
     }
 
@@ -145,11 +149,13 @@ public class TileEntityChemicalWasher extends TileEntityUpgradeableMachine<GasIn
         }
     }
 
-    public int getUpgradedUsage() {
+
+    public int getUpgradedUsage(WasherRecipe recipe) {
         int possibleProcess = Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val());
         possibleProcess = Math.min(Math.min(inputTank.getStored(), outputTank.getNeeded()), possibleProcess);
         possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
-        return Math.min(fluidTank.getFluidAmount() / WATER_USAGE, possibleProcess);
+        possibleProcess = Math.max(possibleProcess, 1);
+        return Math.min(fluidTank.getFluidAmount() / recipe.recipeInput.ingredientFluid.amount, possibleProcess);
     }
 
     @Override
@@ -272,7 +278,7 @@ public class TileEntityChemicalWasher extends TileEntityUpgradeableMachine<GasIn
     @Override
     public boolean canFill(EnumFacing from, @Nonnull FluidStack fluid) {
         if (configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState == SideData.IOState.INPUT) {
-            return FluidContainerUtils.canFill(fluidTank.getFluid(), fluid) && fluid.getFluid().equals(FluidRegistry.WATER);
+            return FluidContainerUtils.canFill(fluidTank.getFluid(), fluid) && Recipe.CHEMICAL_WASHER.containsRecipe(fluid.getFluid());
         }
         return false;
     }

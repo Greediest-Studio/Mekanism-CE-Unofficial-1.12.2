@@ -34,6 +34,7 @@ public class ContainerFactory extends ContainerMekanism<TileEntityFactory> {
     protected void addSlots() {
         addSlotToContainer(new SlotDischarge(tileEntity, 1, 7, 13));
         int xTypeSlot = tileEntity.tier == FactoryTier.CREATIVE ? 252 : tileEntity.tier == FactoryTier.ULTIMATE ? 214 : 180;
+
         addSlotToContainer(new Slot(tileEntity, 2, xTypeSlot, 75) {
             @Override
             public boolean isItemValid(ItemStack stack) {
@@ -42,40 +43,37 @@ public class ContainerFactory extends ContainerMekanism<TileEntityFactory> {
             }
         });
         addSlotToContainer(new SlotOutput(tileEntity, 3, xTypeSlot, 112));
-        addSlotToContainer(new FactoryExtraSlot(tileEntity, 4, 7, 57));
+
+        int extraY = tileEntity.getRecipeType().getFuelType() == IFactory.MachineFuelType.FARM ? 69 : tileEntity.getRecipeType() == RecipeType.PRC ? 99 : 57;
+
+        addSlotToContainer(new FactoryExtraSlot(tileEntity, 4, 7, extraY));
 
         int xOffset = tileEntity.tier == FactoryTier.BASIC ? 55 : tileEntity.tier == FactoryTier.ADVANCED ? 35 : tileEntity.tier == FactoryTier.ELITE ? 29 : 27;
         int xDistance = tileEntity.tier == FactoryTier.BASIC ? 38 : tileEntity.tier == FactoryTier.ADVANCED ? 26 : 19;
-
         for (int i = 0; i < tileEntity.tier.processes; i++) {
             addSlotToContainer(new FactoryInputSlot(tileEntity, getInputSlotIndex(i), xOffset + (i * xDistance), 13, i, !tileEntity.NoItemInputMachine(), !tileEntity.NoItemInputMachine()));
-        }
-        for (int i = 0; i < tileEntity.tier.processes; i++) {
             addSlotToContainer(new FactoryOutputSlot(tileEntity, getOutputSlotIndex(i), xOffset + (i * xDistance), 57, tileEntity.OuputItemMachine()));
+            addSlotToContainer(new FactoryOutputSlot(tileEntity, getSecondaryOutputSlotIndex(i), xOffset + (i * xDistance), 78, tileEntity.OuputItemSecondaryMachine()));
         }
 
-        for (int i = 0; i < tileEntity.tier.processes; i++) {
-            boolean Secondary = tileEntity.getRecipeType().getFuelType() == IFactory.MachineFuelType.FARM || tileEntity.getRecipeType().getFuelType() == IFactory.MachineFuelType.CHANCE;
-            addSlotToContainer(new FactoryOutputSlot(tileEntity, getSecondaryOutputSlotIndex(i), xOffset + (i * xDistance), 78, Secondary));
-
-        }
     }
 
     @Override
     protected int getInventorYOffset() {
-        if (tileEntity.getRecipeType().getFuelType() == IFactory.MachineFuelType.ADVANCED || tileEntity.getRecipeType() == RecipeType.INFUSING || tileEntity.getRecipeType() == RecipeType.Dissolution || tileEntity.getRecipeType() == RecipeType.WASHER || tileEntity.getRecipeType() == RecipeType.NUCLEOSYNTHESIZER) {
-            return 95;
-        } else if (tileEntity.getRecipeType() == RecipeType.PRC) {
-            return 113;
-        } else if (tileEntity.getRecipeType() == RecipeType.Crystallizer) {
-            return 91;
-        } else if (tileEntity.getRecipeType().getFuelType() == IFactory.MachineFuelType.FARM) {
-            return 116;
-        } else if (tileEntity.getRecipeType().getFuelType() == IFactory.MachineFuelType.CHANCE) {
-            return 105;
-        } else {
-            return 84;
+        int ymove = 0;
+        if (tileEntity.OuputItemSecondaryMachine()) {
+            ymove += 21;
         }
+        if (tileEntity.getRecipeType() == RecipeType.PRC) {
+            //输出气体
+            ymove += 21;
+            //输入流体
+            ymove += 21;
+        }
+        if (tileEntity.getRecipeType() == RecipeType.INFUSING) {
+            ymove += 10;
+        }
+        return super.getInventorYOffset() + ymove;
     }
 
     @Override
@@ -239,7 +237,7 @@ public class ContainerFactory extends ContainerMekanism<TileEntityFactory> {
                     }
                     if (((Map.Entry<?, ?>) obj).getKey() instanceof ItemStackInput input) {
                         ItemStack stack = input.ingredient;
-                        if (StackUtils.equalsWildcardWithNBT(stack, itemstack)) {
+                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
                             return true;
                         }
                     }

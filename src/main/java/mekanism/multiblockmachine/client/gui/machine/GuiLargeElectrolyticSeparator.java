@@ -5,9 +5,6 @@ import mekanism.client.gui.GuiMekanismTile;
 import mekanism.client.gui.IJeiNoShowRecipe;
 import mekanism.client.gui.button.GuiDisableableButton;
 import mekanism.client.gui.element.*;
-import mekanism.client.gui.element.GuiProgress.IProgressInfoHandler;
-import mekanism.client.gui.element.GuiProgress.ProgressBar;
-import mekanism.client.gui.element.GuiSlot.SlotType;
 import mekanism.client.gui.element.gauge.GuiFluidGauge;
 import mekanism.client.gui.element.gauge.GuiGasGauge;
 import mekanism.client.gui.element.gauge.GuiGauge;
@@ -18,10 +15,10 @@ import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
+import mekanism.common.network.PacketTileEntity;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
-import mekanism.multiblockmachine.common.inventory.container.machine.ContainerLargeElectrolyticSeparator;
+import mekanism.multiblockmachine.common.inventory.container.ContainerLargeElectrolyticSeparator;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeElectrolyticSeparator;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -57,14 +54,14 @@ public class GuiLargeElectrolyticSeparator extends GuiMekanismTile<TileEntityLar
         addGuiElement(new GuiSecurityTab(this, tileEntity, resource));
         addGuiElement(new GuiInputSlot(this, resource, 25, 34, tileEntity));
         addGuiElement(new GuiOutputSlot(this, resource, 58, 51, tileEntity));
-        addGuiElement(new GuiSlot(SlotType.AQUA, this, resource, 100, 51));
+        addGuiElement(new GuiSlot(GuiSlot.SlotType.AQUA, this, resource, 100, 51));
         addGuiElement(new GuiEnergySlot(this, resource, 142, 34, tileEntity));
-        addGuiElement(new GuiProgress(new IProgressInfoHandler() {
+        addGuiElement(new GuiProgress(new GuiProgress.IProgressInfoHandler() {
             @Override
             public double getProgress() {
                 return tileEntity.getActive() ? 1 : 0;
             }
-        }, ProgressBar.BI, this, resource, 78, 29));
+        }, GuiProgress.ProgressBar.BI, this, resource, 78, 29));
         addGuiElement(new GuiPlayerSlot(this, resource));
     }
 
@@ -81,15 +78,14 @@ public class GuiLargeElectrolyticSeparator extends GuiMekanismTile<TileEntityLar
         super.actionPerformed(guibutton);
         if (guibutton.id == LeftMode.id) {
             TileNetworkList data = TileNetworkList.withContents((byte) 0);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketTileEntity.TileEntityMessage(tileEntity, data));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         } else if (guibutton.id == RightMode.id) {
             TileNetworkList data = TileNetworkList.withContents((byte) 1);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketTileEntity.TileEntityMessage(tileEntity, data));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         }
     }
-
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
@@ -121,11 +117,6 @@ public class GuiLargeElectrolyticSeparator extends GuiMekanismTile<TileEntityLar
         }
 
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-    }
-
-    @Override
-    public void updateScreen() {
-        super.updateScreen();
     }
 
     @Override

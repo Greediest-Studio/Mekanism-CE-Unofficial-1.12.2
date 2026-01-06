@@ -19,6 +19,11 @@ public abstract class BaseConfig {
         @Override
         public void registerOption(Option option) {
         }
+
+        @Override
+        public String getCategory() {
+            return "";
+        }
     };
 
     private List<Option> options = new ArrayList<>();
@@ -57,5 +62,15 @@ public abstract class BaseConfig {
      */
     public void read(ByteBuf config) {
         options.forEach(o -> o.read(config));
+    }
+
+    public String category;
+
+    public void setCategory(String string) {
+        category = string;
+    }
+
+    public String getCategory() {
+        return category;
     }
 }

@@ -41,7 +41,6 @@ import net.minecraftforge.oredict.OreDictionary;
 import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.IntStream;
 
 @EventBusSubscriber(modid = Mekanism.MODID)
 public final class OreDictManager {
@@ -400,6 +399,12 @@ public final class OreDictManager {
             RecipeHandler.addEnrichmentChamberRecipe(StackUtils.size(sawdust, 8), new ItemStack(Items.COAL, 1, 1));
             RecipeHandler.addPRCRecipe(StackUtils.size(sawdust, 1), new FluidStack(FluidRegistry.WATER, 20), new GasStack(MekanismFluids.Oxygen, 20),
                     ItemStack.EMPTY, new GasStack(MekanismFluids.Hydrogen, 20), 0, 30);
+        }
+
+        for (ItemStack input : OreDictionary.getOres("blockRedstone", false)) {
+            if (!RecipeHandler.Recipe.ENERGY_RECIPE.containsRecipe(input)){
+                RecipeHandler.addItemStackToEnergyRecipe(input,MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val());
+            }
         }
     }
 

@@ -9,8 +9,6 @@ import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
 import mekanism.common.base.IGuiProvider;
 import mekanism.common.base.IUpgradeTile;
-import mekanism.common.block.BlockMachine;
-import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.inventory.container.ContainerUpgradeManagement;
 import mekanism.common.network.PacketRemoveUpgrade.RemoveUpgradeMessage;
 import mekanism.common.network.PacketSimpleGui;
@@ -19,7 +17,6 @@ import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.MekanismUtils.ResourceType;
-import net.minecraft.block.Block;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -58,9 +55,9 @@ public class GuiUpgradeManagement extends GuiMekanism {
                 new GuiProgress.IProgressInfoHandler() {
                     @Override
                     public double getProgress() {
-                        return (double) tileEntity.getComponent().upgradeTicks / TileComponentUpgrade.UPGRADE_TICKS_REQUIRED;
+                        return Math.max(Math.min((double) tileEntity.getComponent().upgradeTicks / TileComponentUpgrade.UPGRADE_TICKS_REQUIRED, 1.0D), 0.0D);
                     }
-                }, GuiProgress.ProgressBar.INSTALLING, this, getGuiLocation(), 153, 25,false));
+                }, GuiProgress.ProgressBar.INSTALLING, this, getGuiLocation(), 153, 25, false));
         addGuiElement(new GuiInnerScreen(this, getGuiLocation(), 90, 6, 59, 50));
         addGuiElement(new GuiElementScreen(this, getGuiLocation(), 24, 56, 125, 14));
         addGuiElement(new GuiElementScreen(this, getGuiLocation(), 24, 6, 66, 50));
@@ -79,18 +76,11 @@ public class GuiUpgradeManagement extends GuiMekanism {
     protected void actionPerformed(GuiButton guibutton) throws IOException {
         super.actionPerformed(guibutton);
         TileEntity tile = (TileEntity) tileEntity;
-        Block block = tileEntity.getComponent().getBlock();
-        int meta = tileEntity.getComponent().getMeta();
         if (guibutton.id == backButton.id) {
-            if (tile.getBlockType() instanceof BlockMachine) {
-                int guiId = MachineType.get(tile.getBlockType(), tile.getBlockMetadata()).guiId;
-                Mekanism.packetHandler.sendToServer(new SimpleGuiMessage(Coord4D.get(tile), 0, guiId));
-            } else if (tile.getBlockType() == block && tile.getBlockMetadata() == meta) {
-                int guiId = tileEntity.getComponent().getid();
-                List<IGuiProvider> handlers = PacketSimpleGui.handlers;
-                int hand = handlers.indexOf(tileEntity.getComponent().guiProvider());
-                Mekanism.packetHandler.sendToServer(new SimpleGuiMessage(Coord4D.get(tile), hand, guiId));
-            }
+            int guiId = tileEntity.getBlockGuiID(tile.getBlockType(), tile.getBlockMetadata());
+            List<IGuiProvider> handlers = PacketSimpleGui.handlers;
+            int hand = handlers.indexOf(tileEntity.guiProvider());
+            Mekanism.packetHandler.sendToServer(new SimpleGuiMessage(Coord4D.get(tile), hand, guiId));
         } else if (guibutton.id == removeButton.id) {
             if (selectedType != null) {
                 Mekanism.packetHandler.sendToServer(new RemoveUpgradeMessage(Coord4D.get(tile), selectedType.ordinal(), Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) ? 1 : 0));
@@ -136,11 +126,11 @@ public class GuiUpgradeManagement extends GuiMekanism {
             String typeName = selectedType.getName() + " " + LangUtils.localize("gui.upgrade");
             int length = fontRenderer.getStringWidth(typeName);
             if (length <= 55) {
-                renderText(typeName,92, 8, 0.6F, true);
-            }else {
-                renderScaledText(typeName, 92, 8,0x00CD00,55);
+                renderText(typeName, 92, 8, 0.6F, true);
+            } else {
+                renderScaledText(typeName, 92, 8, 0x00CD00, 55);
             }
-            renderText(LangUtils.localize("gui.upgrades.amount") + ": " + amount + "/" + selectedType.getMax(), 92, 16, 0.6F, true);
+            renderText(LangUtils.localize("gui.upgrades.amount") + ": " + amount + "/" + selectedType.getMaxInstalled(), 92, 16, 0.6F, true);
             int text = 0;
             for (String s : selectedType.getInfo((TileEntity) tileEntity)) {
                 renderText(s, 92, 22 + (6 * text++), 0.6F, true);
@@ -150,8 +140,8 @@ public class GuiUpgradeManagement extends GuiMekanism {
             Upgrade[] supported = tileEntity.getComponent().getSupportedTypes().toArray(new Upgrade[0]);
             if (supported.length > supportedIndex) {
                 renderUpgrade(supported[supportedIndex], 80, 57, 0.8F, true);
-                renderScaledText(supported[supportedIndex].getName(), 96, 59, 0x404040,47);
-               // fontRenderer.drawString(supported[supportedIndex].getName(), 96, 59, 0x404040);
+                renderScaledText(supported[supportedIndex].getName(), 96, 59, 0x404040, 47);
+                // fontRenderer.drawString(supported[supportedIndex].getName(), 96, 59, 0x404040);
             }
         }
         Upgrade[] upgrades = getCurrentUpgrades().toArray(new Upgrade[0]);
@@ -165,8 +155,8 @@ public class GuiUpgradeManagement extends GuiMekanism {
             Upgrade upgrade = upgrades[index];
             int xPos = 25;
             int yPos = 7 + (i * 12);
-            renderScaledText(upgrade.getName(), xPos + 12, yPos + 2, 0x404040,44);
-         //   fontRenderer.drawString(upgrade.getName(), xPos + 12, yPos + 2, 0x404040);
+            renderScaledText(upgrade.getName(), xPos + 12, yPos + 2, 0x404040, 44);
+            //   fontRenderer.drawString(upgrade.getName(), xPos + 12, yPos + 2, 0x404040);
             renderUpgrade(upgrade, xPos + 2, yPos + 2, 0.5F, true);
             if (overUpgradeType(xAxis, yAxis, xPos, yPos)) {
                 this.displayTooltips(MekanismUtils.splitTooltip(upgrade.getDescription(), upgrade.getStack()), xAxis, yAxis);

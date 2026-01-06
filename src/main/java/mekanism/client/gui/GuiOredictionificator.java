@@ -60,7 +60,7 @@ public class GuiOredictionificator extends GuiMekanismTile<TileEntityOredictioni
         addGuiElement(new GuiInputSlot( this, resource, 25, 114, tileEntity));
         addGuiElement(new GuiOutputSlot(this, resource, 133, 114, tileEntity));
         addGuiElement(new GuiSideConfigurationTab(this, tileEntity, resource));
-        addGuiElement(new GuiTransporterConfigTab(this, 34, tileEntity, resource));
+        addGuiElement(new GuiTransporterConfigTab(this, tileEntity, resource));
         ySize += 64;
         addGuiElement(new GuiPlayerSlot(this, resource, 7, 147));
         addGuiElement(new GuiElementScreen(this, resource, 9, 17, 144, 68));

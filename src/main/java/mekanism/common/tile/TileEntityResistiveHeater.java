@@ -49,7 +49,6 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
     public double lastEnvironmentLoss;
     public RedstoneControl controlType = RedstoneControl.DISABLED;
     public TileComponentSecurity securityComponent = new TileComponentSecurity(this);
-    private boolean rendererInitialized = false;
 
     public TileEntityResistiveHeater() {
         super("machine.resistiveheater", "ResistiveHeater", MachineType.RESISTIVE_HEATER.getStorage());
@@ -323,8 +322,7 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
     @Override
     public void validate() {
         super.validate();
-        if (isRemote() && !rendererInitialized) {
-            rendererInitialized = true;
+        if (isRemote()) {
             if (Mekanism.hooks.Bloom && MekanismConfig.current().client.enableBloom.val()) {
                 new BloomRenderResistiveHeater(this);
             }

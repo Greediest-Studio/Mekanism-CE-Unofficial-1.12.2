@@ -20,20 +20,45 @@ public class DoubleOption extends Option<DoubleOption> {
     private double min;
     private double max;
 
+    public DoubleOption(BaseConfig owner, String key, double defaultValue, @Nullable String comment) {
+        super(owner, key, comment);
+        this.defaultValue = defaultValue;
+        this.value = defaultValue;
+    }
+
+    public DoubleOption(BaseConfig owner, String key, double defaultValue) {
+        this(owner, key, defaultValue, null);
+    }
+
+    public DoubleOption(BaseConfig owner, String key) {
+        this(owner, key, 0);
+    }
+
+    public DoubleOption(BaseConfig owner, String key, double defaultValue, @Nullable String comment, double min, double max) {
+        this(owner, key, defaultValue, comment);
+        this.hasRange = true;
+        this.min = min;
+        this.max = max;
+    }
+
+    @Deprecated
     public DoubleOption(BaseConfig owner, String category, String key, double defaultValue, @Nullable String comment) {
         super(owner, category, key, comment);
         this.defaultValue = defaultValue;
         this.value = defaultValue;
     }
 
+    @Deprecated
     public DoubleOption(BaseConfig owner, String category, String key, double defaultValue) {
         this(owner, category, key, defaultValue, null);
     }
 
+    @Deprecated
     public DoubleOption(BaseConfig owner, String category, String key) {
         this(owner, category, key, 0, null);
     }
 
+    @Deprecated
     public DoubleOption(BaseConfig owner, String category, String key, double defaultValue, @Nullable String comment, double min, double max) {
         this(owner, category, key, defaultValue, comment);
         this.hasRange = true;
@@ -52,6 +77,9 @@ public class DoubleOption extends Option<DoubleOption> {
     @SuppressWarnings("Duplicates")//types are different
     @Override
     public void load(Configuration config) {
+        if (category.isEmpty()){
+            return;
+        }
         Property prop;
         if (hasRange) {
             prop = config.get(this.category, this.key, this.defaultValue, this.comment, this.min, this.max);

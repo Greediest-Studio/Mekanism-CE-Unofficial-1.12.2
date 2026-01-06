@@ -37,7 +37,7 @@ public class GuiFarmMachine<RECIPE extends FarmMachineRecipe<RECIPE>> extends Gu
         addGuiElement(new GuiUpgradeTab(this, tileEntity, resource));
         addGuiElement(new GuiSecurityTab(this, tileEntity, resource));
         addGuiElement(new GuiSideConfigurationTab(this, tileEntity, resource));
-        addGuiElement(new GuiTransporterConfigTab(this, 34, tileEntity, resource));
+        addGuiElement(new GuiTransporterConfigTab(this, tileEntity, resource));
         addGuiElement(new GuiPowerBar(this, tileEntity, resource, 164, 15));
         addGuiElement(new GuiBar(this, getGuiLocation(), 60, 36, 8, 14));
         addGuiElement(new GuiEnergyInfo(tileEntity, this, resource));

@@ -38,7 +38,6 @@ public class TileEntityChemicalInfuser extends TileEntityBasicMachine<ChemicalPa
     public GasTank leftTank = new GasTank(MAX_GAS);
     public GasTank rightTank = new GasTank(MAX_GAS);
     public GasTank centerTank = new GasTank(MAX_GAS);
-    public int gasOutput = 256;
 
     public ChemicalInfuserRecipe cachedRecipe;
 
@@ -105,13 +104,17 @@ public class TileEntityChemicalInfuser extends TileEntityBasicMachine<ChemicalPa
         }
         possibleProcess = Math.min(centerTank.getNeeded() / recipe.recipeOutput.output.amount, possibleProcess);
         possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
+        //不能为0
+        possibleProcess = Math.max(possibleProcess, 1);
         return possibleProcess;
     }
 
+    @Override
     public ChemicalPairInput getInput() {
         return new ChemicalPairInput(leftTank.getGas(), rightTank.getGas());
     }
 
+    @Override
     public ChemicalInfuserRecipe getRecipe() {
         ChemicalPairInput input = getInput();
         if (cachedRecipe == null || !input.testEquality(cachedRecipe.getInput())) {
@@ -120,10 +123,12 @@ public class TileEntityChemicalInfuser extends TileEntityBasicMachine<ChemicalPa
         return cachedRecipe;
     }
 
+    @Override
     public boolean canOperate(ChemicalInfuserRecipe recipe) {
         return recipe != null && recipe.canOperate(leftTank, rightTank, centerTank);
     }
 
+    @Override
     public void operate(ChemicalInfuserRecipe recipe) {
         int operations = getUpgradedUsage(recipe);
         recipe.operate(leftTank, rightTank, centerTank, operations);

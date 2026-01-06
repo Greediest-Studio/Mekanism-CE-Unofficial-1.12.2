@@ -11,6 +11,8 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -226,6 +228,12 @@ public class TileEntitySynchronized extends TileEntity {
 
     public boolean isRemote() {
         return getWorldNN().isRemote;
+    }
+
+    @SideOnly(Side.CLIENT)
+    public double getMaxRenderDistanceSquared() {
+        int rang = MekanismConfig.current().client.terRange.val();
+        return rang * rang;
     }
 
 }

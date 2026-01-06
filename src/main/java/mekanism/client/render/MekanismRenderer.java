@@ -72,8 +72,7 @@ public class MekanismRenderer {
     }
 
     public static void registerItemRender(String domain, Item item) {
-        if (item instanceof IMetaItem) {
-            IMetaItem metaItem = (IMetaItem) item;
+        if (item instanceof IMetaItem metaItem) {
             for (int i = 0; i < metaItem.getVariants(); i++) {
                 if (metaItem.getTexture(i) == null) {
                     continue;

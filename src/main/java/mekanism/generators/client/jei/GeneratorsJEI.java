@@ -3,6 +3,7 @@ package mekanism.generators.client.jei;
 import mekanism.client.jei.GuiElementHandler;
 import mekanism.client.jei.MekanismJEI;
 import mekanism.generators.client.jei.machine.other.FusionCoolingRecipeCategory;
+import mekanism.generators.client.jei.machine.other.GasStackFlueToEnergyRecipeCategory;
 import mekanism.generators.common.GeneratorsBlocks;
 import mezz.jei.api.*;
 import mezz.jei.api.recipe.IRecipeCategoryRegistration;
@@ -19,7 +20,8 @@ public class GeneratorsJEI implements IModPlugin {
     @Override
     public void registerCategories(IRecipeCategoryRegistration registry) {
         IGuiHelper guiHelper = registry.getJeiHelpers().getGuiHelper();
-        registry.addRecipeCategories(new FusionCoolingRecipeCategory(guiHelper));
+        registry.addRecipeCategories(new FusionCoolingRecipeCategory<>(guiHelper));
+        registry.addRecipeCategories(new GasStackFlueToEnergyRecipeCategory<>(guiHelper));
 
     }
 
@@ -27,5 +29,6 @@ public class GeneratorsJEI implements IModPlugin {
     public void register(IModRegistry registry) {
         registry.addAdvancedGuiHandlers(new GuiElementHandler());
         GeneratorRecipeRegistryHelper.registerFusionCooling(registry);
+        GeneratorRecipeRegistryHelper.registerGasStackFlueToEnergyRecipe(registry);
     }
 }

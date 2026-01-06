@@ -4,6 +4,10 @@ import mekanism.api.energy.IEnergizedItem;
 import mekanism.api.functions.FloatSupplier;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gear.IModule;
+import mekanism.api.radiation.capability.IRadiationEntity;
+import mekanism.common.block.PortalHelper;
+import mekanism.common.block.states.BlockStateBasic;
+import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.content.gear.ModuleHelper;
 import mekanism.common.content.gear.mekasuit.ModuleGravitationalModulatingUnit;
@@ -19,6 +23,8 @@ import mekanism.common.item.interfaces.IJetpackItem;
 import mekanism.common.item.interfaces.IJetpackItem.JetpackMode;
 import mekanism.common.lib.radiation.RadiationManager;
 import mekanism.common.util.MekanismUtils;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockFire;
 import net.minecraft.block.material.Material;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityLivingBase;
@@ -27,15 +33,20 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
+import net.minecraftforge.oredict.OreDictionary;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -367,4 +378,44 @@ public class CommonPlayerTickHandler {
     }
 
 
+    @SubscribeEvent
+    public void isBananaRadiation(LivingEntityUseItemEvent.Finish event) {
+        if (MekanismConfig.current().general.radiationEnabled.val() && MekanismConfig.current().mekce.BananaRadiation.val()) {
+            ItemStack stack = event.getResultStack();
+            EntityLivingBase base = event.getEntityLiving();
+            if (!stack.isEmpty() && base != null) {
+                for (ItemStack Banana : OreDictionary.getOres("cropBanana", false)) {
+                    if (!Banana.isEmpty()) {
+                        if (ItemStack.areItemsEqual(Banana, stack)) {
+                            if (base.hasCapability(Capabilities.RADIATION_ENTITY_CAPABILITY, null)) {
+                                IRadiationEntity rad = base.getCapability(Capabilities.RADIATION_ENTITY_CAPABILITY, null);
+                                if (rad != null) {
+                                    rad.set(MekanismConfig.current().mekce.BananaRadiationMeasurement.val() + rad.getRadiation());
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    @SubscribeEvent
+    public void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
+        World world = event.getWorld();
+        Block newBlock = world.getBlockState(event.getPos()).getBlock();
+        if (newBlock instanceof BlockFire) {
+            for (EnumFacing facing : event.getNotifiedSides()) {
+                BlockPos blockpos = event.getPos().offset(facing);
+                if (BlockStateBasic.BasicBlockType.get(world.getBlockState(blockpos)) == BlockStateBasic.BasicBlockType.REFINED_OBSIDIAN) {
+                    if (PortalHelper.BlockPortalOverride.instance.trySpawnPortal(world, event.getPos())) {
+                        event.setCanceled(true);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }

@@ -90,10 +90,13 @@ public interface IFactory {
         FARM("Farm", "farm", MachineType.ORGANIC_FARM, MachineFuelType.FARM, true, Recipe.ORGANIC_FARM, true, false, false),
         RECYCLER("Recycler", "Recycler", MachineType.RECYCLER, MachineFuelType.CHANCE2, false, Recipe.RECYCLER),
         Crystallizer("Crystallizer", "crystallizer", MachineType.CHEMICAL_CRYSTALLIZER, MachineFuelType.BASIC, false, Recipe.CHEMICAL_CRYSTALLIZER, false, false, false, true, true, false, false),
+        //TODO:移除这个
         Dissolution("Dissolution", "dissolution", MachineType.CHEMICAL_DISSOLUTION_CHAMBER, MachineFuelType.BASIC, true, Recipe.CHEMICAL_DISSOLUTION_CHAMBER, true, true, true, false, true, true, false),
         PRC("PRC", "prc", MachineType.PRESSURIZED_REACTION_CHAMBER, MachineFuelType.BASIC, false, Recipe.PRESSURIZED_REACTION_CHAMBER, false, false, true, true, true, true, true),
+        //TODO：移除这个
         OXIDIZER("Oxidizer", "oxidizer", MachineType.CHEMICAL_OXIDIZER, MachineFuelType.BASIC, false, Recipe.CHEMICAL_OXIDIZER, false, false, true, false, false, true, false),
         NUCLEOSYNTHESIZER("Nucleosynthesizer", "nucleosynthesizer", MachineType.ANTIPROTONIC_NUCLEOSYNTHESIZER, MachineFuelType.BASIC, false, Recipe.ANTIPROTONIC_NUCLEOSYNTHESIZER, false, false, true, true, true, false, false),
+        //TODO：移除这个
         WASHER("Washer", "washer", MachineType.CHEMICAL_WASHER, MachineFuelType.BASIC, false, Recipe.CHEMICAL_WASHER, false, false, false, false, true, true, true);
 
         private String name;
@@ -245,12 +248,12 @@ public interface IFactory {
             return getPressurizedRecipe(new PressurizedInput(input, fluid, gas));
         }
 
-        public WasherRecipe getWasherRecipe(GasInput input) {
+        public WasherRecipe getWasherRecipe(GasAndFluidInput input) {
             return RecipeHandler.getChemicalWasherRecipe(input);
         }
 
-        public WasherRecipe getWasherRecipe(GasStack gas) {
-            return getWasherRecipe(new GasInput(gas));
+        public WasherRecipe getWasherRecipe(GasStack gas, FluidStack stack) {
+            return getWasherRecipe(new GasAndFluidInput(gas,stack));
         }
 
         public FarmMachineRecipe<?> getFarmRecipe(AdvancedMachineInput input) {
@@ -293,7 +296,7 @@ public interface IFactory {
             } else if (this == NUCLEOSYNTHESIZER) {
                 return getNucleosynthesizerRecipe(slotStack, gasStackType);
             } else if (this == WASHER) {
-                return getWasherRecipe(gasStackType);
+                return getWasherRecipe(gasStackType,fluidStack);
             } else if (this == INFUSING) {
                 if (infuse.getType() != null) {
                     return RecipeHandler.getMetallurgicInfuserRecipe(new InfusionInput(infuse, slotStack));
@@ -384,7 +387,7 @@ public interface IFactory {
                     }
                 }
                 if (((Map.Entry<?, ?>) obj).getKey() instanceof ItemStackInput input) {
-                    if (StackUtils.equalsWildcardWithNBT(input.ingredient, stack)) {
+                    if (ItemHandlerHelper.canItemStacksStack(input.ingredient, stack)) {
                         return true;
                     }
                 }

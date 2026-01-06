@@ -19,6 +19,7 @@ import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
 import mekanism.common.util.FluidContainerUtils.ContainerEditMode;
+import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -458,5 +459,10 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
     @Override
     public void setContainerEditMode(ContainerEditMode mode) {
         editMode = mode;
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return MachineType.get(block, metadata) != null ? MachineType.get(block, metadata).guiId : -1;
     }
 }

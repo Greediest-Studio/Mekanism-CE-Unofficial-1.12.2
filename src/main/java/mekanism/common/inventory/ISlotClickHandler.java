@@ -1,7 +1,7 @@
 package mekanism.common.inventory;
 
-import net.minecraft.item.ItemStack;
 import mekanism.common.lib.inventory.HashedItem;
+import net.minecraft.item.ItemStack;
 
 import java.util.UUID;
 

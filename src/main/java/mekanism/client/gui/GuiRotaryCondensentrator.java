@@ -51,7 +51,7 @@ public class GuiRotaryCondensentrator extends GuiMekanismTile<TileEntityRotaryCo
         addGuiElement(new GuiRedstoneControl(this, tileEntity, resource));
         addGuiElement(new GuiUpgradeTab(this, tileEntity, resource));
         addGuiElement(new GuiSideConfigurationTab(this, tileEntity, resource));
-        addGuiElement(new GuiTransporterConfigTab(this, 34, tileEntity, resource));
+        addGuiElement(new GuiTransporterConfigTab(this, tileEntity, resource));
         addGuiElement(new GuiInputSlot(this, resource, 4, 24, tileEntity).with(SlotOverlay.PLUS));
         addGuiElement(new GuiOutputSlot(this, resource, 4, 55, tileEntity).with(SlotOverlay.MINUS));
         addGuiElement(new GuiInputSlot(this, resource, 154, 24, tileEntity));

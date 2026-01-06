@@ -3,6 +3,7 @@ package mekanism.common.tile.machine;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
+import mekanism.api.math.MathUtils;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.MekanismFluids;
 import mekanism.common.SideData;
@@ -20,6 +21,7 @@ import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.inputs.FluidInput;
 import mekanism.common.recipe.machines.SeparatorRecipe;
 import mekanism.common.recipe.outputs.ChemicalPairOutput;
+import mekanism.common.tier.GasTankTier;
 import mekanism.common.tile.TileEntityGasTank.GasMode;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
@@ -69,7 +71,7 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
     /**
      * How fast this block can output gas.
      */
-    public int output = 512;
+    //public int output = 512;
     /**
      * The type of gas this block is outputting.
      */
@@ -107,7 +109,7 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
 
     @Override
     public void setupVariableValues() {
-        if (getRecipe() == null){
+        if (getRecipe() == null) {
             return;
         }
         boolean update = BASE_ENERGY_PER_TICK != getRecipe().energyUsage;
@@ -176,10 +178,18 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
             } else {
                 tank.draw(dumpAmount, true);
             }
-            if (mode == GasMode.DUMPING_EXCESS && tank.getNeeded() < output) {
-                tank.draw(output - tank.getNeeded(), true);
+            if (mode == GasMode.DUMPING_EXCESS) {
+                int target = getDumpingExcessTarget(tank);
+                int stored = tank.getStored();
+                if (target < stored) {
+                    tank.draw(Math.min(stored - target, GasTankTier.BASIC.getBaseOutput()), true);
+                }
             }
         }
+    }
+
+    private int getDumpingExcessTarget(GasTank tank) {
+        return MathUtils.clampToInt(tank.getMaxGas() * MekanismConfig.current().general.dumpExcessKeepRatio.val());
     }
 
     private void ejectGas(Set<EnumFacing> outputSides, GasTank tank, EjectSpeedController speedController, int tankIdx) {
@@ -210,6 +220,7 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
         }
         possibleProcess = Math.min(Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val()), possibleProcess);
         possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
+        possibleProcess = Math.max(possibleProcess,1);
         return Math.min(fluidTank.getFluidAmount() / recipe.recipeInput.ingredient.amount, possibleProcess);
     }
 
@@ -349,7 +360,6 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
     public Object[] invoke(int method, Object[] arguments) throws NoSuchMethodException {
         return switch (method) {
             case 0 -> new Object[]{electricityStored};
-            case 1 -> new Object[]{output};
             case 2 -> new Object[]{BASE_MAX_ENERGY};
             case 3 -> new Object[]{BASE_MAX_ENERGY - electricityStored.get()};
             case 4 -> new Object[]{fluidTank.getFluid() != null ? fluidTank.getFluid().amount : 0};

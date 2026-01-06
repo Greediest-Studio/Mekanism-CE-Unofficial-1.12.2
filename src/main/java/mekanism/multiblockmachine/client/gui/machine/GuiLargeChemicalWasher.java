@@ -1,6 +1,5 @@
 package mekanism.multiblockmachine.client.gui.machine;
 
-import mekanism.api.util.time.Timeticks;
 import mekanism.client.gui.GuiMekanismTile;
 import mekanism.client.gui.IJeiNoShowRecipe;
 import mekanism.client.gui.element.*;
@@ -13,7 +12,7 @@ import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
-import mekanism.multiblockmachine.common.inventory.container.machine.ContainerLargeChemicalWasher;
+import mekanism.multiblockmachine.common.inventory.container.ContainerLargeChemicalWasher;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeChemicalWasher;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.util.ResourceLocation;
@@ -26,11 +25,9 @@ import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class GuiLargeChemicalWasher extends GuiMekanismTile<TileEntityLargeChemicalWasher> implements IJeiNoShowRecipe {
-    protected Timeticks time;
 
     public GuiLargeChemicalWasher(InventoryPlayer inventory, TileEntityLargeChemicalWasher tile) {
         super(tile, new ContainerLargeChemicalWasher(inventory, tile));
-        time = new Timeticks(20, 20, false);
         ResourceLocation resource = getGuiLocation();
         addGuiElement(new GuiSecurityTab(this, tileEntity, resource));
         addGuiElement(new GuiRedstoneControl(this, tileEntity, resource));
@@ -50,11 +47,12 @@ public class GuiLargeChemicalWasher extends GuiMekanismTile<TileEntityLargeChemi
         addGuiElement(new GuiProgress(new GuiProgress.IProgressInfoHandler() {
             @Override
             public double getProgress() {
-                return tileEntity.getActive() ? (double) time.getValue() / 20F : 0;
+                return tileEntity.getActive() ? 1 : 0;
             }
         }, GuiProgress.ProgressBar.LARGE_RIGHT, this, resource, 62, 38));
         addGuiElement(new GuiPlayerSlot(this, resource));
     }
+
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
@@ -78,11 +76,6 @@ public class GuiLargeChemicalWasher extends GuiMekanismTile<TileEntityLargeChemi
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
     }
 
-
-    @Override
-    public void updateScreen() {
-        super.updateScreen();
-    }
     @Override
     protected void drawGuiContainerBackgroundLayer(int xAxis, int yAxis) {
         super.drawGuiContainerBackgroundLayer(xAxis, yAxis);

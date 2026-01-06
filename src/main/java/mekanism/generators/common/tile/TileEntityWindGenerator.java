@@ -57,9 +57,14 @@ public class TileEntityWindGenerator extends TileEntityGenerator implements IBou
             setActive(MekanismUtils.canFunction(this) && currentMultiplier > 0);
         }
         if (getActive()) {
-            setEnergy(electricityStored.get() + (MekanismConfig.current().generators.windGenerationMin.val() * currentMultiplier));
+            setEnergy(electricityStored.get() + getEnergyAdd());
         }
     }
+
+    public double getEnergyAdd(){
+        return MekanismConfig.current().generators.windGenerationMin.val() * currentMultiplier;
+    }
+
 
     @Override
     public void onUpdateClient() {
@@ -197,4 +202,6 @@ public class TileEntityWindGenerator extends TileEntityGenerator implements IBou
     public boolean getOuputSlot() {
         return false;
     }
+
+
 }

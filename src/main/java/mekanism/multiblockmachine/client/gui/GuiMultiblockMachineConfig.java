@@ -27,23 +27,9 @@ public class GuiMultiblockMachineConfig extends GuiConfig {
     private static List<IConfigElement> getConfigElements() {
         List<IConfigElement> list = new ArrayList<>();
         list.add(new DummyConfigElement.DummyCategoryElement(LangUtils.localize("mekanism.configgui.ctgy.multiblock.multiblock"), "mekanism.configgui.ctgy.multiblock.multiblock", MultiblockMachineGenerationEntry.class));
-        list.add(new DummyConfigElement.DummyCategoryElement(LangUtils.localize("mekanism.configgui.ctgy.multiblock.multiblockmachinegenerators"), "mekanism.configgui.ctgy.multiblock.multiblockmachinegenerators", MultiblockMachineGeneratorsEntry.class));
-        list.add(new DummyConfigElement.DummyCategoryElement(LangUtils.localize("mekanism.configgui.ctgy.multiblock.multiblockmachines"),"mekanism.configgui.ctgy.multiblock.multiblockmachines", MultiblockMachine.class));
         return list;
     }
 
-    public static class MultiblockMachineGeneratorsEntry extends CategoryEntry {
-
-        public MultiblockMachineGeneratorsEntry(GuiConfig owningScreen, GuiConfigEntries owningEntryList, IConfigElement prop) {
-            super(owningScreen, owningEntryList, prop);
-        }
-
-        @Override
-        protected GuiScreen buildChildScreen() {
-            return new GuiConfig(owningScreen, new ConfigElement(Mekanism.configurationMultiblockMachine.getCategory("multiblockmachinegenerators")).getChildElements(), owningScreen.modID,
-                    Configuration.CATEGORY_GENERAL, false, false, GuiConfig.getAbridgedConfigPath(Mekanism.configurationMultiblockMachine.toString()));
-        }
-    }
 
     public static class MultiblockMachineGenerationEntry extends CategoryEntry {
 
@@ -58,16 +44,4 @@ public class GuiMultiblockMachineConfig extends GuiConfig {
         }
     }
 
-    public static class MultiblockMachine extends CategoryEntry {
-
-        public MultiblockMachine(GuiConfig owningScreen, GuiConfigEntries owningEntryList, IConfigElement prop) {
-            super(owningScreen, owningEntryList, prop);
-        }
-
-        @Override
-        protected GuiScreen buildChildScreen() {
-            return new GuiConfig(owningScreen, new ConfigElement(Mekanism.configurationMultiblockMachine.getCategory("multiblockmachines")).getChildElements(), owningScreen.modID,
-                    Configuration.CATEGORY_GENERAL, false, false, GuiConfig.getAbridgedConfigPath(Mekanism.configurationMultiblockMachine.toString()));
-        }
-    }
 }

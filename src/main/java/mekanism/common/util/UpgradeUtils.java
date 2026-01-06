@@ -48,8 +48,8 @@ public class UpgradeUtils {
 
     public static List<String> getMultScaledInfo(IUpgradeTile tile, Upgrade upgrade) {
         List<String> ret = new ArrayList<>();
-        if (tile.supportsUpgrades() && upgrade.getMax() > 1) {
-            double effect = Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), (float) tile.getComponent().getUpgrades(upgrade) / (float) upgrade.getMax());
+        if (tile.supportsUpgrades() && upgrade.getMaxInstalled() > 1) {
+            double effect = Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), (float) tile.getComponent().getUpgrades(upgrade) / (float) upgrade.getMaxInstalled());
             ret.add(MekanismLang.UPGRADES_EFFECT.translate(Math.round(effect * 100) / 100F).getFormattedText());
         }
         return ret;
@@ -57,7 +57,7 @@ public class UpgradeUtils {
 
     public static List<String> getExpScaledInfo(IUpgradeTile tile, Upgrade upgrade) {
         List<String> ret = new ArrayList<>();
-        if (tile.supportsUpgrades() && upgrade.getMax() > 1) {
+        if (tile.supportsUpgrades() && upgrade.getMaxInstalled() > 1) {
             ret.add(MekanismLang.UPGRADES_EFFECT.translate(Math.pow(2, (float) tile.getComponent().getUpgrades(upgrade))).getFormattedText());
         }
         return ret;

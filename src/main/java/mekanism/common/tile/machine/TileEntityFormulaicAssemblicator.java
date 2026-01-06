@@ -23,6 +23,7 @@ import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
@@ -678,5 +679,10 @@ public class TileEntityFormulaicAssemblicator extends TileEntityElectricBlock im
     @Override
     public boolean getExtraSlot() {
         return inventory.get(SLOT_FORMULA).isEmpty();
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return MachineType.get(block, metadata) != null ? MachineType.get(block, metadata).guiId : -1;
     }
 }

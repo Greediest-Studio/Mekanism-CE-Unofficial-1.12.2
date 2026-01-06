@@ -12,6 +12,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nonnull;
 
@@ -75,7 +76,7 @@ public class ContainerElectricMachine<RECIPE extends BasicMachineRecipe<RECIPE>>
 
     private boolean isInputItem(ItemStack itemstack) {
         for (ItemStackInput input : tileEntity.getRecipes().keySet()) {
-            if (StackUtils.equalsWildcardWithNBT(input.ingredient, itemstack)) {
+            if (ItemHandlerHelper.canItemStacksStack(input.ingredient, itemstack)) {
                 return true;
             }
         }

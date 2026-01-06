@@ -210,7 +210,7 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
             return false;
         }
         if (tile.getComponent().supports(Upgrade.MUFFLING)) {
-            return tile.getComponent().getUpgrades(Upgrade.MUFFLING) == Upgrade.MUFFLING.getMax();
+            return tile.getComponent().getUpgrades(Upgrade.MUFFLING) == Upgrade.MUFFLING.getMaxInstalled();
         }
         return false;
     }

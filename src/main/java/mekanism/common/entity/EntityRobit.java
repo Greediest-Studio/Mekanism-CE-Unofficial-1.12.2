@@ -10,7 +10,6 @@ import mekanism.api.energy.IEnergizedItem;
 import mekanism.common.MekanismItems;
 import mekanism.common.base.ISustainedInventory;
 import mekanism.common.capabilities.Capabilities;
-import mekanism.common.config.MekanismConfig;
 import mekanism.common.entity.ai.RobitAIFollow;
 import mekanism.common.entity.ai.RobitAIPickup;
 import mekanism.common.integration.MekanismHooks;
@@ -20,6 +19,7 @@ import mekanism.common.integration.redstoneflux.RFIntegration;
 import mekanism.common.integration.tesla.TeslaIntegration;
 import mekanism.common.item.ItemConfigurator;
 import mekanism.common.item.ItemRobit;
+import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.tile.TileEntityChargepad;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.NonNullListSynchronized;
@@ -32,12 +32,9 @@ import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.nbt.NBTTagCompound;
@@ -194,12 +191,19 @@ public class EntityRobit extends EntityCreature implements IInventory, ISustaine
                         double gain = IC2Integration.fromEU(ElectricItem.manager.discharge(stack, IC2Integration.toEU(MAX_ELECTRICITY - getEnergy()), 4, true, true, false));
                         setEnergy(getEnergy() + gain);
                     }
-                } else if (stack.getItem() == Items.REDSTONE && getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE.val() <= MAX_ELECTRICITY) {
+                } /* else if (stack.getItem() == Items.REDSTONE && getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE.val() <= MAX_ELECTRICITY) {
                     setEnergy(getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE.val());
                     stack.shrink(1);
                 } else if (stack.getItem() == Item.getItemFromBlock(Blocks.REDSTONE_BLOCK) && getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val() <= MAX_ELECTRICITY) {
                     setEnergy(getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val());
                     stack.shrink(1);
+                }*/ else if (RecipeHandler.Recipe.ENERGY_RECIPE.containsRecipe(stack) && RecipeHandler.getItemStackToEnergyRecipe(stack) != null) {
+                    int itemAmount = RecipeHandler.getItemStackToEnergyRecipe(stack).getInput().ingredient.getCount();
+                    double getEnergy = getEnergy() + RecipeHandler.getItemStackToEnergyRecipe(stack).getOutput().energyOutput;
+                    if (stack.getCount() >= itemAmount && getEnergy <= MAX_ELECTRICITY) {
+                        setEnergy(getEnergy);
+                        stack.shrink(itemAmount);
+                    }
                 }
             }
 

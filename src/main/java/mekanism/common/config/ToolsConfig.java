@@ -57,13 +57,13 @@ public class ToolsConfig extends BaseConfig {
             this.headProtection = new IntOption(owner, protectionCategory, "head", headProtectionDefault, protectionComment + " helmets.");
             this.enchantability = new IntOption(owner, category, "enchantability", enchantabilityDefault, "Natural enchantability factor of " + toolKey + " armor.");
             this.toughness = new FloatOption(owner, category, "toughness", toughnessDefault, "Base armor toughness value of " + toolKey + " armor.");
-            this.durability.setRequiresGameRestart(true);
-            this.feetProtection.setRequiresGameRestart(true);
-            this.legsProtection.setRequiresGameRestart(true);
-            this.chestProtection.setRequiresGameRestart(true);
-            this.headProtection.setRequiresGameRestart(true);
-            this.enchantability.setRequiresGameRestart(true);
-            this.toughness.setRequiresGameRestart(true);
+            this.durability.setRequiresGameRestart();
+            this.feetProtection.setRequiresGameRestart();
+            this.legsProtection.setRequiresGameRestart();
+            this.chestProtection.setRequiresGameRestart();
+            this.headProtection.setRequiresGameRestart();
+            this.enchantability.setRequiresGameRestart();
+            this.toughness.setRequiresGameRestart();
         }
     }
 
@@ -81,30 +81,30 @@ public class ToolsConfig extends BaseConfig {
 
         private ToolBalance(BaseConfig owner, String toolKey, String variant, int harvestLevelDefault, int maxUsesDefault, int maxShieldUsesDefault,float efficiencyDefault, int damageDefault,
                             int enchantabilityDefault, float axeAttackDamageDefault, float axeAttackSpeedDefault) {
-            final String category = "tools.tool-balance." + toolKey + "." + variant;
-            this.harvestLevel = new IntOption(owner, category, "harvestLevel", harvestLevelDefault, "Harvest level of " + toolKey + " tools.");
-            this.maxUses = new IntOption(owner, category, "maxUses", maxUsesDefault, "Maximum durability of " + toolKey + " tools.");
-            this.maxShieldUses = new IntOption(owner,category,"maxShieldUses",maxShieldUsesDefault,"Maximum durability of " + toolKey + " tools.");
-            this.efficiency = new FloatOption(owner, category, "efficiency", efficiencyDefault, "Base speed of " + toolKey + ".");
-            this.damage = new IntOption(owner, category, "damage", damageDefault, "Base attack damage of " + toolKey + ".");
-            this.enchantability = new IntOption(owner, category, "enchantability", enchantabilityDefault, "Natural enchantability factor of " + toolKey + ".");
+            owner.setCategory("tools.tool-balance." + toolKey + "." + variant);
+            this.harvestLevel = new IntOption(owner, "harvestLevel", harvestLevelDefault, "Harvest level of " + toolKey + " tools.");
+            this.maxUses = new IntOption(owner,  "maxUses", maxUsesDefault, "Maximum durability of " + toolKey + " tools.");
+            this.maxShieldUses = new IntOption(owner,"maxShieldUses",maxShieldUsesDefault,"Maximum durability of " + toolKey + " tools.");
+            this.efficiency = new FloatOption(owner,  "efficiency", efficiencyDefault, "Base speed of " + toolKey + ".");
+            this.damage = new IntOption(owner,  "damage", damageDefault, "Base attack damage of " + toolKey + ".");
+            this.enchantability = new IntOption(owner,  "enchantability", enchantabilityDefault, "Natural enchantability factor of " + toolKey + ".");
 
             if (variant.equals("regular")) {
-                this.axeAttackDamage = new FloatOption(owner, category, "axeAttackDamage", axeAttackDamageDefault, "Base attack damage of a " + toolKey + " axe.");
-                this.axeAttackSpeed = new FloatOption(owner, category, "axeAttackSpeed", axeAttackSpeedDefault, "Base attack speed of a " + toolKey + " axe.");
+                this.axeAttackDamage = new FloatOption(owner,  "axeAttackDamage", axeAttackDamageDefault, "Base attack damage of a " + toolKey + " axe.");
+                this.axeAttackSpeed = new FloatOption(owner,  "axeAttackSpeed", axeAttackSpeedDefault, "Base attack speed of a " + toolKey + " axe.");
             } else {
-                this.axeAttackDamage = new FloatOption(NULL_OWNER, "", "");
-                this.axeAttackSpeed = new FloatOption(NULL_OWNER, "", "");
+                this.axeAttackDamage = new FloatOption(NULL_OWNER, "");
+                this.axeAttackSpeed = new FloatOption(NULL_OWNER, "");
             }
 
-            this.harvestLevel.setRequiresGameRestart(true);
-            this.maxUses.setRequiresGameRestart(true);
-            this.maxShieldUses.setRequiresGameRestart(true);
-            this.efficiency.setRequiresGameRestart(true);
-            this.damage.setRequiresGameRestart(true);
-            this.enchantability.setRequiresGameRestart(true);
-            this.axeAttackDamage.setRequiresGameRestart(true);
-            this.axeAttackSpeed.setRequiresGameRestart(true);
+            this.harvestLevel.setRequiresGameRestart();
+            this.maxUses.setRequiresGameRestart();
+            this.maxShieldUses.setRequiresGameRestart();
+            this.efficiency.setRequiresGameRestart();
+            this.damage.setRequiresGameRestart();
+            this.enchantability.setRequiresGameRestart();
+            this.axeAttackDamage.setRequiresGameRestart();
+            this.axeAttackSpeed.setRequiresGameRestart();
         }
 
         public ToolBalance(BaseConfig owner, String toolKey, String variant, int harvestLevelDefault, int maxUsesDefault,int maxShieldUsesDefault, float efficiencyDefault, int damageDefault,
@@ -115,4 +115,6 @@ public class ToolsConfig extends BaseConfig {
             }
         }
     }
+
+
 }

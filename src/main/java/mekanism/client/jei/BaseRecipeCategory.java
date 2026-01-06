@@ -38,12 +38,17 @@ public abstract class BaseRecipeCategory<WRAPPER extends IRecipeWrapper> impleme
     protected int xOffset;
     protected int yOffset;
     protected IDrawable fluidOverlayLarge;
+    protected IDrawable fluidOverlayheight;
     protected IDrawable fluidOverlaySmall;
     protected Set<GuiElement> guiElements = new ReferenceOpenHashSet<>();
     private String recipeName;
     private String unlocalizedName;
 
     private final IDrawable background;
+
+    protected static IDrawable createIcon(IGuiHelper helper, ResourceLocation iconRL) {
+        return helper.drawableBuilder(iconRL, 0, 0, 18, 18).setTextureSize(18, 18).build();
+    }
 
     protected BaseRecipeCategory(IGuiHelper helper, String guiTexture, String name, String unlocalized, @Nullable ProgressBar progress, int xOffset, int yOffset, int width, int height) {
         guiHelper = helper;
@@ -59,6 +64,7 @@ public abstract class BaseRecipeCategory<WRAPPER extends IRecipeWrapper> impleme
         ResourceLocation resource = MekanismUtils.getResource(MekanismUtils.ResourceType.GAUGE, "Gauge_Icon.png");
         fluidOverlayLarge = guiHelper.createDrawable(resource, 35, 1, 16, 59);
         fluidOverlaySmall = guiHelper.createDrawable(resource, 35, 1, 16, 29);
+        fluidOverlayheight = guiHelper.createDrawable(resource, 92, 1, 64, 49);
 
         addGuiElements();
 
@@ -100,6 +106,7 @@ public abstract class BaseRecipeCategory<WRAPPER extends IRecipeWrapper> impleme
 
     @Override
     public void displayTooltip(String s, int xAxis, int yAxis) {
+        guiElements.forEach(e -> e.displayTooltip(s, xAxis, yAxis));
     }
 
     @Override
@@ -129,17 +136,20 @@ public abstract class BaseRecipeCategory<WRAPPER extends IRecipeWrapper> impleme
         return Collections.emptyList();
     }
 
-    protected void initGas(IGuiIngredientGroup<GasStack> group, int slot, boolean input, int x, int y, int width, int height, @Nullable GasStack stack, boolean overlay) {
+    protected void initGas(IGuiIngredientGroup<GasStack> group ,int slot, boolean input, int x, int y, int width, int height, @Nullable GasStack stack, boolean overlay) {
         if (stack == null) {
             return;
         }
 
         IDrawable fluidOverlay = height > 50 ? fluidOverlayLarge : fluidOverlaySmall;
-        GasStackRenderer renderer = new GasStackRenderer(stack.amount, false, width, height, overlay ? fluidOverlay : null);
+        IDrawable fluidheight = width > 20 ? fluidOverlayheight : fluidOverlay;
+        GasStackRenderer renderer = new GasStackRenderer(stack.amount, false, width, height, overlay ? fluidheight : null);
         group.init(slot, input, renderer, x, y, width, height, 0, 0);
         group.set(slot, stack);
     }
 
+
     public static class GuiDummy extends Gui {
     }
+
 }

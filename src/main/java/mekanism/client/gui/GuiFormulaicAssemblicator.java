@@ -48,7 +48,7 @@ public class GuiFormulaicAssemblicator extends GuiMekanismTile<TileEntityFormula
         addGuiElement(new GuiUpgradeTab(this, tileEntity, resource));
         addGuiElement(new GuiRedstoneControl(this, tileEntity, resource));
         addGuiElement(new GuiSideConfigurationTab(this, tileEntity, resource));
-        addGuiElement(new GuiTransporterConfigTab(this, 34, tileEntity, resource));
+        addGuiElement(new GuiTransporterConfigTab(this, tileEntity, resource));
         addGuiElement(new GuiPowerBar(this, tileEntity, resource, 159, 15));
         addGuiElement(new GuiEnergyInfo(tileEntity, this, resource));
         addGuiElement(new GuiEnergySlot(this, resource, 151, 75, tileEntity));
@@ -73,7 +73,7 @@ public class GuiFormulaicAssemblicator extends GuiMekanismTile<TileEntityFormula
         addGuiElement(new GuiProgress(new GuiProgress.IProgressInfoHandler() {
             @Override
             public double getProgress() {
-                return (double) tileEntity.operatingTicks / tileEntity.ticksRequired;
+                return Math.max(Math.min((double) tileEntity.operatingTicks / tileEntity.ticksRequired,1.0D),0.0D);
             }
         }, GuiProgress.ProgressBar.TALL_RIGHT, this, getGuiLocation(), 85, 42));
         addGuiElement(new GuiExtraSlot(this, getGuiLocation(), 5, 25, tileEntity).with(SlotOverlay.FORMULA));

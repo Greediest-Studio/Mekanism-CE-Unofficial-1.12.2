@@ -22,13 +22,18 @@ public abstract class TileEntityOperationalMachine extends TileEntityMachine imp
 
     public int ticksRequired;
 
+    protected TileEntityOperationalMachine(String sound, String name, double energyStorge, double energUsage, int upgradeSlot, int baseTicksRequired) {
+        super(sound, name, energyStorge, energUsage, upgradeSlot);
+        ticksRequired = BASE_TICKS_REQUIRED = baseTicksRequired;
+    }
+
     protected TileEntityOperationalMachine(String sound, MachineType type, int upgradeSlot, int baseTicksRequired) {
         super(sound, type, upgradeSlot);
         ticksRequired = BASE_TICKS_REQUIRED = baseTicksRequired;
     }
 
     public double getScaledProgress() {
-        return Math.min((double) operatingTicks / ticksRequired, 1F);
+        return Math.max(Math.min((double) operatingTicks / ticksRequired, 1.0D),0.0D);
     }
 
     @Override

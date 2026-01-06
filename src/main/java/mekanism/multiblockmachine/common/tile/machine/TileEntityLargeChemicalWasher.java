@@ -6,17 +6,20 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
 import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
+import mekanism.common.Upgrade.IUpgradeInfoHandler;
 import mekanism.common.base.*;
+import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.recipe.RecipeHandler;
-import mekanism.common.recipe.inputs.GasInput;
+import mekanism.common.recipe.inputs.GasAndFluidInput;
 import mekanism.common.recipe.machines.WasherRecipe;
 import mekanism.common.recipe.outputs.GasOutput;
+import mekanism.common.tile.prefab.TileEntityBasicMachine;
 import mekanism.common.util.*;
-import mekanism.multiblockmachine.client.render.bloom.machine.BloomRenderLargeChemicalWasher;
-import mekanism.multiblockmachine.common.block.states.BlockStateMultiblockMachine;
-import mekanism.multiblockmachine.common.tile.machine.prefab.TileEntityMultiblockBasicMachine;
+import mekanism.multiblockmachine.client.render.block.machine.bloom.BloomRenderLargeChemicalWasher;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -37,25 +40,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMachine<GasInput, GasOutput, WasherRecipe> implements IGasHandler, IFluidHandlerWrapper, ISustainedData, Upgrade.IUpgradeInfoHandler, ITankManager, IAdvancedBoundingBlock,IMachineSlotTip {
+public class TileEntityLargeChemicalWasher extends TileEntityBasicMachine<GasAndFluidInput, GasOutput, WasherRecipe> implements IGasHandler, IFluidHandlerWrapper, ISustainedData, IUpgradeInfoHandler, ITankManager, IAdvancedBoundingBlock {
 
-    public static int WATER_USAGE = 5;
-    public FluidTank fluidTank = new FluidTankSync(5120000);
+    public FluidTank fluidTank = new FluidTankSync(8192000);
     public GasTank inputTank = new GasTank(8192000);
     public GasTank outputTank = new GasTank(8192000);
+
     public WasherRecipe cachedRecipe;
     public double clientEnergyUsed;
+    private int currentRedstoneLevel;
+    private final EjectSpeedController gasSpeedController = new EjectSpeedController();
+    public int processes = MekanismConfig.current().multiblock.LargeChemicalWasherProcesses.val();
+    public int numPowering;
     public int updateDelay;
     public boolean needsPacket;
-    public int numPowering;
-    private int currentRedstoneLevel;
-    private boolean rendererInitialized = false;
-    private final EjectSpeedController gasSpeedController = new EjectSpeedController();
 
     public TileEntityLargeChemicalWasher() {
-        super("washer", BlockStateMultiblockMachine.MultiblockMachineType.LARGE_CHEMICAL_WASHER, 1, 4);
+        super("washer", "LargeChemicalWasher", 0, MachineType.CHEMICAL_WASHER.getUsage(), 4, 1);
         inventory = NonNullListSynchronized.withSize(5, ItemStack.EMPTY);
         upgradeComponent.setSupported(Upgrade.THREAD);
+    }
+
+    @Override
+    public void onUpdateClient() {
+        super.onUpdateClient();
+        if (updateDelay > 0) {
+            updateDelay--;
+            if (updateDelay == 0) {
+                MekanismUtils.updateBlock(world, getPos());
+            }
+        }
     }
 
     @Override
@@ -71,22 +85,26 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
         manageBuckets();
         TileUtils.drawGas(inventory.get(2), outputTank);
         WasherRecipe recipe = getRecipe();
-        getProcess(recipe, true, energyPerTick * getUpgradedUsage() * Thread(), true, false);
+        getProcess(recipe, true, energyPerTick, true, false);
         prevEnergy = getEnergy();
+        int newRedstoneLevel = getRedstoneLevel();
+        if (newRedstoneLevel != currentRedstoneLevel) {
+            updateComparatorOutputLevelSync();
+            currentRedstoneLevel = newRedstoneLevel;
+        }
         if (needsPacket) {
             Mekanism.packetHandler.sendUpdatePacket(this);
+            needsPacket = false;
         }
-        needsPacket = false;
     }
 
     @Override
-    public void onUpdateClient() {
-        if (updateDelay > 0) {
-            updateDelay--;
-            if (updateDelay == 0) {
-                MekanismUtils.updateBlock(world, getPos());
-            }
+    protected void setUpOtherActions() {
+        double prev = getEnergy();
+        if (getRecipe() != null) {
+            setEnergy(getEnergy() - energyPerTick * getUpgradedUsage(getRecipe()));
         }
+        clientEnergyUsed = prev - getEnergy();
     }
 
     @Override
@@ -99,13 +117,6 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
             updateComparatorOutputLevelSync();
             currentRedstoneLevel = newRedstoneLevel;
         }
-    }
-
-    @Override
-    protected void setUpOtherActions() {
-        double prev = getEnergy();
-        setEnergy(getEnergy() - energyPerTick * getUpgradedUsage() * Thread());
-        clientEnergyUsed = prev - getEnergy();
     }
 
     private TileEntity getRightTankSide() {
@@ -140,28 +151,32 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
         tank.draw(emitted, true);
     }
 
+    @Override
     public WasherRecipe getRecipe() {
-        GasInput input = getInput();
+        GasAndFluidInput input = getInput();
         if (cachedRecipe == null || !input.testEquality(cachedRecipe.getInput())) {
             cachedRecipe = RecipeHandler.getChemicalWasherRecipe(getInput());
         }
         return cachedRecipe;
     }
 
-    public GasInput getInput() {
-        return new GasInput(inputTank.getGas());
+    @Override
+    public GasAndFluidInput getInput() {
+        return new GasAndFluidInput(inputTank.getGas(), fluidTank.getFluid());
     }
 
+    @Override
     public boolean canOperate(WasherRecipe recipe) {
         return recipe != null && recipe.canOperate(inputTank, fluidTank, outputTank);
     }
 
+    @Override
     public void operate(WasherRecipe recipe) {
-        recipe.operate(inputTank, fluidTank, outputTank, getUpgradedUsage());
+        recipe.operate(inputTank, fluidTank, outputTank, getUpgradedUsage(recipe));
     }
 
     @Override
-    public Map<GasInput, WasherRecipe> getRecipes() {
+    public Map<GasAndFluidInput, WasherRecipe> getRecipes() {
         return RecipeHandler.Recipe.CHEMICAL_WASHER.get();
     }
 
@@ -171,13 +186,23 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
         }
     }
 
-    public int getUpgradedUsage() {
-        int possibleProcess = Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val());
-        possibleProcess = Math.min(Math.min(inputTank.getStored(), outputTank.getNeeded()), possibleProcess);
-        possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
-        return Math.min(fluidTank.getFluidAmount() / WATER_USAGE, possibleProcess);
+    public int getThread() {
+        int thread = 1;
+        if (upgradeComponent.isUpgradeInstalled(Upgrade.THREAD)) {
+            thread += upgradeComponent.getUpgrades(Upgrade.THREAD);
+        }
+        return thread;
     }
 
+    public int getUpgradedUsage(WasherRecipe recipe) {
+        int possibleProcess = Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val());
+        possibleProcess *= processes;
+        possibleProcess *= getThread();
+        possibleProcess = Math.min(Math.min(inputTank.getStored(), outputTank.getNeeded()), possibleProcess);
+        possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
+        possibleProcess = Math.max(possibleProcess, 1);
+        return Math.min(fluidTank.getFluidAmount() / recipe.getInput().ingredientFluid.amount, possibleProcess);
+    }
 
     @Override
     public void handlePacketData(ByteBuf dataStream) {
@@ -209,18 +234,19 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        fluidTank.readFromNBT(nbtTags.getCompoundTag("fluidTank"));
-        inputTank.read(nbtTags.getCompoundTag("inputTank"));
-        outputTank.read(nbtTags.getCompoundTag("outputTank"));
+        fluidTank.readFromNBT(nbtTags.getCompoundTag("leftTank"));
+        inputTank.read(nbtTags.getCompoundTag("rightTank"));
+        outputTank.read(nbtTags.getCompoundTag("centerTank"));
         numPowering = nbtTags.getInteger("numPowering");
     }
 
     @Override
     public void writeCustomNBT(NBTTagCompound nbtTags) {
         super.writeCustomNBT(nbtTags);
-        nbtTags.setTag("fluidTank", fluidTank.writeToNBT(new NBTTagCompound()));
-        nbtTags.setTag("inputTank", inputTank.write(new NBTTagCompound()));
-        nbtTags.setTag("outputTank", outputTank.write(new NBTTagCompound()));
+        nbtTags.setTag("leftTank", fluidTank.writeToNBT(new NBTTagCompound()));
+        nbtTags.setTag("rightTank", inputTank.write(new NBTTagCompound()));
+        nbtTags.setTag("centerTank", outputTank.write(new NBTTagCompound()));
+        nbtTags.setInteger("numPowering", numPowering);
     }
 
     @Override
@@ -258,6 +284,13 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
         return new GasTankInfo[]{inputTank, outputTank};
     }
 
+
+    @Nonnull
+    @Override
+    public int[] getSlotsForFace(@Nonnull EnumFacing side) {
+        return InventoryUtils.EMPTY;
+    }
+
     @Override
     public boolean isItemValidForSlot(int slotID, @Nonnull ItemStack itemstack) {
         if (slotID == 0) {
@@ -268,16 +301,10 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
         return false;
     }
 
-    @NotNull
-    @Override
-    public int[] getSlotsForFace(@NotNull EnumFacing side) {
-        return InventoryUtils.EMPTY;
-    }
-
     @Override
     public boolean canExtractItem(int slotID, @Nonnull ItemStack itemstack, @Nonnull EnumFacing side) {
         if (slotID == 1) {
-            return !itemstack.isEmpty() && itemstack.getItem() instanceof IGasItem item && item.canProvideGas(itemstack, null);
+            return !itemstack.isEmpty() && itemstack.getItem() instanceof IGasItem gasItem && gasItem.canProvideGas(itemstack, null);
         } else if (slotID == 2) {
             return ChargeUtils.canBeOutputted(itemstack, false);
         }
@@ -305,13 +332,22 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
     }
 
     @Override
+    public double getMaxEnergy() {
+        return upgradeComponent.isUpgradeInstalled(Upgrade.ENERGY) ? MekanismUtils.getMaxEnergy(this, getTierEnergy()) : getTierEnergy();
+    }
+
+    public double getTierEnergy() {
+        return MachineType.CHEMICAL_WASHER.getStorage() * processes * getThread();
+    }
+
+    @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
         return fluidTank.fill(resource, doFill);
     }
 
     @Override
     public boolean canFill(EnumFacing from, @Nonnull FluidStack fluid) {
-        return fluid.getFluid().equals(FluidRegistry.WATER);
+        return RecipeHandler.Recipe.CHEMICAL_WASHER.containsRecipe(fluid.getFluid());
     }
 
     @Override
@@ -360,6 +396,11 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
     }
 
     @Override
+    public boolean isPowered() {
+        return redstone || numPowering > 0;
+    }
+
+    @Override
     public String[] getMethods() {
         return new String[0];
     }
@@ -367,6 +408,38 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
     @Override
     public Object[] invoke(int method, Object[] args) throws NoSuchMethodException {
         return new Object[0];
+    }
+
+    @Override
+    public boolean getEnergySlot() {
+        return inventory.get(3).isEmpty();
+    }
+
+    @Override
+    public boolean getInputSlot() {
+        return false;
+    }
+
+    @Override
+    public boolean getOuputSlot() {
+        return false;
+    }
+
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return 2;
+    }
+
+    @Override
+    public IGuiProvider guiProvider() {
+        return MekanismMultiblockMachine.proxy;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return LangUtils.localize("tile.LargeChemicalWasher.name");
     }
 
     @Override
@@ -410,7 +483,7 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
 
     @Override
     public String getDataType() {
-        return getBlockType().getTranslationKey() + "." + fullName + ".name";
+        return getName();
     }
 
     @Override
@@ -443,7 +516,6 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
             }
         }
     }
-
 
     @Override
     public boolean hasOffsetCapability(@NotNull Capability<?> capability, @Nullable EnumFacing side, @NotNull Vec3i offset) {
@@ -557,12 +629,22 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
         return false;
     }
 
+    @Override
+    public boolean isCapabilityDisabled(@Nonnull Capability<?> capability, EnumFacing side) {
+        if (capability == Capabilities.GAS_HANDLER_CAPABILITY) {
+            return true;
+        } else if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
+            return true;
+        } else if (isStrictEnergy(capability) || capability == CapabilityEnergy.ENERGY || isTesla(capability, side)) {
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public void validate() {
         super.validate();
-        if (isRemote() && !rendererInitialized) {
-            rendererInitialized = true;
+        if (isRemote()) {
             if (Mekanism.hooks.Bloom && MekanismConfig.current().client.enableBloom.val()) {
                 new BloomRenderLargeChemicalWasher(this);
             }
@@ -571,17 +653,11 @@ public class TileEntityLargeChemicalWasher extends TileEntityMultiblockBasicMach
 
 
     @Override
-    public boolean getEnergySlot() {
-        return inventory.get(3).isEmpty();
-    }
-
-    @Override
-    public boolean getInputSlot() {
-        return false;
-    }
-
-    @Override
-    public boolean getOuputSlot() {
-        return false;
+    public void setActive(boolean active) {
+        super.setActive(active);
+        if (updateDelay == 0) {
+            Mekanism.packetHandler.sendUpdatePacket(this);
+            updateDelay = 10;
+        }
     }
 }

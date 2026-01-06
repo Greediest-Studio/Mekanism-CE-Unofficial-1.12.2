@@ -7,18 +7,15 @@ import mekanism.api.energy.EnergizedItemManager;
 import mekanism.api.energy.IEnergizedItem;
 import mekanism.api.energy.IStrictEnergyStorage;
 import mekanism.common.capabilities.Capabilities;
-import mekanism.common.config.MekanismConfig;
 import mekanism.common.integration.forgeenergy.ForgeEnergyIntegration;
 import mekanism.common.integration.ic2.IC2Integration;
 import mekanism.common.integration.redstoneflux.RFIntegration;
 import mekanism.common.integration.tesla.TeslaIntegration;
+import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import net.darkhax.tesla.api.ITeslaConsumer;
 import net.darkhax.tesla.api.ITeslaProducer;
-import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.IEnergyStorage;
@@ -61,15 +58,23 @@ public final class ChargeUtils {
             } else if (MekanismUtils.useIC2() && isIC2Dischargeable(stack)) {
                 double gain = IC2Integration.fromEU(ElectricItem.manager.discharge(stack, IC2Integration.toEU(storer.getMaxEnergy() - storer.getEnergy()), 4, true, true, false));
                 storer.setEnergy(storer.getEnergy() + gain);
-            } else if (stack.getItem() == Items.REDSTONE && storer.getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE.val() <= storer.getMaxEnergy()) {
+            } /*else if (stack.getItem() == Items.REDSTONE && storer.getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE.val() <= storer.getMaxEnergy()) {
                 storer.setEnergy(storer.getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE.val());
                 stack.shrink(1);
             } else if (stack.getItem() == Item.getItemFromBlock(Blocks.REDSTONE_BLOCK) && storer.getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val() <= storer.getMaxEnergy()) {
                 storer.setEnergy(storer.getEnergy() + MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val());
                 stack.shrink(1);
+            }*/ else if (RecipeHandler.Recipe.ENERGY_RECIPE.containsRecipe(stack) && RecipeHandler.getItemStackToEnergyRecipe(stack) != null) {
+                int itemAmount = RecipeHandler.getItemStackToEnergyRecipe(stack).getInput().ingredient.getCount();
+                double getEnergy = storer.getEnergy() + RecipeHandler.getItemStackToEnergyRecipe(stack).getOutput().energyOutput;
+                if (stack.getCount() >= itemAmount && getEnergy <= storer.getMaxEnergy()) {
+                    storer.setEnergy(getEnergy);
+                    stack.shrink(itemAmount);
+                }
             }
         }
     }
+
 
     /**
      * Universally charges an item, and updates the TileEntity's energy level.
@@ -136,25 +141,26 @@ public final class ChargeUtils {
             }
         }
         if (MekanismUtils.useForge()) {
-            if (itemstack.hasCapability(CapabilityEnergy.ENERGY, null)  && itemstack.getCapability(CapabilityEnergy.ENERGY, null).getMaxEnergyStored() > 0) {
+            if (itemstack.hasCapability(CapabilityEnergy.ENERGY, null) && itemstack.getCapability(CapabilityEnergy.ENERGY, null).getMaxEnergyStored() > 0) {
                 if (itemstack.getCapability(CapabilityEnergy.ENERGY, null).extractEnergy(1, true) > 0) {
                     return true;
                 }
             }
         }
         if (MekanismUtils.useRF()) {
-            if (itemstack.getItem() instanceof IEnergyContainerItem item && item.getMaxEnergyStored(itemstack) > 0 ) {
+            if (itemstack.getItem() instanceof IEnergyContainerItem item && item.getMaxEnergyStored(itemstack) > 0) {
                 if (item.extractEnergy(itemstack, 1, true) != 0) {
                     return true;
                 }
             }
         }
         if (MekanismUtils.useIC2()) {
-            if (ElectricItem.manager.getMaxCharge(itemstack) > 0 &&  ElectricItem.manager.discharge(itemstack, 1, 0, true, true, true) > 0) {
+            if (ElectricItem.manager.getMaxCharge(itemstack) > 0 && ElectricItem.manager.discharge(itemstack, 1, 0, true, true, true) > 0) {
                 return true;
             }
         }
-        return itemstack.getItem() == Items.REDSTONE || itemstack.getItem() == Item.getItemFromBlock(Blocks.REDSTONE_BLOCK);
+        return RecipeHandler.Recipe.ENERGY_RECIPE.containsRecipe(itemstack);
+        // return itemstack.getItem() == Items.REDSTONE || itemstack.getItem() == Item.getItemFromBlock(Blocks.REDSTONE_BLOCK);
     }
 
     /**

@@ -21,20 +21,46 @@ public class FloatOption extends Option<FloatOption> implements FloatSupplier {
     private float min;
     private float max;
 
+    public FloatOption(BaseConfig owner, String key, float defaultValue, @Nullable String comment) {
+        super(owner, key, comment);
+        this.defaultValue = defaultValue;
+        this.value = defaultValue;
+    }
+
+
+    public FloatOption(BaseConfig owner,String key, float defaultValue) {
+        this(owner, key, defaultValue, null);
+    }
+
+    public FloatOption(BaseConfig owner,String key) {
+        this(owner, key, 0);
+    }
+
+    public FloatOption(BaseConfig owner,String key, float defaultValue, @Nullable String comment, float min, float max) {
+        this(owner, key, defaultValue, comment);
+        this.hasRange = true;
+        this.min = min;
+        this.max = max;
+    }
+
+    @Deprecated
     public FloatOption(BaseConfig owner, String category, String key, float defaultValue, @Nullable String comment) {
         super(owner, category, key, comment);
         this.defaultValue = defaultValue;
         this.value = defaultValue;
     }
 
+    @Deprecated
     public FloatOption(BaseConfig owner, String category, String key, float defaultValue) {
         this(owner, category, key, defaultValue, null);
     }
 
+    @Deprecated
     public FloatOption(BaseConfig owner, String category, String key) {
         this(owner, category, key, 0, null);
     }
 
+    @Deprecated
     public FloatOption(BaseConfig owner, String category, String key, float defaultValue, @Nullable String comment, float min, float max) {
         this(owner, category, key, defaultValue, comment);
         this.hasRange = true;
@@ -53,6 +79,9 @@ public class FloatOption extends Option<FloatOption> implements FloatSupplier {
     @SuppressWarnings("Duplicates")//types are different
     @Override
     public void load(Configuration config) {
+        if (category.isEmpty()){
+            return;
+        }
         Property prop;
         if (hasRange) {
             prop = config.get(this.category, this.key, this.defaultValue, this.comment, this.min, this.max);

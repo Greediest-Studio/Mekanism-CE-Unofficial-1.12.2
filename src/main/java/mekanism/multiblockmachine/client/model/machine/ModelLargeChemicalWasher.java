@@ -1,8 +1,9 @@
 package mekanism.multiblockmachine.client.model.machine;
 
-
 import mekanism.client.render.MekanismRenderer;
-import mekanism.multiblockmachine.common.util.MekanismMultiblockMachineUtils;
+import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.MekanismUtils.ResourceType;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBox;
 import net.minecraft.client.model.ModelRenderer;
@@ -16,8 +17,8 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class ModelLargeChemicalWasher extends ModelBase {
 
-    public static ResourceLocation OVERLAY_ON = MekanismMultiblockMachineUtils.getResource(MekanismMultiblockMachineUtils.ResourceType.RENDER_MACHINE, "ChemicalWasher/ChemicalWasher_ON.png");
-    public static ResourceLocation OVERLAY_OFF = MekanismMultiblockMachineUtils.getResource(MekanismMultiblockMachineUtils.ResourceType.RENDER_MACHINE, "ChemicalWasher/ChemicalWasher_OFF.png");
+    public static ResourceLocation OVERLAY_ON = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER_MACHINE, "ChemicalWasher/ChemicalWasher_ON.png");
+    public static ResourceLocation OVERLAY_OFF = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER_MACHINE, "ChemicalWasher/ChemicalWasher_OFF.png");
 
     ModelRenderer tube;
     ModelRenderer up_2;
@@ -144,7 +145,7 @@ public class ModelLargeChemicalWasher extends ModelBase {
             MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
             doRender(size);
             if (on) {
-                manager.bindTexture(MekanismMultiblockMachineUtils.getResource(MekanismMultiblockMachineUtils.ResourceType.RENDER_MACHINE, "ChemicalWasher/LED/LED_" + getTick(tick) + ".png"));
+                manager.bindTexture(MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER_MACHINE, "ChemicalWasher/LED/LED_" + getTick(tick) + ".png"));
                 doRender(size);
             }
             MekanismRenderer.disableGlow(glowInfo);
@@ -166,7 +167,7 @@ public class ModelLargeChemicalWasher extends ModelBase {
         MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
         doRender(size);
         if (on) {
-            manager.bindTexture(MekanismMultiblockMachineUtils.getResource(MekanismMultiblockMachineUtils.ResourceType.RENDER_MACHINE, "ChemicalWasher/LED/LED_" + getTick(tick) + ".png"));
+            manager.bindTexture(MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER_MACHINE, "ChemicalWasher/LED/LED_" + getTick(tick) + ".png"));
             doRender(size);
         }
         MekanismRenderer.disableGlow(glowInfo);

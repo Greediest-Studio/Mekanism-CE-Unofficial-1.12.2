@@ -7,6 +7,7 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.MekanismAPI;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasRegistry;
+import mekanism.api.gas.GasStack;
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.common.*;
 import mekanism.common.base.IModule;
@@ -64,6 +65,7 @@ public class MekanismGenerators implements IModule {
     public static final int DATA_VERSION = 1;
     public static CreativeTabMekanismGenerators tabMekanismGenerators = new CreativeTabMekanismGenerators();
     public static MultiblockManager<SynchronizedTurbineData> turbineManager = new MultiblockManager<>("industrialTurbine");
+
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         // Register blocks and tile entities
@@ -96,7 +98,7 @@ public class MekanismGenerators implements IModule {
         Mekanism.modulesLoaded.add(this);
 
         //Register this module's GUI handler in the simple packet protocol
-        PacketSimpleGui.handlers.add(1, proxy);
+        PacketSimpleGui.handlers.add(proxy);
 
         //Set up the GUI handler
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GeneratorsGuiHandler());
@@ -120,7 +122,9 @@ public class MekanismGenerators implements IModule {
         if (FuelHandler.BCPresent() && BuildcraftFuelRegistry.fuel != null) {
             for (IFuel s : BuildcraftFuelRegistry.fuel.getFuels()) {
                 if (s.getFluid() != null && !GasRegistry.containsGas(s.getFluid().getFluid().getName())) {
+                    Gas gas = new Gas(s.getFluid().getFluid());
                     GasRegistry.register(new Gas(s.getFluid().getFluid()));
+                    RecipeHandler.addGasStackFuelToEnergyRecipe(new GasStack(gas, s.getTotalBurningTime() / Fluid.BUCKET_VOLUME),RFIntegration.fromRF(s.getPowerPerCycle() / (double) MjAPI.MJ * 20) );
                 }
             }
 
@@ -128,11 +132,14 @@ public class MekanismGenerators implements IModule {
         }
     }
 
+
     @SubscribeEvent
     public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {
         //1mB hydrogen + 2*bioFuel/tick*200ticks/100mB * 20x efficiency bonus
-        FuelHandler.addGas(MekanismFluids.Ethene, MekanismConfig.current().general.ETHENE_BURN_TIME.val(),
-                MekanismConfig.current().general.FROM_H2.val() + MekanismConfig.current().generators.bioGeneration.val() * 2 * MekanismConfig.current().general.ETHENE_BURN_TIME.val());
+       // FuelHandler.addGas(MekanismFluids.Ethene, MekanismConfig.current().general.ETHENE_BURN_TIME.val(), MekanismConfig.current().general.FROM_H2.val() + MekanismConfig.current().generators.bioGeneration.val() * 2 * MekanismConfig.current().general.ETHENE_BURN_TIME.val());
+
+
+        RecipeHandler.addGasStackFuelToEnergyRecipe(new GasStack(MekanismFluids.Ethene, MekanismConfig.current().general.ETHENE_BURN_TIME.val()), MekanismConfig.current().general.FROM_H2.val() + MekanismConfig.current().generators.bioGeneration.val() * 2 * MekanismConfig.current().general.ETHENE_BURN_TIME.val());
 
         for (ItemStack ore : OreDictionary.getOres("dustGold", false)) {
             RecipeHandler.addMetallurgicInfuserRecipe(InfuseRegistry.get("CARBON"), 10, StackUtils.size(ore, 4), GeneratorsItems.Hohlraum.getEmptyItem());
@@ -140,7 +147,7 @@ public class MekanismGenerators implements IModule {
 
         RecipeHandler.addFusionCoolingRecipe(FluidRegistry.getFluidStack("water", 1), FluidRegistry.getFluidStack("steam", 1));
         RecipeHandler.addFusionCoolingRecipe(FluidRegistry.getFluidStack("liquidsodium", 1), FluidRegistry.getFluidStack("liquidsuperheatedsodium", 1));
-        RecipeHandler.addFusionCoolingRecipe(FluidRegistry.getFluidStack("fissilefuel", 1), FluidRegistry.getFluidStack("nuclearwaste", 1),20);
+        RecipeHandler.addFusionCoolingRecipe(FluidRegistry.getFluidStack("fissilefuel", 1), FluidRegistry.getFluidStack("nuclearwaste", 1), 20);
     }
 
     @Override
@@ -183,9 +190,9 @@ public class MekanismGenerators implements IModule {
         MekanismAPI.addBoxBlacklist(GeneratorsBlocks.Generator, 6); // Wind Generator
     }
 
-    private void imcQueue(){
-        ModuleHelper.get().setSupported(MekanismItems.MEKASUIT_HELMET,MekanismModules.SOLAR_RECHARGING_UNIT);
-        ModuleHelper.get().setSupported(MekanismItems.MEKASUIT_PANTS,GeneratorsModules.GEOTHERMAL_GENERATOR_UNIT);
+    private void imcQueue() {
+        ModuleHelper.get().setSupported(MekanismItems.MEKASUIT_HELMET, MekanismModules.SOLAR_RECHARGING_UNIT);
+        ModuleHelper.get().setSupported(MekanismItems.MEKASUIT_PANTS, GeneratorsModules.GEOTHERMAL_GENERATOR_UNIT);
     }
 
 }

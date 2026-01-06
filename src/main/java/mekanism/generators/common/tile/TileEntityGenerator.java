@@ -15,10 +15,7 @@ import mekanism.common.util.MekanismUtils;
 import mekanism.generators.common.block.states.BlockStateGenerator.GeneratorType;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 
@@ -117,14 +114,6 @@ public abstract class TileEntityGenerator extends TileEntityEffectsBlock impleme
     public void writeCustomNBT(NBTTagCompound nbtTags) {
         super.writeCustomNBT(nbtTags);
         nbtTags.setInteger("controlType", controlType.ordinal());
-
-    }
-
-    @Nonnull
-    @Override
-    @SideOnly(Side.CLIENT)
-    public AxisAlignedBB getRenderBoundingBox() {
-        return INFINITE_EXTENT_AABB;
     }
 
     @Override

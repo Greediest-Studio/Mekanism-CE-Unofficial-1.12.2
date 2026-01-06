@@ -1,0 +1,33 @@
+{
+  "result": {
+    "item": "mekanismmultiblockmachine:largechemicalwasher"
+  },
+  "pattern": [
+    "ACA",
+    "EBE",
+    "FCF"
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "A": {
+      "ore": "circuitUltimate",
+      "type": "forge:ore_dict"
+    },
+    "B": {
+      "ore": "alloyUltimate",
+      "type": "forge:ore_dict"
+    },
+    "C": {
+      "item": "mekanism:machineblock4",
+      "data": 10
+    },
+    "E": {
+      "ore":"blockSteel",
+      "type": "forge:ore_dict"
+    },
+    "F": {
+      "item": "mekanism:basicblock",
+      "data": 8
+    }
+  }
+}

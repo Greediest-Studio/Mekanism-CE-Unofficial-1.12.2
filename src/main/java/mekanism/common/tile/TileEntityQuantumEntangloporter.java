@@ -17,6 +17,7 @@ import mekanism.common.SideData;
 import mekanism.common.SideData.IOState;
 import mekanism.common.Upgrade;
 import mekanism.common.base.*;
+import mekanism.common.block.states.BlockStateMachine;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.chunkloading.IChunkLoader;
 import mekanism.common.config.MekanismConfig;
@@ -30,6 +31,7 @@ import mekanism.common.tile.component.*;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -606,5 +608,10 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
     protected boolean shouldDumpRadiation() {
         //Note: The QE doesn't support radioactive substances but override this method anyway
         return false;
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
     }
 }

@@ -1,6 +1,7 @@
 package mekanism.client.gui.element.gauge;
 
 import mekanism.api.energy.IStrictEnergyStorage;
+import mekanism.api.math.MathUtils;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.render.MekanismRenderer;
@@ -12,13 +13,19 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class GuiEnergyGauge extends GuiGauge {
+public class GuiEnergyGauge extends GuiGauge<Void> {
 
     private final IEnergyInfoHandler infoHandler;
 
     public GuiEnergyGauge(IEnergyInfoHandler handler, Type type, IGuiWrapper gui, ResourceLocation def, int x, int y) {
         super(type, gui, def, x, y);
         infoHandler = handler;
+    }
+
+    public static GuiEnergyGauge getDummy(Type type, IGuiWrapper gui, ResourceLocation def, int x, int y) {
+        GuiEnergyGauge gauge = new GuiEnergyGauge(null, type, gui, def, x, y);
+        gauge.dummy = true;
+        return gauge;
     }
 
     @Override
@@ -33,10 +40,16 @@ public class GuiEnergyGauge extends GuiGauge {
 
     @Override
     public int getScaledLevel() {
-        if (infoHandler.getEnergyStorage().getEnergy() == Double.MAX_VALUE) {
+        if (dummy || infoHandler.getEnergyStorage().getEnergy() == Double.MAX_VALUE) {
             return height - 2;
         }
-        return (int) (infoHandler.getEnergyStorage().getEnergy() * (height - 2) / infoHandler.getEnergyStorage().getMaxEnergy());
+        double scale =  Math.max(Math.min(infoHandler.getEnergyStorage().getEnergy() / infoHandler.getEnergyStorage().getMaxEnergy(), 1.0D), 0.0D);
+        if (vertical) {
+            return MathUtils.clampToInt(Math.round(scale * (height - 2)));
+        } else {
+            return MathUtils.clampToInt(Math.round(scale * (width - 2)));
+        }
+
     }
 
     @Override

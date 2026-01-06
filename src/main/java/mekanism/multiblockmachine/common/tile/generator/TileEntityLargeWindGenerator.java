@@ -1,19 +1,22 @@
 package mekanism.multiblockmachine.common.tile.generator;
 
+import com.google.common.base.Predicate;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
 import mekanism.common.base.IAdvancedBoundingBlock;
+import mekanism.common.base.IGuiProvider;
 import mekanism.common.base.IMachineSlotTip;
+import mekanism.common.base.IUpgradeTile;
 import mekanism.common.config.MekanismConfig;
-import mekanism.common.util.CableUtils;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.NonNullListSynchronized;
-import mekanism.multiblockmachine.client.render.bloom.generator.BloomRenderLargeWindGenerator;
-import mekanism.multiblockmachine.common.block.states.BlockStateMultiblockMachineGenerator.MultiblockMachineGeneratorType;
+import mekanism.common.tile.component.TileComponentUpgrade;
+import mekanism.common.util.*;
+import mekanism.generators.common.tile.TileEntityGenerator;
+import mekanism.multiblockmachine.client.render.block.generator.bloom.BloomRenderLargeWindGenerator;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
+import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -31,8 +34,6 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,34 +41,41 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 
-public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator implements IAdvancedBoundingBlock, IMachineSlotTip {
+public class TileEntityLargeWindGenerator extends TileEntityGenerator implements IAdvancedBoundingBlock, IMachineSlotTip, IUpgradeTile {
 
     public static final float SPEED = 32F;
     public static final float SPEED_SCALED = 256F / SPEED;
     static final String[] methods = new String[]{"getEnergy", "getOutput", "getMaxEnergy", "getEnergyNeeded", "getMultiplier"};
-    private static final int[] SLOTS = {0};
-    public int numPowering;
     private double angle;
     private float currentMultiplier;
     private boolean isBlacklistDimension = false;
+    public int processes = MekanismConfig.current().multiblock.LargeWindGeneratorProcesses.val();
+    public TileComponentUpgrade upgradeComponent;
+    public int numPowering;
     private int explode;
     private boolean machineStop;
     private boolean machineStop2;
     private boolean bladeDamage;
-    private boolean rendererInitialized = false;
 
     public TileEntityLargeWindGenerator() {
-        super("wind", MultiblockMachineGeneratorType.LARGE_WIND_GENERATOR, MekanismConfig.current().multiblock.largewindGeneratorStorage.val(), MekanismConfig.current().multiblock.largewindGeneratorOut.val(), 1);
-        inventory = NonNullListSynchronized.withSize(SLOTS.length + 1, ItemStack.EMPTY);
-        upgradeComponent.setSupported(Upgrade.ENERGY);
+        super("wind", "LargeWindGenerator", 0, 0);
+        upgradeComponent = new TileComponentUpgrade(this, 1, Upgrade.ENERGY);
+        upgradeComponent.setSupported(Upgrade.THREAD);
+        inventory = NonNullListSynchronized.withSize(2, ItemStack.EMPTY);
+    }
+
+
+    public int getThread() {
+        int thread = 1;
+        if (upgradeComponent.isUpgradeInstalled(Upgrade.THREAD)) {
+            thread += upgradeComponent.getUpgrades(Upgrade.THREAD);
+        }
+        return thread;
     }
 
     @Override
     public void onLoad() {
         super.onLoad();
-        // Check the blacklist and force an update if we're in the blacklist. Otherwise, we'll never send
-        // an initial activity status and the client (in MP) will show the windmills turning while not
-        // generating any power
         isBlacklistDimension = MekanismConfig.current().generators.windGenerationDimBlacklist.val().contains(world.provider.getDimension());
         if (isBlacklistDimension) {
             setActive(false);
@@ -75,48 +83,91 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
     }
 
     @Override
-    public void onUpdateServer() {
-        super.onUpdateServer();
+    public void onAsyncUpdateServer() {
+        super.onAsyncUpdateServer();
         ChargeUtils.charge(0, this);
         // If we're in a blacklisted dimension, there's nothing more to do
         if (isBlacklistDimension) {
             return;
         }
-
-        if (ticker % 200 == 0 && MekanismConfig.current().multiblock.largewindGenerationRangeStops.val() && !machineStop2) {
-            RangeStops();
-        }
-
         if (ticker % 20 == 0) {
             currentMultiplier = getMultiplier();
-            setActive(MekanismUtils.canFunction(this) && currentMultiplier > 0 && !machineStop && !machineStop2);
+            setActive(MekanismUtils.canFunction(this) && currentMultiplier > 0);
         }
         if (getActive()) {
-            setEnergy(electricityStored.get() + (MekanismConfig.current().multiblock.largewindGenerationMin.val() * currentMultiplier));
-            if (MekanismConfig.current().multiblock.largewindGenerationDamage.val()) {
+            setEnergy(electricityStored.get() + getEnergyAdd());
+        }
+    }
+
+    public double getEnergyAdd() {
+        return MekanismConfig.current().multiblock.LargeWindGenerationMin.val() * currentMultiplier * processes * getThread();
+    }
+
+    @Override
+    public void onUpdateServer() {
+        super.onUpdateServer();
+        if (ticker % 200 == 0 && MekanismConfig.current().multiblock.LargeWindGenerationRangeStops.val() && !machineStop2) {
+            RangeStops();
+        }
+        if (getActive()) {
+            if (MekanismConfig.current().multiblock.LargeWindGenerationDamage.val()) {
                 kill();
             }
         }
         if (explode != 0) {
             bladeDamage = true;
         }
-        if (explode >= MekanismConfig.current().multiblock.largewindGenerationExplodeCount.val() && MekanismConfig.current().multiblock.largewindGenerationExplode.val()) {
+        if (explode >= MekanismConfig.current().multiblock.LargeWindGenerationExplodeCount.val() && MekanismConfig.current().multiblock.LargewindGenerationExplode.val()) {
             explode();
         }
     }
 
-    @Override
-    public void onUpdateClient() {
-        if (getActive()) {
-            angle = (angle + (getPos().getY() + 46F) / SPEED_SCALED) % 360;
+
+    public void kill() {
+        AxisAlignedBB death_zone = new AxisAlignedBB(getPos());
+        if (facing == EnumFacing.NORTH) {
+            death_zone = new AxisAlignedBB(
+                    getPos().up(46).north(3).getX() + 22, getPos().up(46).north(3).getY() + 22, getPos().up(46).north(3).getZ(),
+                    getPos().up(46).north(4).getX() - 22, getPos().up(46).north(4).getY() - 22, getPos().up(46).north(4).getZ());
+        } else if (facing == EnumFacing.SOUTH) {
+            death_zone = new AxisAlignedBB(
+                    getPos().up(46).south(3).getX() + 22, getPos().up(46).south(3).getY() + 22, getPos().up(46).south(3).getZ(),
+                    getPos().up(46).south(4).getX() - 22, getPos().up(46).south(4).getY() - 22, getPos().up(46).south(4).getZ());
+        } else if (facing == EnumFacing.WEST) {
+            death_zone = new AxisAlignedBB(
+                    getPos().up(46).west(3).getX(), getPos().up(46).west(3).getY() + 22, getPos().up(46).west(3).getZ() + 22,
+                    getPos().up(46).west(4).getX(), getPos().up(46).west(4).getY() - 22, getPos().up(46).west(4).getZ() - 22);
+        } else if (facing == EnumFacing.EAST) {
+            death_zone = new AxisAlignedBB(
+                    getPos().up(46).east(3).getX(), getPos().up(46).east(3).getY() + 22, getPos().up(46).east(3).getZ() + 22,
+                    getPos().up(46).east(4).getX(), getPos().up(46).east(4).getY() - 22, getPos().up(46).east(4).getZ() - 22);
+        }
+
+        List<Entity> entitiesToDie = getWorld().getEntitiesWithinAABB(Entity.class, death_zone, isCanKill);
+
+        for (Entity entity : entitiesToDie) {
+            if (entity instanceof EntityPlayer player && player.capabilities.isCreativeMode) {
+                continue;
+            }
+            entity.attackEntityFrom(DamageSource.FLY_INTO_WALL, Float.MAX_VALUE);
+            machineStop = true;
+            explode += 1;
         }
     }
+
+    Predicate<Entity> isCanKill = entity -> {
+        if (entity instanceof EntityPlayer player) {
+            return player.isEntityAlive() && !player.isSpectator() && !player.isCreative();
+        }
+        return entity.isEntityAlive();
+    };
 
 
     @Override
     public void addTileSyncTask() {
         CableUtils.emit(this, 4);
     }
+
 
     private void RangeStops() {
         if (machineStop2) {
@@ -126,23 +177,26 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         World world = getWorld();
         BlockPos currentPos = getPos();
         ChunkPos currentChunk = new ChunkPos(currentPos);
-
-        for (int chunkX = currentChunk.x - 1; chunkX <= currentChunk.x + 1; chunkX++) {
-            for (int chunkZ = currentChunk.z - 1; chunkZ <= currentChunk.z + 1; chunkZ++) {
-
+        int rangeCheck = MekanismConfig.current().multiblock.LargeWindGeneratorRangeCheck.val();
+        int range;
+        if (rangeCheck % 16 != 0) {
+            range = rangeCheck / 16 + 1;
+        } else {
+            range = rangeCheck / 16;
+        }
+        for (int chunkX = currentChunk.x - range; chunkX <= currentChunk.x + range; chunkX++) {
+            for (int chunkZ = currentChunk.z - range; chunkZ <= currentChunk.z + range; chunkZ++) {
                 Chunk chunk = world.getChunkProvider().getLoadedChunk(chunkX, chunkZ);
                 if (chunk == null) {
                     continue;
                 }
-
                 Map<BlockPos, TileEntity> tileEntityMap = chunk.getTileEntityMap();
-
                 for (TileEntity tileEntity : tileEntityMap.values()) {
                     if (tileEntity instanceof TileEntityLargeWindGenerator && tileEntity != this) {
                         BlockPos tilePos = tileEntity.getPos();
 
                         double distanceSquared = currentPos.distanceSq(tilePos);
-                        if (distanceSquared <= 50.0 * 50.0) {
+                        if (distanceSquared <= rangeCheck * rangeCheck) {
                             machineStop2 = true;
                             return;
                         }
@@ -152,6 +206,30 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         }
     }
 
+    private void explode() {
+        int BlastRadius = MekanismConfig.current().multiblock.LargeWindGenerationBlastRadius.val();
+        if (facing == EnumFacing.NORTH) {
+            world.createExplosion(null, getPos().up(46).north(4).getX(), getPos().up(46).north(4).getY(), getPos().up(46).north(4).getZ(), BlastRadius, true);
+            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).north(3).getX(), getPos().up(46).north(3).getY(), getPos().up(46).north(3).getZ(), 0, 0, 0);
+        } else if (facing == EnumFacing.SOUTH) {
+            world.createExplosion(null, getPos().up(46).south(4).getX(), getPos().up(46).south(4).getY(), getPos().up(46).south(4).getZ(), BlastRadius, true);
+            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).south(3).getX(), getPos().up(46).south(3).getY(), getPos().up(46).south(3).getZ(), 0, 0, 0);
+        } else if (facing == EnumFacing.WEST) {
+            world.createExplosion(null, getPos().up(46).west(4).getX(), getPos().up(46).west(4).getY(), getPos().up(46).west(4).getZ(), BlastRadius, true);
+            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).west(3).getX(), getPos().up(46).west(3).getY(), getPos().up(46).west(3).getZ(), 0, 0, 0);
+        } else if (facing == EnumFacing.EAST) {
+            world.createExplosion(null, getPos().up(46).east(4).getX(), getPos().up(46).east(4).getY(), getPos().up(46).east(4).getZ(), BlastRadius, true);
+            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).east(3).getX(), getPos().up(46).east(3).getY(), getPos().up(46).east(3).getZ(), 0, 0, 0);
+        }
+    }
+
+    @Override
+    public void onUpdateClient() {
+        super.onUpdateClient();
+        if (getActive()) {
+            angle = (angle + (getPos().getY() + 4F) / SPEED_SCALED) % 360;
+        }
+    }
 
     @Override
     public void handlePacketData(ByteBuf dataStream) {
@@ -188,38 +266,41 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         return data;
     }
 
+
+    /**
+     * Determines the current output multiplier, taking sky visibility and height into account.
+     **/
     public float getMultiplier() {
         //Wind turbine head and tail
         BlockPos head = getPos().up(46);
         BlockPos head2 = getPos().up(46);
         if (facing == EnumFacing.NORTH) {
-            head = getPos().up(46).north(3);
-            head2 = getPos().up(46).north(4);
+            head = head.north(3);
+            head2 = head2.north(4);
         } else if (facing == EnumFacing.SOUTH) {
-            head = getPos().up(46).south(3);
-            head2 = getPos().up(46).south(4);
+            head = head.south(3);
+            head2 = head2.south(4);
         } else if (facing == EnumFacing.WEST) {
-            head = getPos().up(46).west(3);
-            head2 = getPos().up(46).west(4);
+            head = head.west(3);
+            head2 = head2.west(4);
         } else if (facing == EnumFacing.EAST) {
-            head = getPos().up(46).east(3);
-            head2 = getPos().up(46).east(4);
+            head = head.east(3);
+            head2 = head2.east(4);
         }
 
-
         if (world.canSeeSky(head) && world.canSeeSky(head2)) {
-            int minY = MekanismConfig.current().multiblock.largewindGenerationMinY.val();
-            int maxY = MekanismConfig.current().multiblock.largewindGenerationMaxY.val();
-            float clampedY = Math.min(maxY, Math.max(minY, head.getY()));
-            float minG = (float) MekanismConfig.current().multiblock.largewindGenerationMin.val();
-            float maxG = (float) MekanismConfig.current().multiblock.largewindGenerationMax.val();
+            int minY = MekanismConfig.current().multiblock.LargeWindGenerationMinY.val();
+            int maxY = MekanismConfig.current().multiblock.LargeWindGenerationMaxY.val();
+            float clampedY = (float) Math.min(maxY, Math.max(minY, head.getY()));
+            float minG = (float) MekanismConfig.current().multiblock.LargeWindGenerationMin.val();
+            float maxG = (float) MekanismConfig.current().multiblock.LargeWindGenerationMax.val();
+            //Prevents the possibility of writing opposite values; https://github.com/Thorfusion/Mekanism-Community-Edition/issues/150
             int rangeY = maxY < minY ? minY - maxY : maxY - minY;
             float rangG = maxG < minG ? minG - maxG : maxG - minG;
             float slope = rangG / rangeY;
             float toGen = minG + (slope * (clampedY - minY));
-            return ((toGen / minG) * 45 - (explode * 0.01F)) * Thread();
+            return toGen / minG;
         }
-
         return 0;
     }
 
@@ -228,14 +309,13 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         return methods;
     }
 
-
     @Override
     public Object[] invoke(int method, Object[] arguments) throws NoSuchMethodException {
         return switch (method) {
             case 0 -> new Object[]{electricityStored};
-            case 1 -> new Object[]{output};
-            case 2 -> new Object[]{BASE_MAX_ENERGY};
-            case 3 -> new Object[]{BASE_MAX_ENERGY - electricityStored.get()};
+            case 1 -> new Object[]{getMaxOutput()};
+            case 2 -> new Object[]{getMaxEnergy()};
+            case 3 -> new Object[]{getMaxEnergy() - electricityStored.get()};
             case 4 -> new Object[]{getMultiplier()};
             default -> throw new NoSuchMethodException();
         };
@@ -243,12 +323,11 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
 
     @Override
     public boolean canOperate() {
-        return electricityStored.get() < BASE_MAX_ENERGY && getMultiplier() > 0 && MekanismUtils.canFunction(this);
+        return electricityStored.get() < getMaxEnergy() && getMultiplier() > 0 && MekanismUtils.canFunction(this);
     }
 
     @Override
     public void onPlace() {
-
         //bottom
         for (int x = -3; x <= 3; x++) {
             for (int z = -3; z <= 3; z++) {
@@ -346,15 +425,23 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
             }
         }
 
-
         // Check to see if the placement is happening in a blacklisted dimension
         isBlacklistDimension = MekanismConfig.current().generators.windGenerationDimBlacklist.val().contains(world.provider.getDimension());
     }
 
 
     @Override
-    public boolean sideIsOutput(EnumFacing side) {
-        return side == MekanismUtils.getLeft(facing) || side == MekanismUtils.getRight(facing) || side == facing;
+    public double getMaxOutput() {
+        return (upgradeComponent.isUpgradeInstalled(Upgrade.ENERGY) ? MekanismUtils.getMaxEnergy(this, getTierEnergy()) : getTierEnergy()) * 2;
+    }
+
+    @Override
+    public double getMaxEnergy() {
+        return upgradeComponent.isUpgradeInstalled(Upgrade.ENERGY) ? MekanismUtils.getMaxEnergy(this, getTierEnergy()) : getTierEnergy();
+    }
+
+    public double getTierEnergy() {
+        return MekanismConfig.current().generators.windGeneratorStorage.val() * processes * getThread();
     }
 
     @Override
@@ -435,11 +522,9 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
                 }
             }
         }
-
-
-        invalidate();
         world.setBlockToAir(getPos());
     }
+
 
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
@@ -461,7 +546,6 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         nbtTags.setBoolean("bladeDamage", bladeDamage);
     }
 
-
     @Override
     public boolean renderUpdate() {
         return false;
@@ -472,8 +556,8 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         return false;
     }
 
-    public float getCurrentMultiplier() {
-        return currentMultiplier;
+    public void setAngle(double angle) {
+        this.angle = angle;
     }
 
     public double getAngle() {
@@ -503,68 +587,55 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
     @Nonnull
     @Override
     public int[] getSlotsForFace(@Nonnull EnumFacing side) {
-        return SLOTS;
+        return InventoryUtils.EMPTY;
     }
 
     @Override
-    public boolean isItemValidForSlot(int slot, @Nonnull ItemStack stack) {
-        return ChargeUtils.canBeCharged(stack);
+    public boolean isItemValidForSlot(int slotID, @Nonnull ItemStack stack) {
+        return slotID == 0 && ChargeUtils.canBeCharged(stack);
+    }
+
+    @Override
+    public boolean getEnergySlot() {
+        return inventory.get(0).isEmpty();
+    }
+
+    @Override
+    public boolean getInputSlot() {
+        return false;
+    }
+
+    @Override
+    public boolean getOuputSlot() {
+        return false;
+    }
+
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return 3;
+    }
+
+    @Override
+    public IGuiProvider guiProvider() {
+        return MekanismMultiblockMachine.proxy;
+    }
+
+    @Override
+    public TileComponentUpgrade getComponent() {
+        return upgradeComponent;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return LangUtils.localize("tile.LargeWindGenerator.name");
     }
 
     @Override
     public boolean canBoundReceiveEnergy(BlockPos location, EnumFacing side) {
         return false;
     }
-
-    public void kill() {
-        AxisAlignedBB death_zone = new AxisAlignedBB(getPos());
-        if (facing == EnumFacing.NORTH) {
-            death_zone = new AxisAlignedBB(
-                    getPos().up(46).north(3).getX() + 22, getPos().up(46).north(3).getY() + 22, getPos().up(46).north(3).getZ(),
-                    getPos().up(46).north(4).getX() - 22, getPos().up(46).north(4).getY() - 22, getPos().up(46).north(4).getZ());
-        } else if (facing == EnumFacing.SOUTH) {
-            death_zone = new AxisAlignedBB(
-                    getPos().up(46).south(3).getX() + 22, getPos().up(46).south(3).getY() + 22, getPos().up(46).south(3).getZ(),
-                    getPos().up(46).south(4).getX() - 22, getPos().up(46).south(4).getY() - 22, getPos().up(46).south(4).getZ());
-        } else if (facing == EnumFacing.WEST) {
-            death_zone = new AxisAlignedBB(
-                    getPos().up(46).west(3).getX(), getPos().up(46).west(3).getY() + 22, getPos().up(46).west(3).getZ() + 22,
-                    getPos().up(46).west(4).getX(), getPos().up(46).west(4).getY() - 22, getPos().up(46).west(4).getZ() - 22);
-        } else if (facing == EnumFacing.EAST) {
-            death_zone = new AxisAlignedBB(
-                    getPos().up(46).east(3).getX(), getPos().up(46).east(3).getY() + 22, getPos().up(46).east(3).getZ() + 22,
-                    getPos().up(46).east(4).getX(), getPos().up(46).east(4).getY() - 22, getPos().up(46).east(4).getZ() - 22);
-        }
-
-        List<Entity> entitiesToDie = getWorld().getEntitiesWithinAABB(Entity.class, death_zone);
-
-        for (Entity entity : entitiesToDie) {
-            if (entity instanceof EntityPlayer player && player.capabilities.isCreativeMode) {
-                return;
-            }
-            entity.attackEntityFrom(DamageSource.FLY_INTO_WALL, Float.MAX_VALUE);
-            machineStop = true;
-            explode += 1;
-        }
-    }
-
-
-    private void explode() {
-        if (facing == EnumFacing.NORTH) {
-            world.createExplosion(null, getPos().up(46).north(4).getX(), getPos().up(46).north(4).getY(), getPos().up(46).north(4).getZ(), MekanismConfig.current().multiblock.largewindGenerationBlastRadius.val(), true);
-            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).north(3).getX(), getPos().up(46).north(3).getY(), getPos().up(46).north(3).getZ(), 0, 0, 0);
-        } else if (facing == EnumFacing.SOUTH) {
-            world.createExplosion(null, getPos().up(46).south(4).getX(), getPos().up(46).south(4).getY(), getPos().up(46).south(4).getZ(), MekanismConfig.current().multiblock.largewindGenerationBlastRadius.val(), true);
-            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).south(3).getX(), getPos().up(46).south(3).getY(), getPos().up(46).south(3).getZ(), 0, 0, 0);
-        } else if (facing == EnumFacing.WEST) {
-            world.createExplosion(null, getPos().up(46).west(4).getX(), getPos().up(46).west(4).getY(), getPos().up(46).west(4).getZ(), MekanismConfig.current().multiblock.largewindGenerationBlastRadius.val(), true);
-            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).west(3).getX(), getPos().up(46).west(3).getY(), getPos().up(46).west(3).getZ(), 0, 0, 0);
-        } else if (facing == EnumFacing.EAST) {
-            world.createExplosion(null, getPos().up(46).east(4).getX(), getPos().up(46).east(4).getY(), getPos().up(46).east(4).getZ(), MekanismConfig.current().multiblock.largewindGenerationBlastRadius.val(), true);
-            world.spawnParticle(EnumParticleTypes.LAVA, getPos().up(46).east(3).getX(), getPos().up(46).east(3).getY(), getPos().up(46).east(3).getZ(), 0, 0, 0);
-        }
-    }
-
 
     @Override
     public boolean canBoundOutPutEnergy(BlockPos coord, EnumFacing side) {
@@ -576,8 +647,9 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
             return side == right;
         } else if (coord.equals(getPos().offset(facing, 3))) {
             return side == facing;
+        } else {
+            return false;
         }
-        return false;
     }
 
     @Override
@@ -602,14 +674,12 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
 
     @Override
     public void setConfigurationData(NBTTagCompound nbtTags) {
-
     }
 
     @Override
     public String getDataType() {
-        return getBlockType().getTranslationKey() + "." + fullName + ".name";
+        return getName();
     }
-
 
     @Override
     public boolean hasOffsetCapability(@NotNull Capability<?> capability, @Nullable EnumFacing side, @NotNull Vec3i offset) {
@@ -623,7 +693,7 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
     }
 
     @Override
-    public <T> T getOffsetCapability(@Nonnull Capability<T> capability, EnumFacing side, @Nonnull Vec3i offset) {
+    public @Nullable <T> T getOffsetCapability(@NotNull Capability<T> capability, @Nullable EnumFacing side, @NotNull Vec3i offset) {
         if (isOffsetCapabilityDisabled(capability, side, offset)) {
             return null;
         } else if (isStrictEnergy(capability)) {
@@ -637,7 +707,7 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
     }
 
     @Override
-    public boolean isOffsetCapabilityDisabled(@Nonnull Capability<?> capability, EnumFacing side, @Nonnull Vec3i offset) {
+    public boolean isOffsetCapabilityDisabled(@NotNull Capability<?> capability, @Nullable EnumFacing side, @NotNull Vec3i offset) {
         if (isStrictEnergy(capability) || capability == CapabilityEnergy.ENERGY || isTesla(capability, side)) {
             EnumFacing left = MekanismUtils.getLeft(facing);
             EnumFacing right = MekanismUtils.getRight(facing);
@@ -663,34 +733,20 @@ public class TileEntityLargeWindGenerator extends TileEntityMultiblockGenerator 
         return super.isCapabilityDisabled(capability, side);
     }
 
-    @SideOnly(Side.CLIENT)
-    public double getMaxRenderDistanceSquared() {
-        return MekanismConfig.current().client.largeWindGeneratorMaxRenderDistanceSquared.val();
+    @Override
+    public boolean sideIsOutput(EnumFacing side) {
+        return side == MekanismUtils.getLeft(facing) || side == MekanismUtils.getRight(facing) || side == facing;
     }
+
 
     @Override
     public void validate() {
         super.validate();
-        if (isRemote() && !rendererInitialized) {
-            rendererInitialized = true;
+        if (isRemote()) {
             if (Mekanism.hooks.Bloom && MekanismConfig.current().client.enableBloom.val()) {
                 new BloomRenderLargeWindGenerator(this);
             }
         }
     }
 
-    @Override
-    public boolean getEnergySlot() {
-        return inventory.get(0).isEmpty();
-    }
-
-    @Override
-    public boolean getInputSlot() {
-        return false;
-    }
-
-    @Override
-    public boolean getOuputSlot() {
-        return false;
-    }
 }

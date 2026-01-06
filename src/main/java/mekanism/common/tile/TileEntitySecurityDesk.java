@@ -25,11 +25,8 @@ import mekanism.common.util.NonNullListSynchronized;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 import javax.annotation.Nonnull;
@@ -42,7 +39,6 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
     public UUID ownerUUID;
     public String clientOwner;
     public SecurityFrequency frequency;
-    private boolean rendererInitialized = false;
 
     public TileEntitySecurityDesk() {
         super("SecurityDesk");
@@ -246,12 +242,6 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
         return null;
     }
 
-    @Nonnull
-    @Override
-    @SideOnly(Side.CLIENT)
-    public AxisAlignedBB getRenderBoundingBox() {
-        return INFINITE_EXTENT_AABB;
-    }
 
     @Nonnull
     @Override
@@ -274,8 +264,7 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
     @Override
     public void validate() {
         super.validate();
-        if (isRemote() && !rendererInitialized) {
-            rendererInitialized = true;
+        if (isRemote()) {
             if (Mekanism.hooks.Bloom && MekanismConfig.current().client.enableBloom.val()) {
                 new BloomRenderSecurityDesk(this);
             }

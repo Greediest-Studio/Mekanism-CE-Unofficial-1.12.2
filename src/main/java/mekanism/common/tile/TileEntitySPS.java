@@ -19,6 +19,7 @@ import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityMachine;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
@@ -131,6 +132,11 @@ public class TileEntitySPS extends TileEntityMachine implements IGasHandler, ISi
 
 
     @Override
+    public boolean canInsertItem(int i, @Nonnull ItemStack itemStack, @Nonnull EnumFacing side) {
+        return false;
+    }
+
+    @Override
     public boolean canExtractItem(int slotID, @Nonnull ItemStack itemstack, @Nonnull EnumFacing side) {
         return false;
     }
@@ -203,10 +209,15 @@ public class TileEntitySPS extends TileEntityMachine implements IGasHandler, ISi
         return new Object[]{inputTank, outputTank};
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public int[] getSlotsForFace(@NotNull EnumFacing side) {
-        return configComponent.getOutput(TransmissionType.ITEM, side, facing).availableSlots;
+        return InventoryUtils.EMPTY;
+    }
+
+    @Override
+    public boolean handleInventory() {
+        return false;
     }
 
     @Override
@@ -223,6 +234,7 @@ public class TileEntitySPS extends TileEntityMachine implements IGasHandler, ISi
     public TileComponentEjector getEjector() {
         return ejectorComponent;
     }
+
 
     @Override
     public void handlePacketData(ByteBuf dataStream) {
@@ -287,5 +299,10 @@ public class TileEntitySPS extends TileEntityMachine implements IGasHandler, ISi
     @Override
     public boolean isCapabilityDisabled(@Nonnull Capability<?> capability, EnumFacing side) {
         return configComponent.isCapabilityDisabled(capability, side, facing) || super.isCapabilityDisabled(capability, side);
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
     }
 }

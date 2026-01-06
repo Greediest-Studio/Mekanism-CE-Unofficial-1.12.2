@@ -1,10 +1,9 @@
 package mekanism.client.gui.button;
 
-import com.blakebr0.cucumber.lib.Pos3d;
 import mekanism.api.EnumColor;
+import mekanism.api.Pos3D;
 import mekanism.api.RelativeSide;
 import mekanism.client.render.MekanismRenderer;
-import mekanism.common.MekanismBlocks;
 import mekanism.common.SideData;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
@@ -12,7 +11,6 @@ import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
@@ -42,16 +40,12 @@ public class GuiSideDataButton extends GuiButton {
         this.colorSupplier = colorSupplier;
         World tileWorld = tile.getWorld();
         if (tileWorld != null) {
-            EnumFacing globalSide = side.getDirection(tile.facing);
-            BlockPos otherBlockPos = tile.getPos().offset(globalSide);
+            EnumFacing facing = side.getDirection(tile.facing);
+            BlockPos otherBlockPos = tile.getPos().offset(facing);
             IBlockState blockOnSide = tileWorld.getBlockState(otherBlockPos);
-            RayTraceResult target = new RayTraceResult(new Pos3d(tile), globalSide, otherBlockPos);
-            if (blockOnSide.getBlock() != Blocks.AIR) {
-                if (blockOnSide.getBlock() != MekanismBlocks.BoundingBlock) {
-                    otherBlockItem = blockOnSide.getBlock().getPickBlock(blockOnSide, target, tileWorld, otherBlockPos, Minecraft.getMinecraft().player);
-                } else {
-                    otherBlockItem = ItemStack.EMPTY;
-                }
+            RayTraceResult target = new RayTraceResult(new Pos3D(tile).centre().translate(facing, 0.501), facing, otherBlockPos);
+            if (!blockOnSide.getBlock().isAir(blockOnSide, tileWorld, otherBlockPos)) {
+                otherBlockItem = blockOnSide.getBlock().getPickBlock(blockOnSide, target, tileWorld, otherBlockPos, Minecraft.getMinecraft().player);
             } else {
                 otherBlockItem = ItemStack.EMPTY;
             }

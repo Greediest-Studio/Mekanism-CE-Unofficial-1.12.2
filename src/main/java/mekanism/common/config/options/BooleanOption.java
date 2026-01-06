@@ -18,16 +18,35 @@ public class BooleanOption extends Option<BooleanOption> implements BooleanSuppl
     private boolean value;
     private final boolean defaultValue;
 
+
+    public BooleanOption(BaseConfig owner, String key, boolean defaultValue, @Nullable String comment) {
+        super(owner, key, comment);
+        this.defaultValue = defaultValue;
+        this.value = defaultValue;
+    }
+
+    public BooleanOption(BaseConfig owner, String key, boolean defaultValue) {
+        this(owner, key, defaultValue, null);
+    }
+
+    public BooleanOption(BaseConfig owner, String key) {
+        this(owner, key, false);
+    }
+
+    @Deprecated
     public BooleanOption(BaseConfig owner, String category, String key, boolean defaultValue, @Nullable String comment) {
         super(owner, category, key, comment);
         this.defaultValue = defaultValue;
         this.value = defaultValue;
     }
 
+
+    @Deprecated
     public BooleanOption(BaseConfig owner, String category, String key, boolean defaultValue) {
         this(owner, category, key, defaultValue, null);
     }
 
+    @Deprecated
     public BooleanOption(BaseConfig owner, String category, String key) {
         this(owner, category, key, false, null);
     }
@@ -42,6 +61,9 @@ public class BooleanOption extends Option<BooleanOption> implements BooleanSuppl
 
     @Override
     public void load(Configuration config) {
+        if (category.isEmpty()){
+            return;
+        }
         Property prop = config.get(this.category, this.key, this.defaultValue, this.comment);
         prop.setRequiresMcRestart(this.requiresGameRestart);
         prop.setRequiresWorldRestart(this.requiresWorldRestart);

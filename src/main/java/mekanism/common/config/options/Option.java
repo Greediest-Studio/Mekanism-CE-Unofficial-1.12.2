@@ -26,6 +26,11 @@ public abstract class Option<THISTYPE extends Option> {
 
     protected boolean requiresWorldRestart = false;
 
+
+    public Option(BaseConfig owner, String key, @Nullable String comment) {
+        this(owner, owner.getCategory(), key, comment);
+    }
+
     public Option(BaseConfig owner, String category, String key, @Nullable String comment) {
         this.category = category;
         this.key = key;
@@ -54,14 +59,29 @@ public abstract class Option<THISTYPE extends Option> {
      */
     public abstract void read(ByteBuf buf);
 
+    @Deprecated
     public THISTYPE setRequiresWorldRestart(boolean requiresWorldRestart) {
         this.requiresWorldRestart = requiresWorldRestart;
         //noinspection unchecked
         return (THISTYPE) this;
     }
 
+    @Deprecated
     public THISTYPE setRequiresGameRestart(boolean requiresGameRestart) {
         this.requiresGameRestart = requiresGameRestart;
+        //noinspection unchecked
+        return (THISTYPE) this;
+    }
+
+    public THISTYPE setRequiresWorldRestart() {
+        this.requiresWorldRestart = true;
+        //noinspection unchecked
+        return (THISTYPE) this;
+    }
+
+
+    public THISTYPE setRequiresGameRestart() {
+        this.requiresGameRestart = true;
         //noinspection unchecked
         return (THISTYPE) this;
     }

@@ -9,5 +9,7 @@ import mekanism.common.tier.BaseTier;
  */
 public interface ITierUpgradeable extends ITierOptionalUpgradeable<BaseTier> {
 
-
+    default boolean CanInstalled(){
+        return true;
+    }
 }

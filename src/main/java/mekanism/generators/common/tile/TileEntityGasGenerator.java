@@ -3,13 +3,14 @@ package mekanism.generators.common.tile;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
-import mekanism.common.FuelHandler;
-import mekanism.common.FuelHandler.FuelGas;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.IMachineSlotTip;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.recipe.GasStackFuelToEnergyRecipe;
+import mekanism.common.recipe.RecipeHandler;
+import mekanism.common.recipe.inputs.GasInput;
 import mekanism.common.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -33,11 +34,12 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     public int burnTicks = 0;
     public int maxBurnTicks;
     public double generationRate = 0;
-    public int clientUsed;
+    public double clientUsed;
     private int currentRedstoneLevel;
+    public GasStackFuelToEnergyRecipe cachedRecipe;
 
     public TileEntityGasGenerator() {
-        super("gas", "GasGenerator", MekanismConfig.current().general.FROM_H2.val() * 100, MekanismConfig.current().general.FROM_H2.val() * 2);
+        super("gas", "GasGenerator", MekanismConfig.current().general.FROM_H2.val() * 1000, MekanismConfig.current().general.FROM_H2.val() * 2);
         inventory = NonNullListSynchronized.withSize(2, ItemStack.EMPTY);
         fuelTank = new GasTank(MAX_GAS);
     }
@@ -46,6 +48,8 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     public void onAsyncUpdateServer() {
         super.onAsyncUpdateServer();
         ChargeUtils.charge(1, this);
+
+
         if (!inventory.get(0).isEmpty() && fuelTank.getStored() < MAX_GAS) {
             Gas gasType = null;
             if (fuelTank.getGas() != null) {
@@ -55,23 +59,25 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
                     gasType = gasItem.getGas(inventory.get(0)).getGas();
                 }
             }
-            if (gasType != null && FuelHandler.getFuel(gasType) != null) {
+            if (gasType != null && RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.containsRecipe(gasType)) {
                 GasStack removed = GasUtils.removeGas(inventory.get(0), gasType, fuelTank.getNeeded());
                 boolean isTankEmpty = fuelTank.getGas() == null;
                 int fuelReceived = fuelTank.receive(removed, true);
                 if (fuelReceived > 0 && isTankEmpty) {
-                    output = FuelHandler.getFuel(fuelTank.getGas().getGas()).energyPerTick * 2;
+                    if (RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas()) != null) {
+                        output = RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas()).getOutput().energyOutput * 2;
+                    }
                 }
             }
         }
 
         boolean operate = canOperate();
+        GasStackFuelToEnergyRecipe recipe = getRecipe();
         if (operate && getEnergy() + generationRate < getMaxEnergy()) {
             setActive(true);
             if (fuelTank.getStored() != 0) {
-                FuelGas fuel = FuelHandler.getFuel(fuelTank.getGas().getGas());
-                maxBurnTicks = fuel.burnTicks;
-                generationRate = fuel.energyPerTick;
+                maxBurnTicks = recipe.getInput().ingredient.amount;
+                generationRate = recipe.getOutput().energyOutput;
             }
 
             int toUse = getToUse();
@@ -85,7 +91,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
                 fuelTank.setGas(new GasStack(fuelTank.getGasType(), total / maxBurnTicks));
             }
             burnTicks = total % maxBurnTicks;
-            clientUsed = toUse;
+            clientUsed = toUse /(double)  maxBurnTicks;
         } else {
             if (!operate) {
                 reset();
@@ -131,7 +137,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     public boolean isItemValidForSlot(int slotID, @Nonnull ItemStack itemstack) {
         if (slotID == 0) {
             return itemstack.getItem() instanceof IGasItem gasItem && gasItem.getGas(itemstack) != null &&
-                    FuelHandler.getFuel(gasItem.getGas(itemstack).getGas()) != null;
+                    RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.containsRecipe(gasItem.getGas(itemstack).getGas());
         } else if (slotID == 1) {
             return ChargeUtils.canBeCharged(itemstack);
         }
@@ -148,6 +154,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     public boolean canOperate() {
         return (fuelTank.getStored() > 0 || burnTicks > 0) && MekanismUtils.canFunction(this);
     }
+
 
     /**
      * Gets the scaled gas level for the GUI.
@@ -170,7 +177,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
             case 0 -> new Object[]{getEnergy()};
             case 1 -> new Object[]{output};
             case 2 -> new Object[]{getMaxEnergy()};
-            case 3 -> new Object[]{getMaxEnergy() - getEnergy()};
+            case 3 -> new Object[]{getNeedEnergy()};
             case 4 -> new Object[]{fuelTank.getStored()};
             case 5 -> new Object[]{fuelTank.getNeeded()};
             default -> throw new NoSuchMethodException();
@@ -185,7 +192,8 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
             TileUtils.readTankData(dataStream, fuelTank);
             generationRate = dataStream.readDouble();
             output = dataStream.readDouble();
-            clientUsed = dataStream.readInt();
+            clientUsed = dataStream.readDouble();
+            maxBurnTicks = dataStream.readInt();
         }
     }
 
@@ -196,6 +204,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
         data.add(generationRate);
         data.add(output);
         data.add(clientUsed);
+        data.add(maxBurnTicks);
         return data;
     }
 
@@ -205,7 +214,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
         if (canReceiveGas(side, stack.getGas()) && (isTankEmpty || fuelTank.getGas().isGasEqual(stack))) {
             int fuelReceived = fuelTank.receive(stack, doTransfer);
             if (doTransfer && isTankEmpty && fuelReceived > 0) {
-                output = FuelHandler.getFuel(fuelTank.getGas().getGas()).energyPerTick * 2;
+                output = RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas()).getOutput().energyOutput * 2;
             }
             return fuelReceived;
         }
@@ -223,9 +232,9 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
         super.readCustomNBT(nbtTags);
         fuelTank.read(nbtTags.getCompoundTag("fuelTank"));
         boolean isTankEmpty = fuelTank.getGas() == null;
-        FuelGas fuel = isTankEmpty ? null : FuelHandler.getFuel(fuelTank.getGas().getGas());
-        if (fuel != null) {
-            output = fuel.energyPerTick * 2;
+        GasStackFuelToEnergyRecipe recipe = RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas());
+        if (!isTankEmpty) {
+            output = recipe.getOutput().energyOutput * 2;
         }
     }
 
@@ -233,12 +242,11 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     public void writeCustomNBT(NBTTagCompound nbtTags) {
         super.writeCustomNBT(nbtTags);
         nbtTags.setTag("fuelTank", fuelTank.write(new NBTTagCompound()));
-
     }
 
     @Override
     public boolean canReceiveGas(EnumFacing side, Gas type) {
-        return FuelHandler.getFuel(type) != null && side != facing;
+        return RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.containsRecipe(type) && side != facing;
     }
 
     @Override
@@ -290,9 +298,9 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
             fuelTank.read(ItemDataUtils.getCompound(itemStack, "fuelTank"));
             boolean isTankEmpty = fuelTank.getGas() == null;
             //Update energy output based on any existing fuel in tank
-            FuelGas fuel = isTankEmpty ? null : FuelHandler.getFuel(fuelTank.getGas().getGas());
-            if (fuel != null) {
-                output = fuel.energyPerTick * 2;
+            GasStackFuelToEnergyRecipe recipe = RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas());
+            if (!isTankEmpty) {
+                output = recipe.getOutput().energyOutput * 2;
             }
         }
     }
@@ -315,5 +323,26 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+    public GasStackFuelToEnergyRecipe getRecipe() {
+        GasInput input = getInput();
+        if (cachedRecipe == null || !input.testEquality(cachedRecipe.getInput())) {
+            cachedRecipe = RecipeHandler.getGasStackFuelToEnergyRecipe(getInput());
+        }
+        return cachedRecipe;
+    }
+
+    public GasInput getInput() {
+        return new GasInput(fuelTank.getGas());
+    }
+
+
+    public double getUsed() {
+        return Math.round(clientUsed * 100) / 100D;
+    }
+
+    public int getMaxBurnTicks() {
+        return maxBurnTicks;
     }
 }

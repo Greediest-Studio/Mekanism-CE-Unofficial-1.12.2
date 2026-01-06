@@ -9,7 +9,7 @@ import net.minecraft.util.EnumFacing;
  *
  * @author AidanBrady
  */
-public interface ISideConfiguration {
+public interface ISideConfiguration extends IGetBackMachine{
 
     /**
      * Gets the tile's configuration component.
@@ -31,4 +31,5 @@ public interface ISideConfiguration {
      * @return this machine's ejector
      */
     TileComponentEjector getEjector();
+
 }

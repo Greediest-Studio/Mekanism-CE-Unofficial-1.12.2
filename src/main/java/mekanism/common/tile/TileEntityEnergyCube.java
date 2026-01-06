@@ -21,6 +21,7 @@ import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
@@ -207,7 +208,6 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
         super.writeCustomNBT(nbtTags);
         nbtTags.setInteger("tier", tier.ordinal());
         nbtTags.setInteger("controlType", controlType.ordinal());
-
     }
 
     @Override
@@ -275,5 +275,10 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
             return Capabilities.CONFIG_CARD_CAPABILITY.cast(this);
         }
         return super.getCapability(capability, side);
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return 8;
     }
 }

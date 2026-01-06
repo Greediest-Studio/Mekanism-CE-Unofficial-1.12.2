@@ -12,6 +12,12 @@ import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.common.ModAPIManager;
 
+@Deprecated
+/**
+ /**
+ * @author sddsd2332
+ * @reason 使用配方系统,来处理这个.
+ */
 public class FuelHandler {
 
     public static Reference2ObjectMap<Gas, FuelGas> fuels = new Reference2ObjectOpenHashMap<>();

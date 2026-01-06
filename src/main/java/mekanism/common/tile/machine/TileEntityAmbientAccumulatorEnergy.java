@@ -20,6 +20,7 @@ import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityMachine;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
@@ -116,6 +117,7 @@ public class TileEntityAmbientAccumulatorEnergy extends TileEntityMachine implem
         int possibleProcess = (int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED));
         possibleProcess = Math.min(outputTank.getNeeded(), possibleProcess);
         possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
+        possibleProcess = Math.max(possibleProcess, 1);
         return possibleProcess;
     }
 
@@ -291,5 +293,10 @@ public class TileEntityAmbientAccumulatorEnergy extends TileEntityMachine implem
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
     }
 }

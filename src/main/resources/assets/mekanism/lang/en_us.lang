@@ -738,6 +738,7 @@ gui.upgrades.uninstall=Uninstalls a single upgrade, hold shift to uninstall all
 gui.chemicalInfuser.short=C. Infuser
 gui.chemicalDissolutionChamber.short=C. Dissolution Chamber
 gui.thermalEvaporationController.short=Thermal E. Controller
+conversion.mekanism.energy=Item to Energy
 gui.dimension2=Dimension ID required
 gui.dimension2Name=Dimension required
 gui.dimensionId=Current dimension ID
@@ -1291,6 +1292,9 @@ gui.editrate=Edit Rate
 gui.Plasma=Plasma
 gui.Case=Case
 
+conversion.mekanism.gasflue.base=Power generation by gas combustion
+chemical.mekanism.attribute.fuel.burn_ticks= - Burn Time:
+chemical.mekanism.attribute.fuel.energy_density= - Energy Density:
 # Config Gui
 mekanism.configgui.ctgy.generators.general=General Settings
 mekanism.configgui.ctgy.generators.generators=Generator Settings

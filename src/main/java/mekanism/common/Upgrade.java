@@ -28,14 +28,14 @@ public enum Upgrade {
     THREAD("thread", MekanismConfig.current().mekce.MAXThreadUpgrade.val(), MekanismConfig.current().mekce.MAXThreadUpgradeSize.val(), EnumColor.ORANGE);
 
     private String name;
-    private int maxStack;
-    private int maxItemStack;
+    private int maxInstalled;
+    private int maxItemStackSize;
     private EnumColor color;
 
-    Upgrade(String s, int max, int maxItem, EnumColor c) {
-        name = s;
-        maxStack = max;
-        maxItemStack = maxItem;
+    Upgrade(String name, int maxInstalled, int maxItemStackSize, EnumColor c) {
+        this.name = name;
+        this.maxInstalled = maxInstalled;
+        this.maxItemStackSize = maxItemStackSize;
         color = c;
     }
 
@@ -75,12 +75,12 @@ public enum Upgrade {
         return LangUtils.localize("upgrade." + name + ".desc");
     }
 
-    public int getItemMax() {
-        return maxItemStack;
+    public int getMaxItemStackSize() {
+        return maxItemStackSize;
     }
 
-    public int getMax() {
-        return maxStack;
+    public int getMaxInstalled() {
+        return maxInstalled;
     }
 
     public EnumColor getColor() {
@@ -88,7 +88,7 @@ public enum Upgrade {
     }
 
     public boolean canMultiply() {
-        return getMax() > 1;
+        return getMaxInstalled() > 1;
     }
 
     public ItemStack getStack() {
@@ -121,10 +121,10 @@ public enum Upgrade {
         Upgrade upgrade = this;
         if (canMultiply()) {
             if (MekanismConfig.current().mekce.EnableUpgradeConfigure.val()) {
-                double effect = upgrade == Upgrade.ENERGY ? MekanismUtils.capacity(tile) : upgrade == Upgrade.SPEED ? MekanismUtils.time(tile) : Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), (float) tile.getComponent().getUpgrades(upgrade) / (float) getMax());
+                double effect = upgrade == Upgrade.ENERGY ? MekanismUtils.capacity(tile) : upgrade == Upgrade.SPEED ? MekanismUtils.time(tile) : Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), (float) tile.getComponent().getUpgrades(upgrade) / (float) getMaxInstalled());
                 ret.add(LangUtils.localize("gui.upgrades.effect") + ": " + MekanismUtils.exponential(effect) + "x");
             } else {
-                double effect = Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), (float) tile.getComponent().getUpgrades(this) / (float) getMax());
+                double effect = Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), (float) tile.getComponent().getUpgrades(this) / (float) getMaxInstalled());
                 ret.add(LangUtils.localize("gui.upgrades.effect") + ": " + (Math.round(effect * 100) / 100F) + "x");
             }
         }

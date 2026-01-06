@@ -1,7 +1,6 @@
 package mekanism.client.render.lib;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.World;
 
 
 public class ScrollIncrementer {

@@ -11,6 +11,7 @@ import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.config.MekanismConfig;
 import mekanism.common.content.filter.IFilter;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.security.ISecurityTile;
@@ -20,6 +21,7 @@ import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -39,7 +41,7 @@ import java.util.List;
 public class TileEntityOredictionificator extends TileEntityContainerBlock implements IRedstoneControl, ISpecialConfigData, ISustainedData, ISecurityTile, ISideConfiguration, IMachineSlotTip {
 
 
-    public static List<String> possibleFilters = Arrays.asList("ingot", "ore", "dust", "nugget");
+    public static List<String> possibleFilters = Arrays.asList(MekanismConfig.current().general.validOredictionificatorFilters.get());
     public HashList<OredictionificatorFilter> filters = new HashList<>();
     public RedstoneControl controlType = RedstoneControl.DISABLED;
 
@@ -237,7 +239,6 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
         data.add(didProcess);
         data.add(filters.size());
         filters.forEach(filter -> filter.write(data));
-
         return data;
     }
 
@@ -440,5 +441,10 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
     @Override
     public TileComponentEjector getEjector() {
         return ejectorComponent;
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return MachineType.get(block, metadata) != null ? MachineType.get(block, metadata).guiId : -1;
     }
 }

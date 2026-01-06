@@ -41,7 +41,7 @@ public class GuiRobitSmelting extends GuiRobit {
         addGuiElement(new GuiProgress(new GuiProgress.IProgressInfoHandler() {
             @Override
             public double getProgress() {
-                return (double) robit.furnaceCookTime / 200;
+                return Math.max(Math.min((double) robit.furnaceCookTime / 200, 1.0D), 0.0D);
             }
         }, GuiProgress.ProgressBar.TALL_RIGHT, this, getGuiLocation(), 78, 34, true, false));
     }

@@ -26,12 +26,12 @@ import mekanism.common.recipe.outputs.ItemStackOutput;
 import mekanism.common.recipe.outputs.PressurizedOutput;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.FactoryTier;
-import mekanism.common.tile.component.SideConfig;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityMachine;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -40,13 +40,11 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
@@ -56,7 +54,6 @@ import java.util.List;
 import java.util.Objects;
 
 import static mekanism.common.tile.machine.TileEntityChemicalDissolutionChamber.BASE_INJECT_USAGE;
-import static mekanism.common.tile.machine.TileEntityChemicalWasher.WATER_USAGE;
 
 //TODO:过于重复，待更改
 public class TileEntityFactory extends TileEntityMachine implements IComputerIntegration, ISideConfiguration, IGasHandler, ISpecialConfigData, ITierUpgradeable,
@@ -104,7 +101,6 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
      * This machine's recipe type.
      */
 
-    public FluidInput waterInput = new FluidInput(new FluidStack(FluidRegistry.WATER, WATER_USAGE));
     public int delayTicks;
     private boolean machineUsesItem;
     private boolean isMachineUsesItem = true;
@@ -316,6 +312,13 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         if (!ItemStack.areItemsEqual(stack, other)) return false;
         return ItemStack.areItemStackTagsEqual(stack, other);
     }
+
+    @Override
+    public boolean CanInstalled() {
+        //阻止机器在工作的时候安装工厂升级
+        return !isActive;
+    }
+
 
     @Override
     public boolean upgrade(BaseTier upgradeTier) {
@@ -547,7 +550,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
             }
         } else {
             inventory.get(getOutputSlot(process)).setCount(inventory.get(getOutputSlot(process)).getMaxStackSize());
-            if (recipeType.getFuelType() == MachineFuelType.FARM || recipeType.getFuelType() == MachineFuelType.CHANCE) {
+            if (OuputItemSecondaryMachine()) {
                 inventory.get(getSecondaryOutputSlot(process)).setCount(inventory.get(getSecondaryOutputSlot(process)).getMaxStackSize());
             }
         }
@@ -591,6 +594,11 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     public boolean OuputItemMachine() {
         return recipeType.getCanOuputItem();
     }
+
+    public boolean OuputItemSecondaryMachine(){
+        return recipeType.getFuelType() == MachineFuelType.CHANCE || recipeType.getFuelType() == MachineFuelType.FARM;
+    }
+
 
     public boolean GasOutputMachine() {
         return recipeType.getCanOuputGas();
@@ -788,7 +796,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         } else if (tier == FactoryTier.CREATIVE && isOutputSlot(slotID)) {
             return true;
         } else
-            return (recipeType.getFuelType() == MachineFuelType.CHANCE || recipeType.getFuelType() == MachineFuelType.FARM) && isSecondaryOutputSlot(slotID);
+            return OuputItemSecondaryMachine() && isSecondaryOutputSlot(slotID);
     }
 
     @Override
@@ -860,11 +868,11 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
                     recalculateUpgradables(Upgrade.SPEED);
                 }
             }
-            return Math.min((double) progress[process] / ticksRequired, 1F);
+            return Math.max(Math.min((double) progress[process] / ticksRequired, 1.0D), 0.0F);
         } else if (recipeType == RecipeType.WASHER) {
             return getActive() ? 1 : 0;
         }
-        return (double) progress[process] / ticksRequired;
+        return Math.max(Math.min((double) progress[process] / ticksRequired, 1.0D), 0.0F);
     }
 
 
@@ -961,10 +969,10 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         }
 
         if (recipeType == RecipeType.WASHER) {
-            if (cachedRecipe[process] instanceof WasherRecipe washer && washer.getInput().useGas(gasTank, false, 1) && waterInput.useFluid(fluidTank, false, 1)) {
+            if (cachedRecipe[process] instanceof WasherRecipe washer && washer.getInput().useGas(gasTank, false, 1) && washer.getInput().useFluid(fluidTank, false, 1)) {
                 return washer.canOperate(gasTank, fluidTank, gasOutTank);
             }
-            GasInput input = new GasInput(gasTank.getGas());
+            GasAndFluidInput input = new GasAndFluidInput(gasTank.getGas(), fluidTank.getFluid());
             WasherRecipe recipe = RecipeHandler.getChemicalWasherRecipe(input);
             cachedRecipe[process] = recipe;
             if (recipe == null) {
@@ -1067,7 +1075,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         } else if (recipeType == RecipeType.NUCLEOSYNTHESIZER && cachedRecipe[process] instanceof NucleosynthesizerRecipe recipe) {
             recipe.operate(inventory, inputSlot, gasTank, outputSlot, tier != FactoryTier.CREATIVE);
         } else if (recipeType == RecipeType.WASHER && cachedRecipe[process] instanceof WasherRecipe recipe) {
-            int operations = getUpgradedUsage();
+            int operations = getUpgradedUsage(recipe);
             recipe.operate(gasTank, fluidTank, gasOutTank, operations, tier != FactoryTier.CREATIVE);
         } else {
             BasicMachineRecipe<?> recipe = (BasicMachineRecipe<?>) cachedRecipe[process];
@@ -1076,11 +1084,12 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         markNoUpdateSync();
     }
 
-    public int getUpgradedUsage() {
+    public int getUpgradedUsage(WasherRecipe recipe) {
         int possibleProcess = Math.min((int) Math.pow(2, upgradeComponent.getUpgrades(Upgrade.SPEED)), MekanismConfig.current().mekce.MAXspeedmachines.val());
         possibleProcess = Math.min(Math.min(gasTank.getStored(), gasOutTank.getNeeded()), possibleProcess);
         possibleProcess = Math.min((int) (getEnergy() / energyPerTick), possibleProcess);
-        return Math.min(fluidTank.getFluidAmount() / WATER_USAGE, possibleProcess);
+        possibleProcess = Math.max(possibleProcess, 1);
+        return Math.min(fluidTank.getFluidAmount() / recipe.recipeInput.ingredientFluid.amount, possibleProcess);
     }
 
 
@@ -1091,9 +1100,6 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
             if (type == 0) {
                 sorting = !sorting;
             } else if (type == 1) {
-                gasTank.setGas(null);
-                gasOutTank.setGas(null);
-                fluidTank.setFluid(null);
                 infuseStored.setEmpty();
             } else if (type == 2) {
                 Factoryoldsorting = !Factoryoldsorting;
@@ -1692,21 +1698,17 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     }
 
     private void InputItems(int dataIndex) {
-        SideConfig config = configComponent.getConfig(TransmissionType.ITEM);
-        EnumFacing[] translatedFacings = MekanismUtils.getBaseOrientations(facing);
-        for (EnumFacing facing : EnumFacing.VALUES) {
-            if (config.get(translatedFacings[facing.ordinal()]) == dataIndex) {
-                BlockPos offset = getPos().offset(facing);
-                TileEntity te = getWorld().getTileEntity(offset);
-                if (te == null) {
-                    continue;
-                }
-                IItemHandler itemHandler = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, facing);
-                if (itemHandler == null) {
-                    continue;
-                }
-                inputFromExternal(itemHandler);
+        for (EnumFacing facing : configComponent.getSidesForData(TransmissionType.ITEM, facing, dataIndex)) {
+            BlockPos offset = getPos().offset(facing);
+            TileEntity te = getWorld().getTileEntity(offset);
+            if (!InventoryUtils.isItemHandler(te, facing.getOpposite())) {
+                continue;
             }
+            IItemHandler itemHandler = InventoryUtils.getItemHandler(te, facing.getOpposite());
+            if (itemHandler == null) {
+                continue;
+            }
+            inputFromExternal(itemHandler);
         }
     }
 
@@ -1714,8 +1716,8 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         boolean successAtLeastOnce = false;
 
         external:
-        for (int externalSlotId = 0; externalSlotId < external.getSlots(); externalSlotId++) {
-            ItemStack externalStack = external.getStackInSlot(externalSlotId);
+        for (int i = external.getSlots() - 1; i >= 0; i--) {
+            ItemStack externalStack = external.getStackInSlot(i);
             if (externalStack.isEmpty()) {
                 continue;
             }
@@ -1728,30 +1730,25 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
                     if (!isItemValidForSlot(internalSlotId, externalStack)) {
                         continue;
                     }
-                    ItemStack extracted = external.extractItem(externalSlotId, maxCanExtract, false);
+                    ItemStack extracted = external.extractItem(i, maxCanExtract, false);
                     inventory.set(internalSlotId, extracted);
                     successAtLeastOnce = true;
                     // If there are no more items in the current slot, check the next external slot.
-                    if (external.getStackInSlot(externalSlotId).isEmpty()) {
+                    if (external.getStackInSlot(i).isEmpty()) {
                         continue external;
                     }
                     continue;
                 }
-
                 if (internalStack.getCount() >= internalStack.getMaxStackSize() || !matchStacks(internalStack, externalStack)) {
                     continue;
                 }
-
-                int extractAmt = Math.min(
-                        internalStack.getMaxStackSize() - internalStack.getCount(),
-                        maxCanExtract);
-
+                int extractAmt = Math.min(internalStack.getMaxStackSize() - internalStack.getCount(), maxCanExtract);
                 // Extract external item and insert to internal.
-                ItemStack extracted = external.extractItem(externalSlotId, extractAmt, false);
+                ItemStack extracted = external.extractItem(i, extractAmt, false);
                 inventory.set(internalSlotId, copyStackWithSize(extracted, internalStack.getCount() + extracted.getCount()));
                 successAtLeastOnce = true;
                 // If there are no more items in the current slot, check the next external slot.
-                if (external.getStackInSlot(externalSlotId).isEmpty()) {
+                if (external.getStackInSlot(i).isEmpty()) {
                     continue external;
                 }
             }
@@ -1805,33 +1802,29 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     }
 
     private void outputItems(int dataIndex) {
-        SideConfig config = configComponent.getConfig(TransmissionType.ITEM);
-        EnumFacing[] translatedFacings = MekanismUtils.getBaseOrientations(facing);
-        for (EnumFacing facing : EnumFacing.VALUES) {
-            if (config.get(translatedFacings[facing.ordinal()]) == dataIndex) {
-                BlockPos offset = getPos().offset(facing);
-                TileEntity te = getWorld().getTileEntity(offset);
-                if (te == null) {
-                    continue;
-                }
-                IItemHandler itemHandler = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, facing);
-                if (itemHandler == null) {
-                    continue;
-                }
-                try {
-                    outputToExternal(itemHandler);
-                } catch (Exception e) {
-                    Mekanism.logger.error("Exception when insert item: ", e);
-                }
+        if (!configComponent.isEjecting(TransmissionType.ITEM)) {
+            return;
+        }
+        for (EnumFacing facing : configComponent.getSidesForData(TransmissionType.ITEM, facing, dataIndex)) {
+            BlockPos offset = getPos().offset(facing);
+            TileEntity te = getWorld().getTileEntity(offset);
+            if (!InventoryUtils.isItemHandler(te, facing.getOpposite())) {
+                continue;
+            }
+            IItemHandler itemHandler = InventoryUtils.getItemHandler(te, facing.getOpposite());
+            if (itemHandler == null) {
+                continue;
+            }
+            try {
+                outputToExternal(itemHandler);
+            } catch (Exception e) {
+                Mekanism.logger.error("Exception when insert item: ", e);
             }
         }
     }
 
     private synchronized void outputToExternal(IItemHandler external) {
         for (int externalSlotId = 0; externalSlotId < external.getSlots(); externalSlotId++) {
-            if (!configComponent.isEjecting(TransmissionType.ITEM)) {
-                break;
-            }
             ItemStack externalStack = external.getStackInSlot(externalSlotId);
             int slotLimit = external.getSlotLimit(externalSlotId);
             if (!externalStack.isEmpty() && externalStack.getCount() >= slotLimit) {
@@ -2114,4 +2107,8 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         }
     }
 
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return MachineType.get(block, metadata) != null ? MachineType.get(block, metadata).guiId : -1;
+    }
 }

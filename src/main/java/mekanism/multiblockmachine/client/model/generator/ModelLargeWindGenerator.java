@@ -2,8 +2,9 @@ package mekanism.multiblockmachine.client.model.generator;
 
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.config.MekanismConfig;
-import mekanism.multiblockmachine.common.util.MekanismMultiblockMachineUtils;
-import mekanism.multiblockmachine.common.util.MekanismMultiblockMachineUtils.ResourceType;
+import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.MekanismUtils.ResourceType;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBox;
 import net.minecraft.client.model.ModelRenderer;
@@ -17,7 +18,7 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class ModelLargeWindGenerator extends ModelBase {
 
-    public static ResourceLocation OVERLAY_OFF = MekanismMultiblockMachineUtils.getResource(ResourceType.RENDER, "WindGenerator/LargeWindGenerator_OFF.png");
+    public static ResourceLocation OVERLAY_OFF = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_OFF.png");
 
     ModelRenderer doll_up;
     ModelRenderer cube_r1;
@@ -1919,11 +1920,11 @@ public class ModelLargeWindGenerator extends ModelBase {
         GlStateManager.pushMatrix();
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
         doRender(size);
-        doRenderFansItem(size,angle);
+        doRenderFansItem(size, angle);
         GlStateManager.popMatrix();
     }
 
-    public void renderBlock(double tick,float size, double angle, boolean on, TextureManager manager,boolean isEnableGlow) {
+    public void renderBlock(double tick, float size, double angle, boolean on, TextureManager manager, boolean isEnableGlow) {
         GlStateManager.pushMatrix();
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
         doRender(size);
@@ -1935,7 +1936,7 @@ public class ModelLargeWindGenerator extends ModelBase {
             GlStateManager.disableAlpha();
             GlStateManager.enableBlend();
             GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            manager.bindTexture(on ? MekanismMultiblockMachineUtils.getResource(ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
+            manager.bindTexture(on ? MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
             GlStateManager.scale(1.001F, 1.001F, 1.001F);
             GlStateManager.translate(-0.0011F, -0.0011F, -0.0011F);
             MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
@@ -1947,13 +1948,13 @@ public class ModelLargeWindGenerator extends ModelBase {
         }
     }
 
-    public void renderBloom(double tick,float size,  double angle,boolean on, TextureManager manager) {
+    public void renderBloom(double tick, float size, double angle, boolean on, TextureManager manager) {
         GlStateManager.pushMatrix();
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
         GlStateManager.disableAlpha();
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        manager.bindTexture(on ? MekanismMultiblockMachineUtils.getResource(ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
+        manager.bindTexture(on ? MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
         GlStateManager.scale(1.0011F, 1.0011F, 1.0011F);
         GlStateManager.translate(-0.0012F, -0.0012F, -0.0012F);
         MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
@@ -1964,7 +1965,7 @@ public class ModelLargeWindGenerator extends ModelBase {
         GlStateManager.popMatrix();
     }
 
-    private void doRender(float size){
+    private void doRender(float size) {
         doll_up.render(size);
         uio_up.render(size);
         doll_up2.render(size);
@@ -1995,13 +1996,12 @@ public class ModelLargeWindGenerator extends ModelBase {
 
     private void doRenderGlow(float size, double angle) {
         wind_power_middle.render(size);
-        doRenderFansBlock(size,angle);
+        doRenderFansBlock(size, angle);
         south_controller.render(size);
         west_io.render(size);
         east_io.render(size);
         north_io.render(size);
     }
-
 
 
     public float getRotation(double angle) {

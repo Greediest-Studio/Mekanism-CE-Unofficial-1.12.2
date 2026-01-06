@@ -8,127 +8,131 @@ import mekanism.common.config.options.IntOption;
  */
 public class UsageConfig extends BaseConfig {
 
-    public final DoubleOption enrichmentChamber = new DoubleOption(this, "usage", "EnrichmentChamberUsage", 50D,
+    public final DoubleOption enrichmentChamber = new DoubleOption(this, "EnrichmentChamberUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption osmiumCompressor = new DoubleOption(this, "usage", "OsmiumCompressorUsage", 100D,
+    public final DoubleOption osmiumCompressor = new DoubleOption(this, "OsmiumCompressorUsage", 100D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption combiner = new DoubleOption(this, "usage", "CombinerUsage", 50D,
+    public final DoubleOption combiner = new DoubleOption(this, "CombinerUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption crusher = new DoubleOption(this, "usage", "CrusherUsage", 50D,
+    public final DoubleOption crusher = new DoubleOption(this, "CrusherUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption metallurgicInfuser = new DoubleOption(this, "usage", "MetallurgicInfuserUsage", 50D,
+    public final DoubleOption metallurgicInfuser = new DoubleOption(this, "MetallurgicInfuserUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption purificationChamber = new DoubleOption(this, "usage", "PurificationChamberUsage", 200D,
+    public final DoubleOption purificationChamber = new DoubleOption(this, "PurificationChamberUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption energizedSmelter = new DoubleOption(this, "usage", "EnergizedSmelterUsage", 50D,
+    public final DoubleOption energizedSmelter = new DoubleOption(this, "EnergizedSmelterUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption digitalMiner = new DoubleOption(this, "usage", "DigitalMinerUsage", 100D,
+    public final DoubleOption digitalMiner = new DoubleOption(this, "DigitalMinerUsage", 100D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption electricPump = new DoubleOption(this, "usage", "ElectricPumpUsage", 100D,
+    public final DoubleOption electricPump = new DoubleOption(this, "ElectricPumpUsage", 100D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption rotaryCondensentrator = new DoubleOption(this, "usage", "RotaryCondensentratorUsage", 50D,
+    public final DoubleOption rotaryCondensentrator = new DoubleOption(this, "RotaryCondensentratorUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption oxidationChamber = new DoubleOption(this, "usage", "OxidationChamberUsage", 200D,
+    public final DoubleOption oxidationChamber = new DoubleOption(this, "OxidationChamberUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption chemicalInfuser = new DoubleOption(this, "usage", "ChemicalInfuserUsage", 200D,
+    public final DoubleOption chemicalInfuser = new DoubleOption(this, "ChemicalInfuserUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption chemicalInjectionChamber = new DoubleOption(this, "usage", "ChemicalInjectionChamberUsage", 400D,
+    public final DoubleOption chemicalInjectionChamber = new DoubleOption(this, "ChemicalInjectionChamberUsage", 400D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption precisionSawmill = new DoubleOption(this, "usage", "PrecisionSawmillUsage", 50D,
+    public final DoubleOption precisionSawmill = new DoubleOption(this, "PrecisionSawmillUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption chemicalDissolutionChamber = new DoubleOption(this, "usage", "ChemicalDissolutionChamberUsage", 400D,
+    public final DoubleOption chemicalDissolutionChamber = new DoubleOption(this, "ChemicalDissolutionChamberUsage", 400D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption chemicalWasher = new DoubleOption(this, "usage", "ChemicalWasherUsage", 200D,
+    public final DoubleOption chemicalWasher = new DoubleOption(this, "ChemicalWasherUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption chemicalCrystallizer = new DoubleOption(this, "usage", "ChemicalCrystallizerUsage", 400D,
+    public final DoubleOption chemicalCrystallizer = new DoubleOption(this, "ChemicalCrystallizerUsage", 400D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption seismicVibrator = new DoubleOption(this, "usage", "SeismicVibratorUsage", 50D,
+    public final DoubleOption seismicVibrator = new DoubleOption(this, "SeismicVibratorUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption pressurizedReactionBase = new DoubleOption(this, "usage", "PressurizedReactionBaseUsage", 5D,
+    public final DoubleOption pressurizedReactionBase = new DoubleOption(this, "PressurizedReactionBaseUsage", 5D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption fluidicPlenisher = new DoubleOption(this, "usage", "FluidicPlenisherUsage", 100D,
+    public final DoubleOption fluidicPlenisher = new DoubleOption(this, "FluidicPlenisherUsage", 100D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption laser = new DoubleOption(this, "usage", "LaserUsage", 5000D,
+    public final DoubleOption laser = new DoubleOption(this, "LaserUsage", 5000D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption heavyWaterElectrolysis = new DoubleOption(this, "usage", "HeavyWaterElectrolysisUsage", 800D,
+    public final DoubleOption heavyWaterElectrolysis = new DoubleOption(this, "HeavyWaterElectrolysisUsage", 800D,
             "Energy needed for one [recipe unit] of heavy water production (Joules).");
 
-    public final DoubleOption formulaicAssemblicator = new DoubleOption(this, "usage", "FormulaicAssemblicatorUsage", 100D,
+    public final DoubleOption formulaicAssemblicator = new DoubleOption(this, "FormulaicAssemblicatorUsage", 100D,
             "Energy per operation tick (Joules).");
 
-    public final IntOption teleporterBase = new IntOption(this, "usage", "TeleporterBaseUsage", 1000,
+    public final IntOption teleporterBase = new IntOption(this, "TeleporterBaseUsage", 1000,
             "Base Joules cost for a teleportation.");
 
-    public final IntOption teleporterDistance = new IntOption(this, "usage", "TeleporterDistanceUsage", 10,
+    public final IntOption teleporterDistance = new IntOption(this, "TeleporterDistanceUsage", 10,
             "Joules per unit of distance travelled during teleportation - sqrt(xDiff^2 + yDiff^2 + zDiff^2).");
 
-    public final IntOption teleporterDimensionPenalty = new IntOption(this, "usage", "TeleporterDimensionPenalty", 10000,
+    public final IntOption teleporterDimensionPenalty = new IntOption(this, "TeleporterDimensionPenalty", 10000,
             "Flat additional cost for interdimensional teleportation.");
 
     /**
      * Add Start
      */
-    public final DoubleOption isotopicCentrifuge = new DoubleOption(this, "usage", "isotopicCentrifuge", 200D,
+    public final DoubleOption isotopicCentrifuge = new DoubleOption(this, "isotopicCentrifuge", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption liquifierNutritional = new DoubleOption(this, "usage", "OxidationChamberUsage", 200D,
+    public final DoubleOption liquifierNutritional = new DoubleOption(this, "OxidationChamberUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption organicfarm = new DoubleOption(this, "usage", "OrganicFarmUsage", 50D,
+    public final DoubleOption organicfarm = new DoubleOption(this, "OrganicFarmUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption nucleosynthesizer = new DoubleOption(this, "usage", "nucleosynthesizerUsage", 200D,
+    public final DoubleOption nucleosynthesizer = new DoubleOption(this, "nucleosynthesizerUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption stamping = new DoubleOption(this, "usage", "StampingUsage", 50D,
+    public final DoubleOption stamping = new DoubleOption(this, "StampingUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption rolling = new DoubleOption(this, "usage", "RollingUsage", 50D,
+    public final DoubleOption rolling = new DoubleOption(this, "RollingUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption brushed = new DoubleOption(this, "usage", "BrushedUsage", 50D,
+    public final DoubleOption brushed = new DoubleOption(this, "BrushedUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption turning = new DoubleOption(this, "usage", "TurningUsage", 50D,
+    public final DoubleOption turning = new DoubleOption(this, "TurningUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption alloy = new DoubleOption(this, "usage", "AlloyUsage", 50D,
+    public final DoubleOption alloy = new DoubleOption(this, "AlloyUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption cellExtractor = new DoubleOption(this, "usage", "CellExtractorUsage", 50D,
+    public final DoubleOption cellExtractor = new DoubleOption(this, "CellExtractorUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption cellSeparator = new DoubleOption(this, "usage", "CellSeparatorUsage", 50D,
+    public final DoubleOption cellSeparator = new DoubleOption(this, "CellSeparatorUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption recycler = new DoubleOption(this, "usage", "RecyclerUsage", 50D,
+    public final DoubleOption recycler = new DoubleOption(this, "RecyclerUsage", 50D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption AmbientAccumulatorEnergy = new DoubleOption(this, "usage", "AmbientAccumulatorEnergyUsage", 200D,
+    public final DoubleOption AmbientAccumulatorEnergy = new DoubleOption(this, "AmbientAccumulatorEnergyUsage", 200D,
             "Energy per operation tick (Joules).");
 
-    public final DoubleOption modificationStation = new DoubleOption(this, "usage", "modificationStationUsage", 100D,
+    public final DoubleOption modificationStation = new DoubleOption(this, "modificationStationUsage", 100D,
             "Energy per operation tick (Joules).");
 
+    @Override
+    public String getCategory() {
+        return "usage";
+    }
 }

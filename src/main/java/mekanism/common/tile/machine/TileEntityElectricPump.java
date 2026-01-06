@@ -10,6 +10,7 @@ import mekanism.common.Mekanism;
 import mekanism.common.MekanismFluids;
 import mekanism.common.Upgrade;
 import mekanism.common.base.*;
+import mekanism.common.block.states.BlockStateMachine;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
@@ -19,6 +20,7 @@ import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -153,7 +155,7 @@ public class TileEntityElectricPump extends TileEntityElectricBlock implements I
         List<Coord4D> tempPumpList = Arrays.asList(recurringNodes.toArray(new Coord4D[0]));
         Collections.shuffle(tempPumpList);
 
-        //First see if there are any fluid blocks touching the pump - if so, sucks and adds the location to the recurring list
+            //First see if there are any fluid blocks touching the pump - if so, sucks and adds the location to the recurring list
         for (EnumFacing orientation : EnumFacing.VALUES) {
             Coord4D wrapper = Coord4D.get(this).offset(orientation);
             FluidStack fluid = MekanismUtils.getFluid(world, wrapper, hasFilter());
@@ -471,5 +473,11 @@ public class TileEntityElectricPump extends TileEntityElectricBlock implements I
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
     }
 }

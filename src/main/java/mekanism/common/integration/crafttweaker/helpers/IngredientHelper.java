@@ -60,7 +60,7 @@ public class IngredientHelper {
 
     public static boolean matches(IIngredient input, IIngredient toMatch) {
         if (input instanceof IGasStack stack) {
-            return GasHelper.matches(toMatch,stack);
+            return GasHelper.matches(toMatch, stack);
         } else if (input instanceof IItemStack stack) {
             return toMatch != null && toMatch.matches(stack);
         } else if (input instanceof ILiquidStack liquidStack) {
@@ -91,6 +91,8 @@ public class IngredientHelper {
             return matches(input.getSolid(), toMatch.getLeft()) && matches(input.getFluid(), toMatch.getMiddle()) && matches(input.getGas(), toMatch.getRight());
         } else if (in instanceof InfusionInput input) {
             return matches(input.inputStack, toMatch.getIngredient()) && (toMatch.getInfuseType().isEmpty() || toMatch.getInfuseType().equalsIgnoreCase(input.infuse.getType().name));
+        } else if (in instanceof GasAndFluidInput input) {
+            return matches(input.ingredientGas, toMatch.getLeft()) && matches(input.ingredientFluid, toMatch.getRight());
         } else if (in instanceof IntegerInput input) {
             return input.ingredient == toMatch.getAmount();
         }

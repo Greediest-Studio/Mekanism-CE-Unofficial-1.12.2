@@ -2,6 +2,7 @@ package mekanism.common.integration.crafttweaker.handlers;
 
 import crafttweaker.annotations.ZenRegister;
 import crafttweaker.api.item.IIngredient;
+import crafttweaker.api.liquid.ILiquidStack;
 import mekanism.common.Mekanism;
 import mekanism.common.integration.crafttweaker.CrafttweakerIntegration;
 import mekanism.common.integration.crafttweaker.gas.IGasStack;
@@ -24,18 +25,25 @@ public class ChemicalWasher {
     public static final String NAME = Mekanism.MOD_NAME + " Chemical Washer";
 
     @ZenMethod
-    public static void addRecipe(IGasStack gasInput, IGasStack gasOutput) {
-        if (IngredientHelper.checkNotNull(NAME, gasInput, gasOutput)) {
-            CrafttweakerIntegration.LATE_ADDITIONS.add(new AddMekanismRecipe<>(NAME, Recipe.CHEMICAL_WASHER, new WasherRecipe(GasHelper.toGas(gasInput),
-                    GasHelper.toGas(gasOutput))));
+    public static void addRecipe(IGasStack gasInput, ILiquidStack liquidStack, IGasStack gasOutput) {
+        if (IngredientHelper.checkNotNull(NAME, gasInput, liquidStack, gasOutput)) {
+            CrafttweakerIntegration.LATE_ADDITIONS.add(new AddMekanismRecipe<>(NAME, Recipe.CHEMICAL_WASHER, new WasherRecipe(GasHelper.toGas(gasInput), IngredientHelper.toFluid(liquidStack), GasHelper.toGas(gasOutput))));
         }
     }
 
     @ZenMethod
-    public static void removeRecipe(IIngredient gasOutput, @Optional IIngredient gasInput) {
+    public static void addRecipe(IGasStack gasInput, IGasStack gasOutput) {
+        if (IngredientHelper.checkNotNull(NAME, gasInput, gasOutput)) {
+            CrafttweakerIntegration.LATE_ADDITIONS.add(new AddMekanismRecipe<>(NAME, Recipe.CHEMICAL_WASHER, new WasherRecipe(GasHelper.toGas(gasInput), GasHelper.toGas(gasOutput))));
+        }
+    }
+
+
+    @ZenMethod
+    public static void removeRecipe(IIngredient gasOutput, @Optional IIngredient gasInput, @Optional IIngredient liquidInput) {
         if (IngredientHelper.checkNotNull(NAME, gasOutput)) {
             CrafttweakerIntegration.LATE_REMOVALS.add(new RemoveMekanismRecipe<>(NAME, Recipe.CHEMICAL_WASHER, new IngredientWrapper(gasOutput),
-                    new IngredientWrapper(gasInput)));
+                    new IngredientWrapper(gasInput, liquidInput)));
         }
     }
 

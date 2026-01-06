@@ -9,6 +9,7 @@ import mekanism.common.HashList;
 import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
 import mekanism.common.base.*;
+import mekanism.common.block.states.BlockStateMachine;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.transporter.*;
@@ -20,6 +21,7 @@ import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.prefab.TileEntityEffectsBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -623,6 +625,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
         return isActive ? 15 : 0;
     }
 
+
     private class StrictFilterFinder extends Finder {
 
         @Override
@@ -634,5 +637,10 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
             }
             return true;
         }
+    }
+
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
     }
 }

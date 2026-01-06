@@ -40,7 +40,6 @@ public class TileEntityHeatGenerator extends TileEntityGenerator implements IFlu
     public double lastTransferLoss;
     public double lastEnvironmentLoss;
     private int currentRedstoneLevel;
-    private boolean rendererInitialized = false;
 
     public TileEntityHeatGenerator() {
         super("heat", "HeatGenerator", MekanismConfig.current().generators.heatGeneratorStorage.val(), MekanismConfig.current().generators.heatGeneration.val() * 2);
@@ -51,13 +50,16 @@ public class TileEntityHeatGenerator extends TileEntityGenerator implements IFlu
     public void onUpdateServer() {
         super.onUpdateServer();
         ChargeUtils.charge(1, this);
+
         if (!inventory.get(0).isEmpty()) {
+            //直接填充储罐
             if (FluidContainerUtils.isFluidContainer(inventory.get(0))) {
                 lavaTank.fill(FluidContainerUtils.extractFluid(lavaTank, this, 0, FluidChecker.check(FluidRegistry.LAVA)), true);
             } else {
+                //通过燃料的热量来填充储罐
                 int fuel = getFuel(inventory.get(0));
                 if (fuel > 0) {
-                    int fuelNeeded = lavaTank.getCapacity() - (lavaTank.getFluid() != null ? lavaTank.getFluid().amount : 0);
+                    int fuelNeeded = lavaTank.getCapacity() -lavaTank.getFluidAmount();
                     if (fuel <= fuelNeeded) {
                         lavaTank.fill(new FluidStack(FluidRegistry.LAVA, fuel), true);
                         if (!inventory.get(0).getItem().getContainerItem(inventory.get(0)).isEmpty()) {
@@ -69,6 +71,7 @@ public class TileEntityHeatGenerator extends TileEntityGenerator implements IFlu
                 }
             }
         }
+
         double prev = getEnergy();
         transferHeatTo(getBoost());
         if (canOperate()) {
@@ -334,8 +337,7 @@ public class TileEntityHeatGenerator extends TileEntityGenerator implements IFlu
     @Override
     public void validate() {
         super.validate();
-        if (isRemote() && !rendererInitialized) {
-            rendererInitialized = true;
+        if (isRemote()) {
             if (Mekanism.hooks.Bloom && MekanismConfig.current().client.enableBloom.val()) {
                 new BloomRenderHeatGenerator(this);
             }

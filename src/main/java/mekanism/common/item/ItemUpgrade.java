@@ -4,6 +4,7 @@ import mekanism.api.EnumColor;
 import mekanism.common.Upgrade;
 import mekanism.common.base.IUpgradeItem;
 import mekanism.common.base.IUpgradeTile;
+import mekanism.common.tile.TileEntityBoundingBlock;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
@@ -31,7 +32,7 @@ public class ItemUpgrade extends ItemMekanism implements IUpgradeItem {
     public ItemUpgrade(Upgrade type) {
         super();
         upgrade = type;
-        setMaxStackSize(type.getItemMax());
+        setMaxStackSize(type.getMaxItemStackSize());
         setRarity(EnumRarity.UNCOMMON);
     }
 
@@ -57,10 +58,19 @@ public class ItemUpgrade extends ItemMekanism implements IUpgradeItem {
             TileEntity tile = world.getTileEntity(pos);
             ItemStack stack = player.getHeldItem(hand);
             Upgrade type = getUpgradeType(stack);
+            //看看目标是不是虚拟方块，
+            if (tile instanceof TileEntityBoundingBlock block) {
+                //如果是虚拟方块,且主方块不是空的
+                if (block.getMainTile() != null) {
+                    //设置tile到为虚拟方块的主方块
+                    tile = block.getMainTile();
+                }
+            }
+
             if (tile instanceof IUpgradeTile upgradeTile) {
                 TileComponentUpgrade component = upgradeTile.getComponent();
                 if (component.supports(type)) {
-                    if (!world.isRemote && component.getUpgrades(type) < type.getMax()) {
+                    if (!world.isRemote && component.getUpgrades(type) < type.getMaxInstalled()) {
                         int added = component.addUpgrades(type, stack.getCount());
                         if (added > 0) {
                             stack.shrink(added);

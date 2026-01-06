@@ -5,6 +5,7 @@ import mekanism.api.transmitters.TransmissionType;
 import mekanism.client.gui.GuiMekanismTile;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.GuiElement;
+import mekanism.client.gui.element.GuiUtils;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.SideData;
 import mekanism.common.base.ISideConfiguration;
@@ -30,7 +31,7 @@ public abstract class GuiGauge<T> extends GuiElement {
     protected final int texY;
     protected final int width;
     protected final int height;
-    protected final int number;
+    protected final boolean vertical;
     protected EnumColor color;
     protected boolean dummy;
 
@@ -45,7 +46,7 @@ public abstract class GuiGauge<T> extends GuiElement {
         height = type.height;
         texX = type.texX;
         texY = type.texY;
-        number = type.FluidWidth;
+        vertical = type.vertical;
     }
 
     public abstract int getScaledLevel();
@@ -92,30 +93,9 @@ public abstract class GuiGauge<T> extends GuiElement {
             guiObj.drawTexturedRect(guiWidth + xLocation, guiHeight + yLocation, texX, texY, width, height);
             return;
         }
-
-        int scale = getScaledLevel();
-        int start = 0;
-
         applyRenderColor();
-        while (scale > 0) {
-            int renderRemaining;
-            if (scale > 16) {
-                renderRemaining = 16;
-                scale -= 16;
-            } else {
-                renderRemaining = scale;
-                scale = 0;
-            }
-
-            mc.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-            for (int i = 0; i < number; i++) {
-                guiObj.drawTexturedRectFromIcon(guiWidth + xLocation + 16 * i + 1, guiHeight + yLocation + height - renderRemaining - start - 1, getIcon(), 16, renderRemaining);
-            }
-            start += 16;
-            if (scale == 0) {
-                break;
-            }
-        }
+        mc.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+        GuiUtils.drawBarSprite(guiWidth + xLocation, guiHeight + yLocation, width, height, getScaledLevel(), getIcon(), vertical);
         MekanismRenderer.resetColor();
         mc.renderEngine.bindTexture(RESOURCE);
         guiObj.drawTexturedRect(guiWidth + xLocation, guiHeight + yLocation, texX, texY, width, height);
@@ -126,11 +106,11 @@ public abstract class GuiGauge<T> extends GuiElement {
         if (xAxis >= xLocation + 1 && xAxis <= xLocation + width - 1 && yAxis >= yLocation + 1 && yAxis <= yLocation + height - 1) {
             ItemStack stack = mc.player.inventory.getItemStack();
             if (!stack.isEmpty() && stack.getItem() instanceof ItemConfigurator && color != null) {
-                if (guiObj instanceof GuiMekanismTile<?>) {
-                    TileEntity tile = ((GuiMekanismTile<?>) guiObj).getTileEntity();
-                    if (tile instanceof ISideConfiguration && getTransmission() != null) {
+                if (guiObj instanceof GuiMekanismTile<?> guiMekanismTile) {
+                    TileEntity tile = guiMekanismTile.getTileEntity();
+                    if (tile instanceof ISideConfiguration side && getTransmission() != null) {
                         SideData data = null;
-                        for (SideData iterData : ((ISideConfiguration) tile).getConfig().getOutputs(getTransmission())) {
+                        for (SideData iterData : side.getConfig().getOutputs(getTransmission())) {
                             if (iterData.color == color) {
                                 data = iterData;
                                 break;
@@ -149,6 +129,11 @@ public abstract class GuiGauge<T> extends GuiElement {
                 }
             }
         }
+    }
+
+
+    public boolean isMouseOver(int xAxis, int yAxis) {
+        return xAxis >= xLocation + 1 && xAxis <= xLocation + width - 1 && yAxis >= yLocation + 1 && yAxis <= yLocation + height - 1;
     }
 
     public GuiGauge<T> withColor(TypeColor color) {
@@ -194,21 +179,32 @@ public abstract class GuiGauge<T> extends GuiElement {
         SMALL(18, 30, 72, 0),
         SMALL_MED(18, 48, 53, 0),
         STANDARD(18, 60, 34, 0),
-        WIDE(66, 50, 91, 0);
-
+        WIDE(66, 50, 91, 0),
+        //这是工厂使用的
+        SLOT(18, 18, 158, 0),
+        SLOT_BASIC(94, 18, 0, 60, false),
+        SLOT_ADVANCED(122, 18, 0, 60, false),
+        SLOT_ELITE(132, 18, 0, 60, false),
+        SLOT_ULTIMATE(170, 18, 0, 60, false),
+        SLOT_CREATIVE(208, 18, 0, 60, false),
+        ;
 
         public final int width;
         public final int height;
         public final int texX;
         public final int texY;
-        public final int FluidWidth;
+        public final boolean vertical;
 
         Type(int w, int h, int tx, int ty) {
+            this(w, h, tx, ty, true);
+        }
+
+        Type(int w, int h, int tx, int ty, boolean vertical) {
             width = w;
             height = h;
             texX = tx;
             texY = ty;
-            FluidWidth = (w - 2) / 16;
+            this.vertical = vertical;
         }
 
     }

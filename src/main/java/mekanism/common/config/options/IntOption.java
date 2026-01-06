@@ -21,20 +21,46 @@ public class IntOption extends Option<IntOption> implements IntSupplier {
     private int min;
     private int max;
 
+    public IntOption(BaseConfig owner, String key, int defaultValue, @Nullable String comment) {
+        super(owner, key, comment);
+        this.defaultValue = defaultValue;
+        this.value = defaultValue;
+    }
+
+    public IntOption(BaseConfig owner, String key, int defaultValue) {
+        this(owner, key, defaultValue, null);
+    }
+
+    public IntOption(BaseConfig owner, String key) {
+        this(owner, key, 0);
+    }
+
+    public IntOption(BaseConfig owner, String key, int defaultValue, @Nullable String comment, int min, int max) {
+        this(owner, key, defaultValue, comment);
+        this.hasRange = true;
+        this.min = min;
+        this.max = max;
+    }
+
+
+    @Deprecated
     public IntOption(BaseConfig owner, String category, String key, int defaultValue, @Nullable String comment) {
         super(owner, category, key, comment);
         this.defaultValue = defaultValue;
         this.value = defaultValue;
     }
 
+    @Deprecated
     public IntOption(BaseConfig owner, String category, String key, int defaultValue) {
         this(owner, category, key, defaultValue, null);
     }
 
+    @Deprecated
     public IntOption(BaseConfig owner, String category, String key) {
         this(owner, category, key, 0, null);
     }
 
+    @Deprecated
     public IntOption(BaseConfig owner, String category, String key, int defaultValue, @Nullable String comment, int min, int max) {
         this(owner, category, key, defaultValue, comment);
         this.hasRange = true;
@@ -53,6 +79,9 @@ public class IntOption extends Option<IntOption> implements IntSupplier {
     @SuppressWarnings("Duplicates")//types are different
     @Override
     public void load(Configuration config) {
+        if (category.isEmpty()){
+            return;
+        }
         Property prop;
         if (hasRange) {
             prop = config.get(this.category, this.key, this.defaultValue, this.comment, this.min, this.max);

@@ -3,6 +3,7 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
+import mekanism.api.math.MathUtils;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
 import mekanism.common.SideData;
@@ -11,6 +12,7 @@ import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.config.MekanismConfig;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.security.ISecurityTile;
@@ -22,6 +24,7 @@ import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.*;
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -115,12 +118,16 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
         if (tier != GasTankTier.CREATIVE) {
             if (dumping == GasMode.DUMPING) {
                 gasTank.draw(tier.getStorage() / 400, true);
-            }
-            if (dumping == GasMode.DUMPING_EXCESS && gasTank.getNeeded() < tier.getOutput()) {
-                gasTank.draw(tier.getOutput() - gasTank.getNeeded(), true);
+            } else if (dumping == GasMode.DUMPING_EXCESS) {
+                int target = MathUtils.clampToInt(gasTank.getMaxGas() * MekanismConfig.current().general.dumpExcessKeepRatio.val());
+                int stored = gasTank.getStored();
+                if (target < stored) {
+                    gasTank.draw(Math.min(stored - target, tier.getOutput()), true);
+                }
             }
         }
     }
+
 
     @Override
     public boolean upgrade(BaseTier upgradeTier) {
@@ -396,9 +403,14 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
             return langKey;
         }
     }
+
     @Override
     protected boolean shouldDumpRadiation() {
         return tier != GasTankTier.CREATIVE;
     }
 
+    @Override
+    public int getBlockGuiID(Block block, int metadata) {
+        return 10;
+    }
 }

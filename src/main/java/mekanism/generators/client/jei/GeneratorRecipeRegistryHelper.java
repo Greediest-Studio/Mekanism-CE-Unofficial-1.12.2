@@ -4,8 +4,11 @@ import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.MachineInput;
 import mekanism.common.recipe.machines.MachineRecipe;
 import mekanism.common.recipe.outputs.MachineOutput;
+import mekanism.generators.client.gui.GuiGasGenerator;
 import mekanism.generators.client.gui.GuiReactorHeat;
 import mekanism.generators.client.jei.machine.other.FusionCoolingRecipeWrapper;
+import mekanism.generators.client.jei.machine.other.GasStackFlueToEnergyRecipeWrapper;
+import mekanism.generators.common.block.states.BlockStateGenerator;
 import mekanism.generators.common.block.states.BlockStateReactor;
 import mezz.jei.api.IModRegistry;
 import mezz.jei.api.recipe.IRecipeWrapperFactory;
@@ -23,6 +26,11 @@ public class GeneratorRecipeRegistryHelper {
         registry.addRecipeCatalyst(BlockStateReactor.ReactorBlockType.REACTOR_PORT.getStack(1), RecipeHandler.Recipe.FUSION_COOLING.getJEICategory());
     }
 
+    public static void registerGasStackFlueToEnergyRecipe(IModRegistry registry) {
+        addRecipes(registry, RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE, GasStackFlueToEnergyRecipeWrapper::new);
+        registry.addRecipeClickArea(GuiGasGenerator.class, 55, 18, 66, 50, RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.getJEICategory());
+        registry.addRecipeCatalyst(BlockStateGenerator.GeneratorType.GAS_GENERATOR.getStack(), RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.getJEICategory());
+    }
 
     private static <INPUT extends MachineInput<INPUT>, OUTPUT extends MachineOutput<OUTPUT>, RECIPE extends MachineRecipe<INPUT, OUTPUT, RECIPE>>
     void addRecipes(IModRegistry registry, RecipeHandler.Recipe<INPUT, OUTPUT, RECIPE> type, IRecipeWrapperFactory<RECIPE> factory) {

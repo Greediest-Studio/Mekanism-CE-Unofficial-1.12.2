@@ -19,14 +19,18 @@ import mekanism.common.Mekanism;
 import mekanism.common.inventory.container.ContainerGasTank;
 import mekanism.common.item.ItemGaugeDropper;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
+import mekanism.common.recipe.GasStackFuelToEnergyRecipe;
+import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.tile.TileEntityGasTank;
 import mekanism.common.util.LangUtils;
+import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.UnitDisplayUtils;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Keyboard;
@@ -46,7 +50,7 @@ public class GuiGasTank extends GuiMekanismTile<TileEntityGasTank> {
         addGuiElement(new GuiRedstoneControl(this, tileEntity, resource));
         addGuiElement(new GuiSecurityTab(this, tileEntity, resource));
         addGuiElement(new GuiSideConfigurationTab(this, tileEntity, resource));
-        addGuiElement(new GuiTransporterConfigTab(this, 34, tileEntity, resource));
+        addGuiElement(new GuiTransporterConfigTab(this, tileEntity, resource));
         addGuiElement(new GuiInputSlot(this, resource, 15, 16, tileEntity).with(SlotOverlay.PLUS));
         addGuiElement(new GuiOutputSlot(this, resource, 15, 46, tileEntity).with(SlotOverlay.MINUS));
         addGuiElement(new GuiInnerScreen(this, resource, 42, 37, 118, 27));
@@ -76,6 +80,13 @@ public class GuiGasTank extends GuiMekanismTile<TileEntityGasTank> {
                 list.add(stack.getGas().getLocalizedName() + ": " + (tileEntity.gasTank.getStored() == Integer.MAX_VALUE ? LangUtils.localize("gui.infinite") : tileEntity.gasTank.getStored()));
                 if (stack.getGas().isRadiation()) {
                     list.add(EnumColor.GREY + LangUtils.localize("chemical.mekanism.attribute.radiation") + EnumColor.INDIGO + UnitDisplayUtils.getDisplayShort(stack.getGas().getRadioactivity(), UnitDisplayUtils.RadiationUnit.SVH, 2));
+                }
+                if (RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.containsRecipe(stack.getGas())) {
+                    GasStackFuelToEnergyRecipe recipe = RecipeHandler.getGasStackFuelToEnergyRecipe(stack);
+                    if (recipe != null) {
+                        list.add(LangUtils.localize("chemical.mekanism.attribute.fuel.burn_ticks") + EnumColor.INDIGO + recipe.getInput().ingredient.amount + TextFormatting.RESET + " t");
+                        list.add(LangUtils.localize("chemical.mekanism.attribute.fuel.energy_density") + EnumColor.INDIGO + MekanismUtils.getEnergyDisplay(recipe.getOutput().energyOutput * recipe.getInput().ingredient.amount));
+                    }
                 }
             } else {
                 list.add(LangUtils.localize("gui.none"));

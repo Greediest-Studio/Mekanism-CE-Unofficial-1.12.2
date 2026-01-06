@@ -165,7 +165,7 @@ public class RecipeUtils {
                 if (!itemstack.isEmpty() && MachineType.get(itemstack) != null && MachineType.get(itemstack).supportsUpgrades) {
                     Upgrade.buildMap(ItemDataUtils.getDataMapIfPresent(itemstack)).entrySet().forEach(entry -> {
                         if (entry != null && entry.getKey() != null && entry.getValue() != null) {
-                            upgrades.compute(entry.getKey(), (k, val) -> Math.min(entry.getKey().getMax(), (val != null ? val : 0) + entry.getValue()));
+                            upgrades.compute(entry.getKey(), (k, val) -> Math.min(entry.getKey().getMaxInstalled(), (val != null ? val : 0) + entry.getValue()));
                         }
                     });
                 }

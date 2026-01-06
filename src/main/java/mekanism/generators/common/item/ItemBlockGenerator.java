@@ -148,6 +148,12 @@ public class ItemBlockGenerator extends ItemBlock implements IEnergizedItem, ISp
     @Override
     public boolean placeBlockAt(@Nonnull ItemStack stack, @Nonnull EntityPlayer player, World world, @Nonnull BlockPos pos, EnumFacing side, float hitX, float hitY,
                                 float hitZ, @Nonnull IBlockState state) {
+        if (MekanismConfig.current().general.destroyDisabledBlocks.val()){
+            GeneratorType type = GeneratorType.get(stack);
+            if (type != null && !type.isEnabled()) {
+                return false;
+            }
+        }
         boolean place = true;
         Block block = world.getBlockState(pos).getBlock();
         if (stack.getItemDamage() == GeneratorType.ADVANCED_SOLAR_GENERATOR.meta) {

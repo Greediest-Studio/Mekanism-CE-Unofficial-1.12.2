@@ -135,7 +135,7 @@ public class MekanismJEI implements IModPlugin {
                 "tile.MachineBlock.EnergizedSmelter.name", ProgressBar.BAR));
 
         //There is no config option to disable the thermal evaporation plant
-        registry.addRecipeCategories(new ThermalEvaporationRecipeCategory(guiHelper));
+        registry.addRecipeCategories(new ThermalEvaporationRecipeCategory<>(guiHelper));
 
         /**
          * ADD START
@@ -158,6 +158,7 @@ public class MekanismJEI implements IModPlugin {
         }
         addRecipeCategory(registry, MachineType.AMBIENT_ACCUMULATOR, new AmbientGasCategory(guiHelper));
         addRecipeCategory(registry, MachineType.SPS, new SPSRecipeCategory(guiHelper));
+        registry.addRecipeCategories(new ItemStackToEnergyRecipeCategory<>(guiHelper));
         /**
          * ADD END
          */
@@ -222,6 +223,7 @@ public class MekanismJEI implements IModPlugin {
         }
         RecipeRegistryHelper.registerAmbientAccumulator(registry);
         RecipeRegistryHelper.registerSPS(registry);
+        RecipeRegistryHelper.registerItemStackToEnergyRecipe(registry);
 
         if (Mekanism.hooks.MekanismMixinHelp) {
             IVanillaRecipeFactory factory = registry.getJeiHelpers().getVanillaRecipeFactory();

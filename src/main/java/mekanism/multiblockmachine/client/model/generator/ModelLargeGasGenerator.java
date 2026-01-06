@@ -1,8 +1,9 @@
 package mekanism.multiblockmachine.client.model.generator;
 
 import mekanism.client.render.MekanismRenderer;
-import mekanism.multiblockmachine.common.util.MekanismMultiblockMachineUtils;
-import mekanism.multiblockmachine.common.util.MekanismMultiblockMachineUtils.ResourceType;
+import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.MekanismUtils.ResourceType;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBox;
 import net.minecraft.client.model.ModelRenderer;
@@ -16,7 +17,7 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class ModelLargeGasGenerator extends ModelBase {
 
-    public static ResourceLocation OVERLAY_OFF = MekanismMultiblockMachineUtils.getResource(ResourceType.RENDER, "GasGenerator/LargeGasGenerator_OFF.png");
+    public static ResourceLocation OVERLAY_OFF = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "GasGenerator/LargeGasGenerator_OFF.png");
 
     ModelRenderer on45;
     ModelRenderer bone;
@@ -478,7 +479,7 @@ public class ModelLargeGasGenerator extends ModelBase {
             GlStateManager.disableAlpha();
             GlStateManager.enableBlend();
             GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            manager.bindTexture(on ? MekanismMultiblockMachineUtils.getResource(ResourceType.RENDER, "GasGenerator/LargeGasGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
+            manager.bindTexture(on ? MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "GasGenerator/LargeGasGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
             GlStateManager.scale(1.001F, 1.001F, 1.001F);
             GlStateManager.translate(-0.0011F, -0.0011F, -0.0011F);
             MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
@@ -496,7 +497,7 @@ public class ModelLargeGasGenerator extends ModelBase {
         GlStateManager.disableAlpha();
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        manager.bindTexture(on ? MekanismMultiblockMachineUtils.getResource(ResourceType.RENDER, "GasGenerator/LargeGasGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
+        manager.bindTexture(on ? MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "GasGenerator/LargeGasGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
         GlStateManager.scale(1.0011F, 1.0011F, 1.0011F);
         GlStateManager.translate(-0.0012F, -0.0012F, -0.0012F);
         MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();

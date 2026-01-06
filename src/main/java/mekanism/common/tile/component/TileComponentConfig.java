@@ -81,6 +81,8 @@ public class TileComponentConfig implements ITileComponent {
         return ret;
     }
 
+
+
     public boolean hasSideForData(TransmissionType type, EnumFacing facing, int dataIndex, EnumFacing sideToTest) {
         if (sideToTest == null) {
             return false;
@@ -285,7 +287,7 @@ public class TileComponentConfig implements ITileComponent {
     }
 
     public boolean isEjecting(TransmissionType type) {
-        return ejecting.get(type);
+        return ejecting != null && ejecting.get(type) != null && ejecting.get(type);
     }
 
     public void setEjecting(TransmissionType type, boolean eject) {

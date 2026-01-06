@@ -192,6 +192,7 @@ public class MekanismRecipe {
             RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.JUNGLE_FENCE_GATE), new ItemStack(Blocks.PLANKS, 2, 3), new ItemStack(Items.STICK, 4), 1);
             RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.ACACIA_FENCE_GATE), new ItemStack(Blocks.PLANKS, 2, 4), new ItemStack(Items.STICK, 4), 1);
             RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.DARK_OAK_FENCE_GATE), new ItemStack(Blocks.PLANKS, 2, 5), new ItemStack(Items.STICK, 4), 1);
+            RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.MELON_BLOCK), new ItemStack(Items.MELON, 9));
         }
 
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.METALLURGIC_INFUSER)) {
@@ -267,7 +268,7 @@ public class MekanismRecipe {
         }
         //Chemical Washer Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_WASHER)) {
-            RecipeHandler.addChemicalWasherRecipe(new GasStack(MekanismFluids.FissileFuel, 1000), new GasStack(MekanismFluids.NuclearWaste, 1));
+            RecipeHandler.addChemicalWasherRecipe(new GasStack(MekanismFluids.FissileFuel, 1000), new FluidStack(FluidRegistry.WATER, 1000), new GasStack(MekanismFluids.NuclearWaste, 1));
         }
         //Chemical Dissolution Chamber Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_DISSOLUTION_CHAMBER)) {
@@ -316,7 +317,8 @@ public class MekanismRecipe {
         }
 
         //Fuel Gases
-        FuelHandler.addGas(MekanismFluids.Hydrogen, 1, MekanismConfig.current().general.FROM_H2.val());
+        // FuelHandler.addGas(MekanismFluids.Hydrogen, 1, MekanismConfig.current().general.FROM_H2.val());
+        RecipeHandler.addGasStackFuelToEnergyRecipe(new GasStack(MekanismFluids.Hydrogen, 1), MekanismConfig.current().general.FROM_H2.val());
 
         //Chemical Oxidizer Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_OXIDIZER)) {
@@ -464,9 +466,12 @@ public class MekanismRecipe {
 
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.AMBIENT_ACCUMULATOR) || MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.AMBIENT_ACCUMULATOR_ENERGY)) {
             //遍历所有维度来生成配方
-            DimensionManager.getRegisteredDimensions().keySet().forEach(dimensionType -> RecipeHandler.addAmbientGas(dimensionType.getId()));
+            if (MekanismConfig.current().general.EnableDefaultAllAddAmbientGas.val()) {
+                DimensionManager.getRegisteredDimensions().keySet().stream().filter(dimensionType -> !MekanismConfig.current().general.defaultAmbientDimBlacklist.val().contains(dimensionType.getId())).forEach(dimensionType -> RecipeHandler.addAmbientGas(dimensionType.getId()));
+            }
         }
-
+        RecipeHandler.addItemStackToEnergyRecipe(new ItemStack(Items.REDSTONE), MekanismConfig.current().general.ENERGY_PER_REDSTONE.val());
+        RecipeHandler.addItemStackToEnergyRecipe(new ItemStack(Blocks.REDSTONE_BLOCK), MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val());
         /**
          * ADD END
          */

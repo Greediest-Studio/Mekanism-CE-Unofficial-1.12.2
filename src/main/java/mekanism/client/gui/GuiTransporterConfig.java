@@ -15,10 +15,12 @@ import mekanism.client.gui.element.GuiInnerScreen;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
 import mekanism.common.SideData;
+import mekanism.common.base.IGuiProvider;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.inventory.container.ContainerNull;
 import mekanism.common.network.PacketConfigurationUpdate.ConfigurationPacket;
 import mekanism.common.network.PacketConfigurationUpdate.ConfigurationUpdateMessage;
+import mekanism.common.network.PacketSimpleGui;
 import mekanism.common.network.PacketSimpleGui.SimpleGuiMessage;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
@@ -88,8 +90,10 @@ public class GuiTransporterConfig extends GuiMekanismTile<TileEntityContainerBlo
         super.actionPerformed(guibutton);
         TileEntity tile = (TileEntity) configurable;
         if (guibutton.id == backButton.id) {
-            int guiId = Mekanism.proxy.getGuiId(tile.getBlockType(), tile.getBlockMetadata());
-            Mekanism.packetHandler.sendToServer(new SimpleGuiMessage(Coord4D.get(tile), 0, guiId));
+            int guiId = configurable.getBlockGuiID(tile.getBlockType(), tile.getBlockMetadata());
+            List<IGuiProvider> handlers = PacketSimpleGui.handlers;
+            int hand = handlers.indexOf(configurable.guiProvider());
+            Mekanism.packetHandler.sendToServer(new SimpleGuiMessage(Coord4D.get(tile), hand, guiId));
         } else if (guibutton.id == strictInputButton.id) {
             Mekanism.packetHandler.sendToServer(new ConfigurationUpdateMessage(ConfigurationPacket.STRICT_INPUT, Coord4D.get(tile), 0, 0, null));
         } else if (guibutton.id == colorButton.id) {

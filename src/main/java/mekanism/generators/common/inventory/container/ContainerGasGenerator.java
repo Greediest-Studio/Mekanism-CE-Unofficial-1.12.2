@@ -2,8 +2,8 @@ package mekanism.generators.common.inventory.container;
 
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.IGasItem;
-import mekanism.common.FuelHandler;
 import mekanism.common.inventory.slot.SlotEnergy.SlotCharge;
+import mekanism.common.recipe.RecipeHandler;
 import mekanism.generators.common.tile.TileEntityGasGenerator;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
@@ -25,7 +25,7 @@ public class ContainerGasGenerator extends ContainerFuelGenerator<TileEntityGasG
     protected boolean tryFuel(ItemStack slotStack) {
         if (slotStack.getItem() instanceof IGasItem gasItem) {
             GasStack gasStack = gasItem.getGas(slotStack);
-            return gasStack != null && FuelHandler.getFuel(gasStack.getGas()) != null;
+            return gasStack != null && RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.containsRecipe(gasStack.getGas());
         }
         return false;
     }

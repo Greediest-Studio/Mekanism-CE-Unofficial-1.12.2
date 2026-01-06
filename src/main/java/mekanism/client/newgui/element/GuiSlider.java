@@ -1,8 +1,7 @@
 package mekanism.client.newgui.element;
 
-import mekanism.client.newgui.IGuiWrapper;
 import mekanism.client.gui.element.GuiUtils;
-import mekanism.client.newgui.element.GuiElement;
+import mekanism.client.newgui.IGuiWrapper;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.util.ResourceLocation;
 

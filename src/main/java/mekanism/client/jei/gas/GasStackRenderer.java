@@ -4,7 +4,10 @@ import mekanism.api.EnumColor;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.client.render.MekanismRenderer;
+import mekanism.common.recipe.GasStackFuelToEnergyRecipe;
+import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.util.LangUtils;
+import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.UnitDisplayUtils;
 import mezz.jei.api.gui.IDrawable;
 import mezz.jei.api.ingredients.IIngredientRenderer;
@@ -161,8 +164,15 @@ public class GasStackRenderer implements IIngredientRenderer<GasStack> {
             String amount = LangUtils.localizeWithFormat("jei.tooltip.liquid.amount", gasStack.amount);
             tooltip.add(TextFormatting.GRAY + amount);
         }
-        if (gasType.isRadiation()){
+        if (gasType.isRadiation()) {
             tooltip.add(EnumColor.GREY + LangUtils.localize("chemical.mekanism.attribute.radiation") + EnumColor.INDIGO + UnitDisplayUtils.getDisplayShort(gasType.getRadioactivity(), UnitDisplayUtils.RadiationUnit.SVH, 2));
+        }
+        if (RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.containsRecipe(gasType)) {
+            GasStackFuelToEnergyRecipe recipe = RecipeHandler.getGasStackFuelToEnergyRecipe(gasStack);
+            if (recipe != null) {
+                tooltip.add(LangUtils.localize("chemical.mekanism.attribute.fuel.burn_ticks") + EnumColor.INDIGO + recipe.getInput().ingredient.amount + TextFormatting.RESET + " t");
+                tooltip.add(LangUtils.localize("chemical.mekanism.attribute.fuel.energy_density") + EnumColor.INDIGO + MekanismUtils.getEnergyDisplay(recipe.getOutput().energyOutput * recipe.getInput().ingredient.amount));
+            }
         }
         return tooltip;
     }

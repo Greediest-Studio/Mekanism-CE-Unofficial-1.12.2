@@ -1,27 +1,31 @@
 package mekanism.multiblockmachine.client.render.item.generator;
 
 import mekanism.client.render.MekanismRenderer;
+import mekanism.client.render.item.ItemLayerWrapper;
+import mekanism.client.render.item.MekanismItemStackRenderer;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.MekanismUtils.ResourceType;
 import mekanism.multiblockmachine.client.model.generator.ModelLargeWindGenerator;
-import mekanism.multiblockmachine.common.util.MekanismMultiblockMachineUtils;
+import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import javax.annotation.Nonnull;
-
+import org.jetbrains.annotations.NotNull;
 
 @SideOnly(Side.CLIENT)
-public class RenderLargeWindGeneratorItem {
+public class RenderLargeWindGeneratorItem extends MekanismItemStackRenderer {
 
     private static ModelLargeWindGenerator windGenerator = new ModelLargeWindGenerator();
     private static double angle = 0;
     private static float lastTicksUpdated = 0;
+    public static ItemLayerWrapper model;
 
-    public static void renderStack(@Nonnull ItemStack stack, TransformType transformType) {
+    @Override
+    protected void renderBlockSpecific(@NotNull ItemStack stack, TransformType transformType) {
         GlStateManager.pushMatrix();
         GlStateManager.rotate(180, 0, 0, 1);
         if (transformType == TransformType.THIRD_PERSON_RIGHT_HAND || transformType == TransformType.THIRD_PERSON_LEFT_HAND) {
@@ -44,8 +48,7 @@ public class RenderLargeWindGeneratorItem {
             }
             GlStateManager.translate(0, 0.4F, 0);
         }
-        MekanismRenderer.bindTexture(MekanismMultiblockMachineUtils.getResource(MekanismMultiblockMachineUtils.ResourceType.RENDER, "WindGenerator/LargeWindGenerator.png"));
-
+        MekanismRenderer.bindTexture(MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator.png"));
         if (MekanismConfig.current().client.windGeneratorItem.val()) {
             if (lastTicksUpdated != Minecraft.getMinecraft().getRenderPartialTicks()) {
                 angle = (angle + 2) % 360;
@@ -56,5 +59,15 @@ public class RenderLargeWindGeneratorItem {
         }
         windGenerator.renderItem(0.002F, angle);
         GlStateManager.popMatrix();
+    }
+
+    @Override
+    protected void renderItemSpecific(@NotNull ItemStack stack, TransformType transformType) {
+
+    }
+
+    @Override
+    protected @NotNull TransformType getTransform(@NotNull ItemStack stack) {
+        return model.getTransform();
     }
 }

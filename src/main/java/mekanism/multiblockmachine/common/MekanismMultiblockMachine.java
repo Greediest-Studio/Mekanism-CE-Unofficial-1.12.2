@@ -1,28 +1,21 @@
 package mekanism.multiblockmachine.common;
 
-
 import io.netty.buffer.ByteBuf;
 import mekanism.api.MekanismAPI;
 import mekanism.common.Mekanism;
 import mekanism.common.Version;
 import mekanism.common.base.IModule;
 import mekanism.common.config.MekanismConfig;
-import mekanism.common.fixers.MekanismDataFixers.MekFixers;
 import mekanism.common.network.PacketSimpleGui;
-import mekanism.multiblockmachine.common.block.states.BlockStateMultiblockMachine.MultiblockMachineType;
-import mekanism.multiblockmachine.common.block.states.BlockStateMultiblockMachineGenerator.MultiblockMachineGeneratorType;
-import mekanism.multiblockmachine.common.fixers.MultiblockMachineTEFixer;
+import mekanism.multiblockmachine.common.registries.MultiblockMachineBlocks;
+import mekanism.multiblockmachine.common.registries.MultiblockMachineItems;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.util.datafix.FixTypes;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.util.CompoundDataFixer;
-import net.minecraftforge.common.util.ModFixs;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -43,7 +36,7 @@ public class MekanismMultiblockMachine implements IModule {
     public static MekanismMultiblockMachine instance;
 
     public static Version versionNumber = new Version(999, 999, 999);
-    public static final int DATA_VERSION = 1;
+
     public static CreativeTabMekanismMultiblockMachine tabMekanismMultiblockMachine = new CreativeTabMekanismMultiblockMachine();
 
     @SubscribeEvent
@@ -59,6 +52,7 @@ public class MekanismMultiblockMachine implements IModule {
 
     @SubscribeEvent
     public static void registerModels(ModelRegistryEvent event) {
+        // Register models
         proxy.registerBlockRenders();
         proxy.registerItemRenders();
     }
@@ -71,23 +65,22 @@ public class MekanismMultiblockMachine implements IModule {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        //Add this module to the core list
         Mekanism.modulesLoaded.add(this);
+        //Register this module's GUI handler in the simple packet protocol
         PacketSimpleGui.handlers.add(proxy);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new MultiblockMachineGuiHandler());
         MinecraftForge.EVENT_BUS.register(this);
         proxy.registerTileEntities();
         proxy.registerTESRs();
-        CompoundDataFixer fixer = FMLCommonHandler.instance().getDataFixer();
-        ModFixs fixes = fixer.init(MODID, DATA_VERSION);
-        fixes.registerFix(FixTypes.BLOCK_ENTITY, new MultiblockMachineTEFixer(MekFixers.TILE_ENTITIES));
-        Mekanism.logger.info("Loaded Mekanism Multi Block Machine module.");
-    }
 
+    }
 
     @Override
     public Version getVersion() {
         return versionNumber;
     }
+
 
     @Override
     public String getName() {
@@ -106,7 +99,6 @@ public class MekanismMultiblockMachine implements IModule {
 
     @Override
     public void resetClient() {
-
     }
 
     @SubscribeEvent
@@ -118,13 +110,10 @@ public class MekanismMultiblockMachine implements IModule {
 
     @SubscribeEvent
     public void onBlacklistUpdate(MekanismAPI.BoxBlacklistEvent event) {
-        for (MultiblockMachineGeneratorType type : MultiblockMachineGeneratorType.values()){
-            MekanismAPI.addBoxBlacklist(MultiblockMachineBlocks.MultiblockGenerator,type.meta);
-        }
-        for (MultiblockMachineType type : MultiblockMachineType.values()){
-            MekanismAPI.addBoxBlacklist(MultiblockMachineBlocks.MultiblockMachine,type.meta);
-        }
+        //本mod的所有方块都不能进行搬
+        MekanismAPI.addBoxBlacklistMod(MekanismMultiblockMachine.MODID);
     }
+
 
     @SubscribeEvent
     public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {

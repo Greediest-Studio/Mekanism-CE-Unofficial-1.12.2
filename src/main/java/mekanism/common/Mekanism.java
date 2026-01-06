@@ -17,6 +17,7 @@ import mekanism.client.render.hud.MekaSuitEnergyLevel;
 import mekanism.client.render.hud.MekanismHUD;
 import mekanism.client.render.hud.MekanismStatusOverlay;
 import mekanism.common.base.IModule;
+import mekanism.common.block.PortalHelper;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.chunkloading.ChunkManager;
 import mekanism.common.command.CommandMek;
@@ -154,7 +155,6 @@ public class Mekanism {
     public static Configuration configurationtools;
 
     public static Configuration configurationMultiblockMachine;
-    public static Configuration configurationmekaweapons;
     public static Configuration configurationMeka;
     /**
      * Mekanism version number
@@ -217,6 +217,7 @@ public class Mekanism {
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         // Register blocks and tile entities
         MekanismBlocks.registerBlocks(event.getRegistry());
+       // event.getRegistry().register(PortalHelper.BlockPortalOverride.instance);
     }
 
     @SubscribeEvent
@@ -445,7 +446,6 @@ public class Mekanism {
         configurationgenerators = new Configuration(new File("config/mekanism/MekanismGenerators.cfg"));
         configurationtools = new Configuration(new File("config/mekanism/MekanismTools.cfg"));
         configurationMultiblockMachine = new Configuration(new File("config/mekanism/MekanismMultiblockMachine.cfg"));
-        configurationmekaweapons = new Configuration(new File("config/mekanism/MekanismWeapons.cfg"));
         configurationMeka = new Configuration(new File("config/mekanism/MekaSuitArmor.cfg"));
 
 
@@ -788,4 +788,5 @@ public class Mekanism {
         MekanismHUD.onDrawScreenPre(event);
         MekanismStatusOverlay.INSTANCE.render(event);
     }
+
 }

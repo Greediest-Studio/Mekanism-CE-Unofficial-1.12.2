@@ -51,7 +51,7 @@ public class GuiChemicalCrystallizer extends GuiMekanismTile<TileEntityChemicalC
         addGuiElement(new GuiUpgradeTab(this, tileEntity, resource));
         addGuiElement(new GuiPowerBar(this, tileEntity, resource, 160, 23));
         addGuiElement(new GuiSideConfigurationTab(this, tileEntity, resource));
-        addGuiElement(new GuiTransporterConfigTab(this, 34, tileEntity, resource));
+        addGuiElement(new GuiTransporterConfigTab(this, tileEntity, resource));
         addGuiElement(new GuiEnergyInfo(tileEntity, this, resource));
         addGuiElement(new GuiGasGauge(() -> tileEntity.inputTank, GuiGauge.Type.STANDARD, this, resource, 5, 4).withColor(GuiGauge.TypeColor.RED));
         addGuiElement(new GuiInputSlot(this, resource, 5, 64, tileEntity).with(SlotOverlay.PLUS));

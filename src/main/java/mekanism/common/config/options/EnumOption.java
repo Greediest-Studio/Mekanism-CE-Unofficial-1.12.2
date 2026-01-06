@@ -21,6 +21,20 @@ public class EnumOption<T extends Enum<T>> extends Option<EnumOption<T>> {
     private final T[] enumValues;
 
     @SuppressWarnings("unchecked")
+    public EnumOption(BaseConfig owner,String key, T defaultValue, @Nullable String comment) {
+        super(owner, key, comment);
+        this.defaultValue = Objects.requireNonNull(defaultValue);
+        this.value = defaultValue;
+        this.enumClass = (Class<T>) defaultValue.getClass();
+        this.enumValues = enumClass.getEnumConstants();
+    }
+
+    public EnumOption(BaseConfig owner, String key, T defaultValue) {
+        this(owner, key, defaultValue, null);
+    }
+
+
+    @SuppressWarnings("unchecked")
     public EnumOption(BaseConfig owner, String category, String key, T defaultValue, @Nullable String comment) {
         super(owner, category, key, comment);
         this.defaultValue = Objects.requireNonNull(defaultValue);
@@ -43,6 +57,9 @@ public class EnumOption<T extends Enum<T>> extends Option<EnumOption<T>> {
 
     @Override
     public void load(Configuration config) {
+        if (category.isEmpty()){
+            return;
+        }
         final Property prop = config.get(this.category, this.key, this.defaultValue.name(), this.comment);
         prop.setRequiresMcRestart(this.requiresGameRestart);
         prop.setRequiresWorldRestart(this.requiresWorldRestart);

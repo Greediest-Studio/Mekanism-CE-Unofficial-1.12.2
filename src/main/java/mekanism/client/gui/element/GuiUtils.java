@@ -134,6 +134,16 @@ public class GuiUtils {
         }
     }
 
+    public static void drawBarSprite(int xPos, int yPos, int sizeX, int sizeY, int displayInt, Object stack, boolean vertical) {
+        if (stack instanceof GasStack gasStack) {
+            drawGasBarSprite(xPos, yPos, sizeX, sizeY, displayInt, gasStack, vertical);
+        } else if (stack instanceof FluidStack fluidStack) {
+            drawFluidBarSprite(xPos, yPos, sizeX, sizeY, displayInt, fluidStack, vertical);
+        }else if (stack instanceof InfuseStorage infuseStorage){
+            drawInfuseBarSprite(xPos, yPos, sizeX, sizeY, displayInt, infuseStorage, vertical);
+        }
+    }
+
 
     public static void drawInfuseBarSprite(int xPos, int yPos, int sizeX, int sizeY, int displayInt, InfuseStorage infuseStorage, boolean vertical) {
         if (displayInt > 0) {
@@ -149,8 +159,9 @@ public class GuiUtils {
     }
 
     public static void drawTiledSprite(int xPosition, int yPosition, int yOffset, int desiredWidth, int desiredHeight, TextureAtlasSprite sprite, int textureWidth, int textureHeight, int zLevel, TilingDirection tilingDirection) {
-        drawTiledSprite(xPosition, yPosition, yOffset, desiredWidth, desiredHeight, sprite, textureWidth, textureHeight, zLevel, tilingDirection, true);
+        drawTiledSprite(xPosition, yPosition, yOffset, desiredWidth, desiredHeight, sprite, textureWidth, textureHeight, zLevel, tilingDirection, false);
     }
+
 
     public static void drawTiledSprite(int xPosition, int yPosition, int yOffset, int desiredWidth, int desiredHeight, TextureAtlasSprite sprite, int textureWidth, int textureHeight, int zLevel, TilingDirection tilingDirection, boolean blendAlpha) {
         if (desiredWidth == 0 || desiredHeight == 0 || textureWidth == 0 || textureHeight == 0) {
@@ -169,11 +180,9 @@ public class GuiUtils {
         float uDif = uMax - uMin;
         float vDif = vMax - vMin;
         if (blendAlpha) {
-
             GlStateManager.enableBlend();
             GlStateManager.enableAlpha();
         }
-        //Note: We still use the tesselator as that is what GuiGraphics#innerBlit does
         BufferBuilder vertexBuffer = Tessellator.getInstance().getBuffer();
         vertexBuffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
 
@@ -225,7 +234,6 @@ public class GuiUtils {
         if (blendAlpha) {
             GlStateManager.disableAlpha();
             GlStateManager.disableBlend();
-
         }
     }
 
@@ -540,7 +548,7 @@ public class GuiUtils {
                 // Vanilla still renders the items using render system transformations so this is required to
                 // have things render in the correct order
                 GlStateManager.pushMatrix();
-               // GlStateManager.multMatrix(matrix.last().pose());
+                // GlStateManager.multMatrix(matrix.last().pose());
                 renderer.renderItemAndEffectIntoGUI(stack, xAxis, yAxis);
                 if (overlay) {
                     renderer.renderItemOverlayIntoGUI(font, stack, xAxis, yAxis, text);
@@ -557,11 +565,11 @@ public class GuiUtils {
     }
 
     public static void drawOutline(int x, int y, int width, int height, int color) {
-        fill( x, y, width, 1, color);
-        fill( x, y + height - 1, width, 1, color);
+        fill(x, y, width, 1, color);
+        fill(x, y + height - 1, width, 1, color);
         if (height > 2) {
-            fill( x, y + 1, 1, height - 2, color);
-            fill( x + width - 1, y + 1, 1, height - 2, color);
+            fill(x, y + 1, 1, height - 2, color);
+            fill(x + width - 1, y + 1, 1, height - 2, color);
         }
     }
 

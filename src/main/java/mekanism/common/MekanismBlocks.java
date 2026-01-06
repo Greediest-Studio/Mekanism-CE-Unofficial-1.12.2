@@ -69,8 +69,6 @@ public class MekanismBlocks {
         registry.register(init(SaltBlock, "SaltBlock"));
 
         registry.register(init(BasicBlock3, "BasicBlock3"));
-
-        registry.register(BlockBasic.BlockPortalOverride.instance);
     }
 
     /**
