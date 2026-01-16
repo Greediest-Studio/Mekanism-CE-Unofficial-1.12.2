@@ -14,7 +14,10 @@ public class FluidHandlerTarget extends Target<IFluidHandler, Integer, FluidStac
 
     @Override
     protected void acceptAmount(EnumFacing side, SplitInfo<Integer> splitInfo, Integer amount) {
-        splitInfo.send(handlers.get(side).fill(PipeUtils.copy(extra, amount), true));
+        IFluidHandler handler = handlers.get(side);
+        if (handler != null) {
+            splitInfo.send(handler.fill(PipeUtils.copy(extra, amount), true));
+        }
     }
 
     @Override
