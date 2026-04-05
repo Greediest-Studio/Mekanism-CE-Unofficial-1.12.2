@@ -696,7 +696,6 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
         return false;
     }
 
-    @SideOnly(Side.CLIENT)
     private static class MultiblockOcclusionData {
 
         private static final MultiblockOcclusionData EMPTY = new MultiblockOcclusionData(false, Collections.emptyList());
@@ -710,7 +709,6 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
         }
     }
 
-    @SideOnly(Side.CLIENT)
     private static class IntBounds {
 
         private final int minX;
