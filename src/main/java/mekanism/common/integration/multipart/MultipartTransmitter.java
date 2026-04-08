@@ -7,6 +7,7 @@ import mcmultipart.api.slot.IPartSlot;
 import mekanism.common.MekanismBlocks;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tile.transmitter.TileEntitySidedPipe;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLivingBase;
@@ -71,7 +72,7 @@ public class MultipartTransmitter implements IMultipart {
         if (tile instanceof TileEntitySidedPipe pipe) {
             BaseTier baseTier = BaseTier.BASIC;
             if (stack.hasTagCompound()) {
-                baseTier = BaseTier.values()[stack.getTagCompound().getInteger("tier")];
+                baseTier = MekanismUtils.getByIndex(BaseTier.values(), stack.getTagCompound().getInteger("tier"), BaseTier.BASIC);
             }
             pipe.setBaseTier(baseTier);
         }

@@ -191,7 +191,7 @@ public class TileEntityTurbineCasing extends TileEntityMultiblock<SynchronizedTu
                 structure.electricityStored = dataStream.readDouble();
                 structure.clientFlow = dataStream.readInt();
                 structure.lastSteamInput = dataStream.readInt();
-                structure.dumpMode = GasMode.values()[dataStream.readInt()];
+                structure.dumpMode = MekanismUtils.getByIndex(GasMode.values(), dataStream.readInt(), GasMode.IDLE);
 
                 structure.fluidStored = TileUtils.readFluidStack(dataStream);
 

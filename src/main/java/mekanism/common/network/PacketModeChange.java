@@ -5,6 +5,7 @@ import mekanism.common.PacketHandler;
 import mekanism.common.item.interfaces.IModeItem;
 import mekanism.common.item.interfaces.IModeItem.DisplayChange;
 import mekanism.common.network.PacketModeChange.ModeChangMessage;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
@@ -69,7 +70,7 @@ public class PacketModeChange implements IMessageHandler<ModeChangMessage, IMess
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            slot = EntityEquipmentSlot.values()[dataStream.readInt()];
+            slot = MekanismUtils.getByIndex(EntityEquipmentSlot.values(), dataStream.readInt(), EntityEquipmentSlot.MAINHAND);
             shift = dataStream.readInt();
             displayChangeMessage = dataStream.readBoolean();
         }

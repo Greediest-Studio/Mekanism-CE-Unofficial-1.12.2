@@ -14,15 +14,13 @@ import mekanism.common.content.gear.mekasuit.ModuleGravitationalModulatingUnit;
 import mekanism.common.content.gear.mekasuit.ModuleHydraulicPropulsionUnit;
 import mekanism.common.content.gear.mekasuit.ModuleLocomotiveBoostingUnit;
 import mekanism.common.entity.EntityFlame;
-import mekanism.common.item.ItemFlamethrower;
-import mekanism.common.item.ItemFreeRunners;
-import mekanism.common.item.ItemGasMask;
-import mekanism.common.item.ItemScubaTank;
+import mekanism.common.item.*;
 import mekanism.common.item.armor.ItemMekaSuitArmor;
 import mekanism.common.item.interfaces.IJetpackItem;
 import mekanism.common.item.interfaces.IJetpackItem.JetpackMode;
 import mekanism.common.lib.radiation.RadiationManager;
 import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.StackUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFire;
 import net.minecraft.block.material.Material;
@@ -41,8 +39,10 @@ import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.ItemFishedEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.BlockEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
@@ -418,4 +418,38 @@ public class CommonPlayerTickHandler {
             }
         }
     }
+
+
+    //meka钓鱼竿倍增器
+    //低优先级
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void MekaFishRodMultiple(ItemFishedEvent event) {
+        EntityPlayer player = event.getEntityPlayer();
+        List<ItemStack> drops = new ArrayList<>();
+        if (player == null || event.getDrops().isEmpty()) {
+            return;
+        }
+        ItemStack stack = player.getHeldItemMainhand();
+        if (!stack.isEmpty() && stack.getItem() instanceof ItemMekaFishingRod rod) {
+            IModule<?> fish = rod.getModule(stack, MekanismModules.FISHING_MULTIPLE_UNIT);
+            if (fish != null && fish.isEnabled()) {
+                int count = (fish.getInstalledCount() / fish.getData().getMaxStackSize());
+                for (ItemStack fishStack : event.getDrops()) {
+                    //如果这里已经是最大物品堆叠了，则直接添加到掉落物内
+                    if (fishStack.getCount() == fishStack.getMaxStackSize()){
+                        drops.add(fishStack);
+                        continue;
+                    }
+                    //否则按照安装数量/最大安装数量的倍增器乘以物品的最大堆叠
+                    drops.add(StackUtils.size(fishStack, fishStack.getMaxStackSize() * count));
+                }
+                //清空原来的掉落物品
+                event.getDrops().clear();
+                //添加掉落物？
+                event.getDrops().addAll(drops);
+            }
+        }
+    }
+
+
 }

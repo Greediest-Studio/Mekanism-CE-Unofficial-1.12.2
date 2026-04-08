@@ -6,6 +6,7 @@ import mekanism.common.block.BlockTransmitter;
 import mekanism.common.block.property.PropertyColor;
 import mekanism.common.block.property.PropertyConnection;
 import mekanism.common.tier.BaseTier;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyEnum;
 import net.minecraft.block.state.IBlockState;
@@ -53,7 +54,7 @@ public class BlockStateTransmitter extends ExtendedBlockState {
         }
 
         public static TransmitterType get(int meta) {
-            return TransmitterType.values()[meta];
+            return MekanismUtils.getByIndex(TransmitterType.values(), meta, TransmitterType.UNIVERSAL_CABLE);
         }
 
         @Override

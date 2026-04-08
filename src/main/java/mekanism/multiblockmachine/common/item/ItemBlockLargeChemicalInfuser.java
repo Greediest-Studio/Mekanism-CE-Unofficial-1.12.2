@@ -17,7 +17,7 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 
-public class ItemBlockLargeChemicalInfuser extends ItemBlockLargeBase {
+public class ItemBlockLargeChemicalInfuser extends ItemBlockLargeBaseEnergy {
 
     public ItemBlockLargeChemicalInfuser(Block block) {
         super(block, "LargeChemicalInfuser");

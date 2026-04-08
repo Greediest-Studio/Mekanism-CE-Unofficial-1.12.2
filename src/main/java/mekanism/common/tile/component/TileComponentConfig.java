@@ -247,9 +247,10 @@ public class TileComponentConfig implements ITileComponent {
         transmissions.clear();
 
         int amount = dataStream.readInt();
+        TransmissionType fallback = sideOutputs.keySet().stream().findFirst().orElse(TransmissionType.ITEM);
 
         for (int i = 0; i < amount; i++) {
-            transmissions.add(TransmissionType.values()[dataStream.readInt()]);
+            transmissions.add(MekanismUtils.getByIndex(TransmissionType.values(), dataStream.readInt(), fallback));
         }
 
         transmissions.forEach(type -> {

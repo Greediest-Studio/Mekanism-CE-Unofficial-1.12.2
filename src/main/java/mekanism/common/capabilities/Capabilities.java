@@ -15,14 +15,19 @@ import mekanism.api.transmitters.IBlockableConnection;
 import mekanism.api.transmitters.IGridTransmitter;
 import mekanism.common.base.ILogisticalTransporter;
 import mekanism.common.base.ITileNetwork;
+import mekanism.common.content.gear.mekafishrod.DefaultMekaFishHook;
+import mekanism.common.content.gear.mekafishrod.IMekaFishHook;
 import mekanism.common.lib.radiation.capability.DefaultRadiationEntity;
 import mekanism.common.lib.radiation.capability.DefaultRadiationShielding;
 import nc.capability.radiation.resistance.IRadiationResistance;
 import net.darkhax.tesla.api.ITeslaConsumer;
 import net.darkhax.tesla.api.ITeslaHolder;
 import net.darkhax.tesla.api.ITeslaProducer;
+import net.minecraft.entity.Entity;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
+
+import java.util.Optional;
 
 /**
  * Created by ben on 30/04/16.
@@ -102,6 +107,8 @@ public class Capabilities {
     @CapabilityInject(IRadiationResistance.class)
     public static Capability<IRadiationResistance> NC_CAPABILITY_RADIATION_RESISTANCE = null;
 
+    @CapabilityInject(IMekaFishHook.class)
+    public static Capability<IMekaFishHook> MEKA_FISH_HOOK = null;
 
     public static void registerCapabilities() {
         DefaultStrictEnergyStorage.register();
@@ -127,5 +134,14 @@ public class Capabilities {
 
         DefaultRadiationShielding.register();
         DefaultRadiationEntity.register();
+        DefaultMekaFishHook.register();
+    }
+
+    public static Optional<IMekaFishHook> getMekaFishCap(Entity entity) {
+        if (entity.hasCapability(MEKA_FISH_HOOK, null)) {
+            return Optional.ofNullable(entity.getCapability(MEKA_FISH_HOOK, null));
+        } else {
+            return Optional.empty();
+        }
     }
 }

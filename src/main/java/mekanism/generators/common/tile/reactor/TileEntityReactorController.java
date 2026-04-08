@@ -12,16 +12,17 @@ import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.*;
 import mekanism.generators.common.FusionReactor;
 import mekanism.generators.common.item.ItemHohlraum;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
+import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.*;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -30,6 +31,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TileEntityReactorController extends TileEntityReactorBlock implements IActiveState {
 
@@ -48,6 +51,12 @@ public class TileEntityReactorController extends TileEntityReactorBlock implemen
     @SideOnly(Side.CLIENT)
     private ISound activeSound;
     private int playSoundCooldown = 0;
+    @SideOnly(Side.CLIENT)
+    private static final int REACTOR_WINDOW_RAY_MAX_STEPS = 24;
+    @SideOnly(Side.CLIENT)
+    private static final double REACTOR_CORE_PROBE_RADIUS = 1.25D;
+    @SideOnly(Side.CLIENT)
+    private static final double REACTOR_CORE_PROBE_VERTICAL_RADIUS = 1.05D;
 
     public TileEntityReactorController() {
         super("ReactorController", MekanismConfig.current().generators.reactorGeneratorStorage.val());
@@ -293,6 +302,120 @@ public class TileEntityReactorController extends TileEntityReactorBlock implemen
     @Override
     public boolean lightUpdate() {
         return false;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean shouldCullForOcclusion() {
+        if (MekanismConfig.current().client.GazeCullingTracking.val() && shouldRenderPlasmaCore()) {
+            return false;
+        }
+        return super.shouldCullForOcclusion();
+    }
+
+    @SideOnly(Side.CLIENT)
+    public boolean shouldRenderPlasmaCore() {
+        if (!isBurning() || !isFormed() || world == null) {
+            return false;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.gameSettings == null) {
+            return false;
+        }
+        if (mc.gameSettings.thirdPersonView != 0) {
+            return true;
+        }
+        Entity renderView = mc.getRenderViewEntity();
+        if (renderView == null) {
+            return false;
+        }
+        Vec3d eyePos = renderView.getPositionEyes(1.0F);
+        List<Vec3d> probePoints = buildCoreProbePoints();
+        for (Vec3d probePoint : probePoints) {
+            if (canSeePointThroughReactorWindow(eyePos, probePoint)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private List<Vec3d> buildCoreProbePoints() {
+        double centerX = pos.getX() + 0.5D;
+        double centerY = pos.getY() - 1.5D;
+        double centerZ = pos.getZ() + 0.5D;
+        double[] xs = new double[]{centerX - REACTOR_CORE_PROBE_RADIUS, centerX, centerX + REACTOR_CORE_PROBE_RADIUS};
+        double[] ys = new double[]{centerY - REACTOR_CORE_PROBE_VERTICAL_RADIUS, centerY, centerY + REACTOR_CORE_PROBE_VERTICAL_RADIUS};
+        double[] zs = new double[]{centerZ - REACTOR_CORE_PROBE_RADIUS, centerZ, centerZ + REACTOR_CORE_PROBE_RADIUS};
+        List<Vec3d> probes = new ArrayList<>(27);
+        for (double y : ys) {
+            for (double x : xs) {
+                for (double z : zs) {
+                    probes.add(new Vec3d(x, y, z));
+                }
+            }
+        }
+        return probes;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean canSeePointThroughReactorWindow(Vec3d eyePos, Vec3d target) {
+        Vec3d start = eyePos;
+        Vec3d direction = target.subtract(eyePos);
+        double distanceSq = direction.lengthSquared();
+        if (distanceSq <= 1.0E-8D) {
+            return true;
+        }
+        Vec3d directionNorm = direction.scale(1.0D / Math.sqrt(distanceSq));
+        boolean passedWindow = false;
+        for (int i = 0; i < REACTOR_WINDOW_RAY_MAX_STEPS; i++) {
+            RayTraceResult trace = world.rayTraceBlocks(start, target, false, true, false);
+            if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK) {
+                return passedWindow;
+            }
+            BlockPos hitPos = trace.getBlockPos();
+            if (isReactorWindow(hitPos)) {
+                passedWindow = true;
+            }
+            IBlockState hitState = world.getBlockState(hitPos);
+            if (!isTransparentForReactorRay(hitState, hitPos)) {
+                return false;
+            }
+            if (trace.hitVec == null) {
+                return false;
+            }
+            start = trace.hitVec.add(directionNorm.scale(0.01D));
+            if (start.squareDistanceTo(target) < 1.0E-6D) {
+                return passedWindow;
+            }
+        }
+        return passedWindow;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isReactorWindow(BlockPos pos) {
+        if (world == null || pos == null) {
+            return false;
+        }
+        TileEntity tile = world.getTileEntity(pos);
+        return tile instanceof TileEntityReactorGlass || tile instanceof TileEntityReactorLaserFocusMatrix;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isTransparentForReactorRay(IBlockState state, BlockPos pos) {
+        if (state == null) {
+            return false;
+        }
+        if (isReactorWindow(pos) || state.getMaterial().isLiquid()) {
+            return true;
+        }
+        if (!state.isFullCube()) {
+            return true;
+        }
+        if (!state.isOpaqueCube()) {
+            return true;
+        }
+        return state.getBlock().isTranslucent(state);
     }
 
     @Nonnull

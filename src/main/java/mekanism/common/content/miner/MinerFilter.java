@@ -16,15 +16,21 @@ public abstract class MinerFilter implements IFilter {
 
     public boolean requireStack;
 
+    @Nullable
     public static MinerFilter readFromNBT(NBTTagCompound nbtTags) {
         MinerFilter filter = getType(nbtTags.getInteger("type"));
-        filter.read(nbtTags);
+        if (filter != null) {
+            filter.read(nbtTags);
+        }
         return filter;
     }
 
+    @Nullable
     public static MinerFilter readFromPacket(ByteBuf dataStream) {
         MinerFilter filter = getType(dataStream.readInt());
-        filter.read(dataStream);
+        if (filter != null) {
+            filter.read(dataStream);
+        }
         return filter;
     }
 

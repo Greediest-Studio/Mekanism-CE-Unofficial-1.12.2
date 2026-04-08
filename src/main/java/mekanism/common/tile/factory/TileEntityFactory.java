@@ -32,6 +32,7 @@ import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityMachine;
 import mekanism.common.util.*;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -54,6 +55,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static mekanism.common.tile.machine.TileEntityChemicalDissolutionChamber.BASE_INJECT_USAGE;
+import static mekanism.common.tile.prefab.TileEntityAdvancedElectricMachine.ceilSecondaryEnergyPerTick;
 
 //TODO:过于重复，待更改
 public class TileEntityFactory extends TileEntityMachine implements IComputerIntegration, ISideConfiguration, IGasHandler, ISpecialConfigData, ITierUpgradeable,
@@ -313,90 +315,102 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         return ItemStack.areItemStackTagsEqual(stack, other);
     }
 
-    @Override
-    public boolean CanInstalled() {
-        //阻止机器在工作的时候安装工厂升级
-        return !isActive;
-    }
 
+    public boolean isUpgrade = true;
 
     @Override
     public boolean upgrade(BaseTier upgradeTier) {
+        IBlockState targetState;
         if (tier == FactoryTier.ELITE || tier == FactoryTier.ULTIMATE) {
             if (upgradeTier.ordinal() != tier.ordinal() + 1) {
                 return false;
             }
-            world.setBlockToAir(getPos());
-            world.setBlockState(getPos(), MekanismBlocks.MachineBlock3.getStateFromMeta(4 + tier.ordinal() + 1), 3);
+            targetState = MekanismBlocks.MachineBlock3.getStateFromMeta(4 + tier.ordinal() + 1);
         } else if (tier == FactoryTier.BASIC || tier == FactoryTier.ADVANCED) {
             if (upgradeTier.ordinal() != tier.ordinal() + 1) {
                 return false;
             }
-            world.setBlockToAir(getPos());
-            world.setBlockState(getPos(), MekanismBlocks.MachineBlock.getStateFromMeta(5 + tier.ordinal() + 1), 3);
+            targetState = MekanismBlocks.MachineBlock.getStateFromMeta(5 + tier.ordinal() + 1);
         } else return false;
+        isUpgrade = false;
+        world.setBlockToAir(getPos());
+        world.setBlockState(getPos(), targetState, 3);
 
-        TileEntityFactory factory = Objects.requireNonNull((TileEntityFactory) world.getTileEntity(getPos()));
-
-        //Basic
-        factory.facing = facing;
-        factory.clientFacing = clientFacing;
-        factory.ticker = ticker;
-        factory.redstone = redstone;
-        factory.redstoneLastTick = redstoneLastTick;
-        factory.doAutoSync = doAutoSync;
-
-        //Electric
-        factory.electricityStored.set(electricityStored.get());
-
-        //Factory
-        System.arraycopy(progress, 0, factory.progress, 0, tier.processes);
-
-        factory.recipeTicks = recipeTicks;
-        factory.isActive = isActive;
-        factory.prevEnergy = prevEnergy;
-        factory.gasTank.setGas(gasTank.getGas());
-        factory.gasOutTank.setGas(gasOutTank.getGas());
-        factory.fluidTank.setFluid(fluidTank.getFluid());
-        factory.sorting = sorting;
-        factory.Factoryoldsorting = Factoryoldsorting;
-        factory.setControlType(getControlType());
-        factory.upgradeComponent.readFrom(upgradeComponent);
-        factory.ejectorComponent.readFrom(ejectorComponent);
-        factory.configComponent.readFrom(configComponent);
-        factory.ejectorComponent.setOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(2));
-        factory.ejectorComponent.setInputOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(6));
-        factory.ejectorComponent.setOutputData(TransmissionType.GAS, factory.configComponent.getOutputs(TransmissionType.GAS).get(2));
-        factory.setRecipeType(recipeType);
-        factory.upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
-        factory.securityComponent.readFrom(securityComponent);
-        factory.infuseStored.copyFrom(infuseStored);
-
-        for (int i = 0; i < tier.processes + 5; i++) {
-            factory.inventory.set(i, inventory.get(i));
-        }
-
-        for (int i = 0; i < tier.processes; i++) {
-            int output = getOutputSlot(i);
-            if (!inventory.get(output).isEmpty()) {
-                int newOutput = 5 + factory.tier.processes + i;
-                factory.inventory.set(newOutput, inventory.get(output));
+        TileEntity tile = world.getTileEntity(getPos());
+        if (!(tile instanceof TileEntityFactory)) {
+            MachineType targetType = MachineType.get(targetState);
+            if (targetType != null) {
+                TileEntity created = targetType.create();
+                if (created instanceof TileEntityFactory) {
+                    world.setTileEntity(getPos(), created);
+                    tile = world.getTileEntity(getPos());
+                }
             }
         }
 
-        for (int i = 0; i < tier.processes; i++) {
-            int SecondaryOutput = getSecondaryOutputSlot(i);
-            if (!inventory.get(SecondaryOutput).isEmpty()) {
-                int newSecondaryOutput = 5 + tier.processes * 2 + i;
-                factory.inventory.set(newSecondaryOutput, inventory.get(SecondaryOutput));
-            }
-        }
+        if (tile instanceof TileEntityFactory factory) {
+            //Basic
+            factory.facing = facing;
+            factory.clientFacing = clientFacing;
+            factory.ticker = ticker;
+            factory.redstone = redstone;
+            factory.redstoneLastTick = redstoneLastTick;
+            factory.doAutoSync = doAutoSync;
 
-        factory.upgradeComponent.getSupportedTypes().forEach(factory::recalculateUpgradables);
-        factory.upgraded = true;
-        factory.markNoUpdateSync();
-        Mekanism.packetHandler.sendUpdatePacket(factory);
-        return true;
+            //Electric
+            factory.electricityStored.set(electricityStored.get());
+
+            //Factory
+            System.arraycopy(progress, 0, factory.progress, 0, tier.processes);
+
+            factory.recipeTicks = recipeTicks;
+            factory.isActive = isActive;
+            factory.prevEnergy = prevEnergy;
+            factory.gasTank.setGas(gasTank.getGas());
+            factory.gasOutTank.setGas(gasOutTank.getGas());
+            factory.fluidTank.setFluid(fluidTank.getFluid());
+            factory.sorting = sorting;
+            factory.Factoryoldsorting = Factoryoldsorting;
+            factory.setControlType(getControlType());
+            factory.upgradeComponent.readFrom(upgradeComponent);
+            factory.ejectorComponent.readFrom(ejectorComponent);
+            factory.configComponent.readFrom(configComponent);
+            factory.ejectorComponent.setOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(2));
+            factory.ejectorComponent.setInputOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(6));
+            factory.ejectorComponent.setOutputData(TransmissionType.GAS, factory.configComponent.getOutputs(TransmissionType.GAS).get(2));
+            factory.setRecipeType(recipeType);
+            factory.upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
+            factory.securityComponent.readFrom(securityComponent);
+            factory.infuseStored.copyFrom(infuseStored);
+
+            for (int i = 0; i < tier.processes + 5; i++) {
+                factory.inventory.set(i, inventory.get(i));
+            }
+
+            for (int i = 0; i < tier.processes; i++) {
+                int output = getOutputSlot(i);
+                if (!inventory.get(output).isEmpty()) {
+                    int newOutput = 5 + factory.tier.processes + i;
+                    factory.inventory.set(newOutput, inventory.get(output));
+                }
+            }
+
+            for (int i = 0; i < tier.processes; i++) {
+                int SecondaryOutput = getSecondaryOutputSlot(i);
+                if (!inventory.get(SecondaryOutput).isEmpty()) {
+                    int newSecondaryOutput = 5 + tier.processes * 2 + i;
+                    factory.inventory.set(newSecondaryOutput, inventory.get(SecondaryOutput));
+                }
+            }
+
+            factory.upgradeComponent.getSupportedTypes().forEach(factory::recalculateUpgradables);
+            factory.upgraded = true;
+            factory.isUpgrade = true;
+            factory.markNoUpdateSync();
+            Mekanism.packetHandler.sendUpdatePacket(factory);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -431,9 +445,9 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
             electricityStored.set(Double.MAX_VALUE);
         }
         if (recipeType == RecipeType.Dissolution) {
-            secondaryEnergyThisTick = Math.max(BASE_INJECT_USAGE * tier.processes, StatUtils.inversePoisson(BASE_INJECT_USAGE * tier.processes));
+            secondaryEnergyThisTick = Math.max(BASE_INJECT_USAGE, StatUtils.inversePoisson(BASE_INJECT_USAGE));
         } else {
-            secondaryEnergyThisTick = recipeType.fuelEnergyUpgrades() ? StatUtils.inversePoisson(secondaryEnergyPerTick) : (int) Math.ceil(secondaryEnergyPerTick);
+            secondaryEnergyThisTick = recipeType.fuelEnergyUpgrades() ? StatUtils.inversePoisson(secondaryEnergyPerTick) : ceilSecondaryEnergyPerTick(secondaryEnergyPerTick);
         }
         for (int process = 0; process < tier.processes; process++) {
             PressurizedRecipe PRCrecipe = recipeType.getPressurizedRecipe(inventory.get(getInputSlot(process)), fluidTank.getFluid(), gasTank.getGas());
@@ -595,7 +609,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         return recipeType.getCanOuputItem();
     }
 
-    public boolean OuputItemSecondaryMachine(){
+    public boolean OuputItemSecondaryMachine() {
         return recipeType.getFuelType() == MachineFuelType.CHANCE || recipeType.getFuelType() == MachineFuelType.FARM;
     }
 
@@ -877,19 +891,22 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
 
     public double getScaledInfuseLevel(int i) {
-        return (double) infuseStored.getAmount() * i / maxInfuse;
+        return maxInfuse <= 0 ? 0 : (double) infuseStored.getAmount() * i / maxInfuse;
     }
 
     public double getScaledGasLevel(int i) {
-        return (double) gasTank.getStored() * i / gasTank.getMaxGas();
+        int maxGas = gasTank.getMaxGas();
+        return maxGas <= 0 ? 0 : (double) gasTank.getStored() * i / maxGas;
     }
 
     public double getScaledGasOutlevel(int i) {
-        return (double) gasOutTank.getStored() * i / gasOutTank.getMaxGas();
+        int maxGas = gasOutTank.getMaxGas();
+        return maxGas <= 0 ? 0 : (double) gasOutTank.getStored() * i / maxGas;
     }
 
     public double getScaledfluidTanklevel(int i) {
-        return (double) fluidTank.getFluidAmount() * i / fluidTank.getCapacity();
+        int capacity = fluidTank.getCapacity();
+        return capacity <= 0 ? 0 : (double) fluidTank.getFluidAmount() * i / capacity;
     }
 
     public int getScaledRecipeProgress(int i) {
@@ -1111,7 +1128,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             RecipeType oldRecipe = recipeType;
-            recipeType = RecipeType.values()[dataStream.readInt()];
+            recipeType = MekanismUtils.getByIndex(RecipeType.values(), dataStream.readInt(), recipeType);
             upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
             recipeTicks = dataStream.readInt();
             sorting = dataStream.readBoolean();
@@ -1156,7 +1173,9 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        setRecipeType(RecipeType.values()[nbtTags.getInteger("recipeType")]);
+        if (nbtTags.hasKey("recipeType")) {
+            setRecipeType(MekanismUtils.getByIndex(RecipeType.values(), nbtTags.getInteger("recipeType"), recipeType));
+        }
         upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
         recipeTicks = nbtTags.getInteger("recipeTicks");
         sorting = nbtTags.getBoolean("sorting");
@@ -1362,6 +1381,9 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (GasMachine() && canReceiveGas(side, stack.getGas())) {
             return gasTank.receive(stack, doTransfer);
         }
@@ -2110,5 +2132,11 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return MachineType.get(block, metadata) != null ? MachineType.get(block, metadata).guiId : -1;
+    }
+
+    //TODO:如果是升级，则取消辐射排放
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return isUpgrade;
     }
 }

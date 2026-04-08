@@ -31,13 +31,15 @@ import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
 public class TileEntityRotaryCondensentrator extends TileEntityMachine implements ISustainedData, IFluidHandlerWrapper, IGasHandler, IUpgradeInfoHandler, ITankManager,
-        IComparatorSupport, ISideConfiguration, ISpecialConfigData, IMachineSlotTip {
+        IComparatorSupport, ISideConfiguration, ISpecialConfigData, IMachineSlotTip, ISpecialSelectionWireframeTile {
 
     public static final int MAX_FLUID = 10000;
     public GasTank gasTank = new GasTank(MAX_FLUID);
@@ -240,6 +242,9 @@ public class TileEntityRotaryCondensentrator extends TileEntityMachine implement
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             return gasTank.receive(stack, doTransfer);
         }
@@ -436,5 +441,16 @@ public class TileEntityRotaryCondensentrator extends TileEntityMachine implement
     @Override
     public String getDataType() {
         return getName();
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelRotaryCondensentrator.class;
     }
 }

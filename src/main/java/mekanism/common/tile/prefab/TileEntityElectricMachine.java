@@ -171,4 +171,9 @@ public abstract class TileEntityElectricMachine<RECIPE extends BasicMachineRecip
     public boolean getOuputSlot() {
         return inventory.get(2).isEmpty();
     }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return false;
+    }
 }

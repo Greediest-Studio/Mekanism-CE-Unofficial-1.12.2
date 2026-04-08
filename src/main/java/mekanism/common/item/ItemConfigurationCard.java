@@ -21,10 +21,7 @@ import net.minecraft.item.IItemPropertyGetter;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
@@ -56,63 +53,70 @@ public class ItemConfigurationCard extends ItemMekanism {
         list.add(EnumColor.GREY + LangUtils.localize("gui.data") + ": " + EnumColor.INDIGO + LangUtils.localize(getDataType(itemstack)));
     }
 
+
     @Nonnull
     @Override
     public EnumActionResult onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ, EnumHand hand) {
-        if (!world.isRemote) {
-            TileEntity tileEntity = world.getTileEntity(pos);
-            if (CapabilityUtils.hasCapability(tileEntity, Capabilities.CONFIG_CARD_CAPABILITY, side)) {
-                if (SecurityUtils.canAccess(player, tileEntity)) {
-                    ItemStack stack = player.getHeldItem(hand);
-                    if (player.isSneaking()) {
-                        NBTTagCompound data = getBaseData(tileEntity);
-                        if (CapabilityUtils.hasCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side)) {
-                            ISpecialConfigData special = CapabilityUtils.getCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side);
-                            data = special.getConfigurationData(data);
-                        }
-
-                        if (data != null) {
-                            data.setString("dataType", getNameFromTile(tileEntity, side));
-                            setData(stack, data);
-                            player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.GREY +
-                                    LangUtils.localize("tooltip.configurationCard.got").replaceAll("%s",
-                                            EnumColor.INDIGO + LangUtils.localize(data.getString("dataType")) + EnumColor.GREY)));
-                        }
-                        return EnumActionResult.SUCCESS;
+        TileEntity tileEntity = world.getTileEntity(pos);
+        if (CapabilityUtils.hasCapability(tileEntity, Capabilities.CONFIG_CARD_CAPABILITY, side)) {
+            if (!SecurityUtils.canAccess(player, tileEntity)) {
+                SecurityUtils.displayNoAccess(player);
+                return EnumActionResult.FAIL;
+            }
+            ItemStack stack = player.getHeldItem(hand);
+            if (player.isSneaking()) {
+                if (!world.isRemote) {
+                    NBTTagCompound data = getBaseData(tileEntity);
+                    if (CapabilityUtils.hasCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side)) {
+                        ISpecialConfigData special = CapabilityUtils.getCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side);
+                        data = special.getConfigurationData(data);
                     }
-                    NBTTagCompound data = getData(stack);
                     if (data != null) {
-                        if (getNameFromTile(tileEntity, side).equals(getDataType(stack))) {
-                            setBaseData(data, tileEntity);
-                            if (CapabilityUtils.hasCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side)) {
-                                ISpecialConfigData special = CapabilityUtils.getCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side);
-                                special.setConfigurationData(data);
-                            }
-                            updateTile(tileEntity);
-                            player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.DARK_GREEN +
-                                    LangUtils.localize("tooltip.configurationCard.set").replaceAll("%s",
-                                            EnumColor.INDIGO + LangUtils.localize(getDataType(stack)) + EnumColor.DARK_GREEN)));
-                        } else {
-                            player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.RED +
-                                    LangUtils.localize("tooltip.configurationCard.unequal") + "."));
-                        }
-                        return EnumActionResult.SUCCESS;
+                        data.setString("dataType", getNameFromTile(tileEntity, side));
+                        setData(stack, data);
+                        player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.GREY + LangUtils.localize("tooltip.configurationCard.got").replaceAll("%s", EnumColor.INDIGO + LangUtils.localize(data.getString("dataType")) + EnumColor.GREY)));
                     }
-                } else {
-                    SecurityUtils.displayNoAccess(player);
                 }
             } else {
-                ItemStack stack = player.getHeldItem(hand);
-                if (player.isSneaking()) {
-                    if (stack.getTagCompound() != null) {
-                        stack.setTagCompound(null);
-                    }
-                    return EnumActionResult.SUCCESS;
+                NBTTagCompound data = getData(stack);
+                if (data == null) {
+                    return EnumActionResult.PASS;
                 }
+                if (!world.isRemote) {
+                    if (getNameFromTile(tileEntity, side).equals(getDataType(stack))) {
+                        setBaseData(data, tileEntity);
+                        if (CapabilityUtils.hasCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side)) {
+                            ISpecialConfigData special = CapabilityUtils.getCapability(tileEntity, Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY, side);
+                            special.setConfigurationData(data);
+                        }
+                        updateTile(tileEntity);
+                        player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.DARK_GREEN + LangUtils.localize("tooltip.configurationCard.set").replaceAll("%s", EnumColor.INDIGO + LangUtils.localize(getDataType(stack)) + EnumColor.DARK_GREEN)));
+                    } else {
+                        player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.RED + LangUtils.localize("tooltip.configurationCard.unequal") + "."));
+                    }
+                }
+                return EnumActionResult.SUCCESS;
             }
         }
         return EnumActionResult.PASS;
     }
+
+
+    @Nonnull
+    @Override
+    public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, @Nonnull EnumHand hand) {
+        ItemStack stack = player.getHeldItem(hand);
+        if (player.isSneaking()) {
+            if (!world.isRemote) {
+                stack.setTagCompound(null);
+                //发送成功清除数据的消息
+                player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.GREY + LangUtils.localize("tooltip.configuration_card.mekanism.cleared") + "."));
+            }
+            return ActionResult.newResult(EnumActionResult.SUCCESS, stack);
+        }
+        return super.onItemRightClick(world, player, hand);
+    }
+
 
     private <TILE extends TileEntity & ITileNetwork> void updateTile(TileEntity tileEntity) {
         //Check the capability in case for some reason the tile doesn't want to expose the fact it has it
@@ -137,7 +141,10 @@ public class ItemConfigurationCard extends ItemMekanism {
 
     private void setBaseData(NBTTagCompound nbtTags, TileEntity tile) {
         if (tile instanceof IRedstoneControl control) {
-            control.setControlType(RedstoneControl.values()[nbtTags.getInteger("controlType")]);
+            int controlType = nbtTags.getInteger("controlType");
+            if (controlType >= 0 && controlType < RedstoneControl.values().length) {
+                control.setControlType(RedstoneControl.values()[controlType]);
+            }
         }
         if (tile instanceof ISideConfiguration configuration) {
             configuration.getConfig().read(nbtTags);

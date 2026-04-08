@@ -17,9 +17,18 @@ public class PacketRobit implements IMessageHandler<RobitMessage, IMessage> {
     @Override
     public IMessage onMessage(RobitMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
-            EntityRobit robit = (EntityRobit) player.world.getEntityByID(message.entityId);
-            if (robit != null) {
+            if (player.world.getEntityByID(message.entityId) instanceof EntityRobit robit) {
+                if (!player.getUniqueID().equals(robit.getOwnerUUID()) && !MekanismUtils.isOp(player)) {
+                    return;
+                }
+                // Do not allow remote control packets from arbitrarily far away.
+                if (player.getDistanceSq(robit) > 64) {
+                    return;
+                }
                 switch (message.activeType) {
                     case GUI:
                         MekanismUtils.openEntityGui(player, robit, message.guiID);
@@ -28,7 +37,9 @@ public class PacketRobit implements IMessageHandler<RobitMessage, IMessage> {
                         robit.setFollowing(!robit.getFollowing());
                         break;
                     case NAME:
-                        robit.setCustomNameTag(message.name);
+                        if (message.name != null) {
+                            robit.setCustomNameTag(message.name.length() > 64 ? message.name.substring(0, 64) : message.name);
+                        }
                         break;
                     case GO_HOME:
                         robit.goHome();
@@ -91,7 +102,7 @@ public class PacketRobit implements IMessageHandler<RobitMessage, IMessage> {
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            activeType = RobitPacketType.values()[dataStream.readInt()];
+            activeType = MekanismUtils.getByIndex(RobitPacketType.values(), dataStream.readInt(), RobitPacketType.GUI);
             entityId = dataStream.readInt();
             if (activeType == RobitPacketType.NAME) {
                 name = PacketHandler.readString(dataStream);

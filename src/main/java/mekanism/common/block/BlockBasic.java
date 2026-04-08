@@ -31,7 +31,6 @@ import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.SecurityUtils;
 import mekanism.common.util.StackUtils;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockFire;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.PropertyEnum;
 import net.minecraft.block.state.BlockStateContainer;
@@ -222,7 +221,7 @@ public abstract class BlockBasic extends BlockTileDrops {
             state = state.withProperty(BlockStateBasic.activeProperty, Valve.eject);
         }
         if (tile instanceof TileEntityBoilerValve Valve) {
-            state = state.withProperty(BlockStateBasic.activeProperty, Valve.Eject);
+            state = state.withProperty(BlockStateBasic.boilerValveModeProperty, Valve.getRenderMode());
         }
         return state;
     }

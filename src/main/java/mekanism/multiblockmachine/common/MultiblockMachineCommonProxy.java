@@ -9,6 +9,7 @@ import mekanism.multiblockmachine.common.tile.generator.TileEntityLargeWindGener
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeChemicalInfuser;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeChemicalWasher;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeElectrolyticSeparator;
+import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeSolarNeutronActivator;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.tileentity.TileEntity;
@@ -29,6 +30,7 @@ public class MultiblockMachineCommonProxy implements IGuiProvider {
         registerTileEntity(TileEntityLargeChemicalWasher.class, "large_chemical_washer");
         registerTileEntity(TileEntityLargeWindGenerator.class,"large_wind_generator");
         registerTileEntity(TileEntityLargeGasGenerator.class,"large_gas_generator");
+        registerTileEntity(TileEntityLargeSolarNeutronActivator.class,"large_solar_neutron_activator");
     }
 
     public void registerTESRs() {
@@ -67,6 +69,7 @@ public class MultiblockMachineCommonProxy implements IGuiProvider {
             case 2 -> new ContainerLargeChemicalWasher(player.inventory, (TileEntityLargeChemicalWasher) tileEntity);
             case 3 -> new ContainerLargeWindGenerator(player.inventory, (TileEntityLargeWindGenerator) tileEntity);
             case 4 -> new ContainerLargeGasGenerator(player.inventory,(TileEntityLargeGasGenerator) tileEntity);
+            case 5 -> new ContainerLargeSolarNeutronActivator(player.inventory,(TileEntityLargeSolarNeutronActivator) tileEntity);
             default -> null;
         };
     }

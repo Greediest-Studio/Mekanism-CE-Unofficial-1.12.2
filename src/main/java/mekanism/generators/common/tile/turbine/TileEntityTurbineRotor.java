@@ -3,17 +3,26 @@ package mekanism.generators.common.tile.turbine;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.config.MekanismConfig;
 import mekanism.common.multiblock.TileEntityInternalMultiblock;
+import mekanism.common.tile.TileEntityStructuralGlass;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TileEntityTurbineRotor extends TileEntityInternalMultiblock {
 
@@ -26,6 +35,10 @@ public class TileEntityTurbineRotor extends TileEntityInternalMultiblock {
     // Rendering helpers
     public float rotationLower;
     public float rotationUpper;
+    @SideOnly(Side.CLIENT)
+    private static final int TURBINE_GLASS_RAY_MAX_STEPS = 20;
+    @SideOnly(Side.CLIENT)
+    private static final double TURBINE_PROBE_MARGIN = 0.03D;
 
     @Override
     public void onNeighborChange(Block block) {
@@ -172,6 +185,140 @@ public class TileEntityTurbineRotor extends TileEntityInternalMultiblock {
     @SideOnly(Side.CLIENT)
     public AxisAlignedBB getRenderBoundingBox() {
         return INFINITE_EXTENT_AABB;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean shouldCullForOcclusion() {
+        if (MekanismConfig.current().client.GazeCullingTracking.val()
+                && getMultiblock() != null && shouldRenderRotorModel()) {
+            return false;
+        }
+        return super.shouldCullForOcclusion();
+    }
+
+    @SideOnly(Side.CLIENT)
+    public boolean shouldRenderRotorModel() {
+        if (blades <= 0) {
+            return false;
+        }
+        if (getMultiblock() == null) {
+            return true;
+        }
+        if (world == null) {
+            return false;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.gameSettings == null) {
+            return false;
+        }
+        if (mc.gameSettings.thirdPersonView != 0) {
+            return true;
+        }
+        Entity renderView = mc.getRenderViewEntity();
+        if (renderView == null) {
+            return false;
+        }
+        Vec3d eyePos = renderView.getPositionEyes(1.0F);
+        for (Vec3d probePoint : buildRotorProbePoints()) {
+            if (canSeePointThroughStructuralGlass(eyePos, probePoint)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private List<Vec3d> buildRotorProbePoints() {
+        double xMin = pos.getX() + TURBINE_PROBE_MARGIN;
+        double yMin = pos.getY() + TURBINE_PROBE_MARGIN;
+        double zMin = pos.getZ() + TURBINE_PROBE_MARGIN;
+        double xMax = pos.getX() + 1D - TURBINE_PROBE_MARGIN;
+        double yMax = pos.getY() + 1D - TURBINE_PROBE_MARGIN;
+        double zMax = pos.getZ() + 1D - TURBINE_PROBE_MARGIN;
+        double centerX = pos.getX() + 0.5D;
+        double centerZ = pos.getZ() + 0.5D;
+        double[] ys = new double[]{
+                yMin + (yMax - yMin) * 0.2D,
+                yMin + (yMax - yMin) * 0.5D,
+                yMin + (yMax - yMin) * 0.8D
+        };
+        List<Vec3d> probes = new ArrayList<>(27);
+        for (double y : ys) {
+            probes.add(new Vec3d(centerX, y, centerZ));
+            probes.add(new Vec3d(xMin, y, centerZ));
+            probes.add(new Vec3d(xMax, y, centerZ));
+            probes.add(new Vec3d(centerX, y, zMin));
+            probes.add(new Vec3d(centerX, y, zMax));
+            probes.add(new Vec3d(xMin, y, zMin));
+            probes.add(new Vec3d(xMin, y, zMax));
+            probes.add(new Vec3d(xMax, y, zMin));
+            probes.add(new Vec3d(xMax, y, zMax));
+        }
+        return probes;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean canSeePointThroughStructuralGlass(Vec3d eyePos, Vec3d target) {
+        Vec3d start = eyePos;
+        Vec3d direction = target.subtract(eyePos);
+        double distanceSq = direction.lengthSquared();
+        if (distanceSq <= 1.0E-8D) {
+            return true;
+        }
+        Vec3d directionNorm = direction.scale(1.0D / Math.sqrt(distanceSq));
+        boolean passedStructuralGlass = false;
+        for (int i = 0; i < TURBINE_GLASS_RAY_MAX_STEPS; i++) {
+            RayTraceResult trace = world.rayTraceBlocks(start, target, false, true, false);
+            if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK) {
+                return passedStructuralGlass;
+            }
+            BlockPos hitPos = trace.getBlockPos();
+            if (pos.equals(hitPos)) {
+                return passedStructuralGlass;
+            }
+            IBlockState hitState = world.getBlockState(hitPos);
+            if (isStructuralGlass(hitPos)) {
+                passedStructuralGlass = true;
+            }
+            if (!isTransparentForRotorRay(hitState, hitPos)) {
+                return false;
+            }
+            if (trace.hitVec == null) {
+                return false;
+            }
+            start = trace.hitVec.add(directionNorm.scale(0.01D));
+            if (start.squareDistanceTo(target) < 1.0E-6D) {
+                return passedStructuralGlass;
+            }
+        }
+        return passedStructuralGlass;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isStructuralGlass(BlockPos pos) {
+        if (world == null || pos == null) {
+            return false;
+        }
+        TileEntity tile = world.getTileEntity(pos);
+        return tile instanceof TileEntityStructuralGlass;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isTransparentForRotorRay(IBlockState state, BlockPos pos) {
+        if (state == null) {
+            return false;
+        }
+        if (isStructuralGlass(pos) || state.getMaterial().isLiquid()) {
+            return true;
+        }
+        if (!state.isFullCube()) {
+            return true;
+        }
+        if (!state.isOpaqueCube()) {
+            return true;
+        }
+        return state.getBlock().isTranslucent(state);
     }
 
 

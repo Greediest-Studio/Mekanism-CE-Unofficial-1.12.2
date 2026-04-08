@@ -245,7 +245,12 @@ public class TransmitterModel extends OBJBakedModelBase {
         public IBakedModel handleItemState(@Nonnull IBakedModel originalModel, ItemStack stack, World world, EntityLivingBase entity) {
             if (itemCache == null) {
                 List<String> visible = new ArrayList<>();
-                TransmissionType transmission = BlockStateTransmitter.TransmitterType.values()[stack.getItemDamage()].getTransmission();
+                BlockStateTransmitter.TransmitterType[] transmitterTypes = BlockStateTransmitter.TransmitterType.values();
+                int typeIndex = stack.getItemDamage();
+                if (typeIndex < 0 || typeIndex >= transmitterTypes.length) {
+                    typeIndex = 0;
+                }
+                TransmissionType transmission = transmitterTypes[typeIndex].getTransmission();
                 if (transmission == TransmissionType.ITEM || transmission == TransmissionType.FLUID) {
                     for (EnumFacing side : EnumFacing.VALUES) {
                         visible.add(side.getName() + (side.getAxis() == Axis.Y ? "NORMAL" : "NONE"));

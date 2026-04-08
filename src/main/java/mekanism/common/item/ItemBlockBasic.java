@@ -82,7 +82,11 @@ public class ItemBlockBasic extends ItemBlock implements IEnergizedItem, ITierIt
         if (itemstack.getTagCompound() == null) {
             return BaseTier.BASIC;
         }
-        return BaseTier.values()[itemstack.getTagCompound().getInteger("tier")];
+        int tier = itemstack.getTagCompound().getInteger("tier");
+        if (tier >= 0 && tier < BaseTier.values().length) {
+            return BaseTier.values()[tier];
+        }
+        return BaseTier.BASIC;
     }
 
     @Override

@@ -1,0 +1,36 @@
+{
+  "result": {
+    "item": "mekanism:machineblock4",
+    "data": 14
+  },
+  "pattern": [
+    "ICI",
+    "ADA",
+    "ICI"
+  ],
+  "type": "mekanism:ore_shaped",
+  "conditions": [
+    {
+      "type": "mekanism:recipe_enabled",
+      "machineType": "dimensional_stabilizer"
+    }
+  ],
+  "key": {
+    "A": {
+      "ore": "alloyUltimate",
+      "type": "forge:ore_dict"
+    },
+    "C": {
+      "ore": "circuitUltimate",
+      "type": "forge:ore_dict"
+    },
+    "D": {
+      "ore": "blockDiamond",
+      "type": "forge:ore_dict"
+    },
+    "I": {
+      "ore": "ingotRefinedObsidian",
+      "type": "forge:ore_dict"
+    }
+  }
+}

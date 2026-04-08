@@ -92,7 +92,7 @@ public class Coord4D {
      * @return the Coord4D from the tag compound
      */
     public static Coord4D read(NBTTagCompound tag) {
-        return new Coord4D(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z"), tag.getInteger("id"));
+        return new Coord4D(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z"), tag.getInteger("dimensionId"));
     }
 
     /**

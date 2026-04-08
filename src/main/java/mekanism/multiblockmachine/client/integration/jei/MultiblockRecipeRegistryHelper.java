@@ -6,6 +6,7 @@ import mekanism.multiblockmachine.client.gui.generator.GuiLargeGasGenerator;
 import mekanism.multiblockmachine.client.gui.machine.GuiLargeChemicalInfuser;
 import mekanism.multiblockmachine.client.gui.machine.GuiLargeChemicalWasher;
 import mekanism.multiblockmachine.client.gui.machine.GuiLargeElectrolyticSeparator;
+import mekanism.multiblockmachine.client.gui.machine.GuiLargeSolarNeutronActivator;
 import mekanism.multiblockmachine.common.registries.MultiblockMachineBlocks;
 import mezz.jei.api.IModRegistry;
 import net.minecraft.block.Block;
@@ -32,6 +33,11 @@ public class MultiblockRecipeRegistryHelper {
     public static void registerGasStackFlueToEnergyRecipe(IModRegistry registry) {
         registry.addRecipeClickArea(GuiLargeGasGenerator.class, 55, 18, 66, 50, RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.getJEICategory());
         registerRecipeItem(registry, MultiblockMachineBlocks.LargeGasGenerator, RecipeHandler.Recipe.GAS_FUEL_TO_ENERGY_RECIPE.getJEICategory());
+    }
+
+    public static void registerLargeSolarNeutronActivator(IModRegistry registry) {
+        registry.addRecipeClickArea(GuiLargeSolarNeutronActivator.class, 64, 39, 48, 8, Recipe.SOLAR_NEUTRON_ACTIVATOR.getJEICategory());
+        registerRecipeItem(registry, MultiblockMachineBlocks.LargeSolarNeutronActivator, RecipeHandler.Recipe.SOLAR_NEUTRON_ACTIVATOR.getJEICategory());
     }
 
     private static void registerRecipeItem(IModRegistry registry, Block block, String... recipe) {

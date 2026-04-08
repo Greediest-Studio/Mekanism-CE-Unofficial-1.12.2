@@ -3,6 +3,7 @@ package mekanism.common.tile.base;
 import mekanism.common.Mekanism;
 import mekanism.common.base.IActiveState;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.interfaces.IOcclusionCulling;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -21,7 +22,7 @@ import java.util.Objects;
  * 可异步类型tile方块。
  */
 //TODO：需要让它正确的运行，虽然可以运行
-public class TileEntitySynchronized extends TileEntity {
+public class TileEntitySynchronized extends TileEntity implements IOcclusionCulling {
 
     private boolean inUpdateTask = false;
     private boolean inMarkTask = false;
@@ -236,4 +237,25 @@ public class TileEntitySynchronized extends TileEntity {
         return rang * rang;
     }
 
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public boolean shouldCullForOcclusion() {
+        if (!MekanismConfig.current().client.GazeCullingTracking.val()) {
+            return false;
+        }
+        return IOcclusionCulling.super.shouldCullForOcclusion();
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public boolean useOpenGlOcclusionCulling() {
+        return MekanismConfig.current().client.GazeCullingOpenGLTracking.val();
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public int getOpenGlOcclusionQueryInterval() {
+        return MekanismConfig.current().client.GazeCullingOpenGLQueryInterval.val();
+    }
 }

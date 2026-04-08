@@ -17,7 +17,7 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 
-public class ItemBlockLargeChemicalWasher extends ItemBlockLargeBase {
+public class ItemBlockLargeChemicalWasher extends ItemBlockLargeBaseEnergy {
 
     public ItemBlockLargeChemicalWasher(Block block) {
         super(block, "LargeChemicalWasher");

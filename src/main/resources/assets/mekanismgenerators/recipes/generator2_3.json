@@ -1,0 +1,24 @@
+{
+  "result": {
+    "item": "mekanismgenerators:generator2",
+    "data": 3,
+    "count": 1
+  },
+  "pattern": [
+    " E ",
+    "IFI",
+    " I "
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "E": {"item": "#CIRCUITELITE"},
+    "F": {
+      "item": "mekanismgenerators:generator2",
+      "data": 2
+    },
+    "I": {
+      "ore": "ingotSteel",
+      "type": "forge:ore_dict"
+    }
+  }
+}

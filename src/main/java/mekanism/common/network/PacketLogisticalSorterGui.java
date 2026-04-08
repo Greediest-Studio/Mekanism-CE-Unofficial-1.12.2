@@ -8,9 +8,11 @@ import mekanism.common.Mekanism;
 import mekanism.common.PacketHandler;
 import mekanism.common.inventory.container.ContainerFilter;
 import mekanism.common.inventory.container.ContainerNull;
+import mekanism.common.network.PacketDataRequest.DataRequestMessage;
 import mekanism.common.network.PacketLogisticalSorterGui.LogisticalSorterGuiMessage;
 import mekanism.common.tile.TileEntityLogisticalSorter;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -29,22 +31,33 @@ public class PacketLogisticalSorterGui implements IMessageHandler<LogisticalSort
     @Override
     public IMessage onMessage(LogisticalSorterGuiMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             if (!player.world.isRemote) {
                 World worldServer = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(message.coord4D.dimensionId);
-                if (message.coord4D.getTileEntity(worldServer) instanceof TileEntityLogisticalSorter) {
+                if (worldServer != null && message.coord4D.getTileEntity(worldServer) instanceof TileEntityLogisticalSorter tile
+                        && PacketHandler.canAccessTile(player, tile)) {
                     LogisticalSorterGuiMessage.openServerGui(message.packetType, message.guiType, worldServer, (EntityPlayerMP) player, message.coord4D, message.index);
                 }
             } else if (message.coord4D.getTileEntity(player.world) instanceof TileEntityLogisticalSorter) {
                 try {
+                    GuiScreen gui = null;
                     if (message.packetType == SorterGuiPacket.CLIENT) {
-                        FMLCommonHandler.instance().showGuiScreen(LogisticalSorterGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
-                                message.coord4D.getPos(), -1));
+                        gui = LogisticalSorterGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
+                                message.coord4D.getPos(), -1);
                     } else if (message.packetType == SorterGuiPacket.CLIENT_INDEX) {
-                        FMLCommonHandler.instance().showGuiScreen(LogisticalSorterGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
-                                message.coord4D.getPos(), message.index));
+                        gui = LogisticalSorterGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
+                                message.coord4D.getPos(), message.index);
                     }
-                    player.openContainer.windowId = message.windowId;
+                    if (gui != null) {
+                        FMLCommonHandler.instance().showGuiScreen(gui);
+                        if (player.openContainer != null) {
+                            player.openContainer.windowId = message.windowId;
+                        }
+                        Mekanism.packetHandler.sendToServer(new DataRequestMessage(message.coord4D));
+                    }
                 } catch (Exception e) {
                     Mekanism.logger.error("FIXME: Packet handling error", e);
                 }
@@ -86,7 +99,7 @@ public class PacketLogisticalSorterGui implements IMessageHandler<LogisticalSort
             } else if (packetType == SorterGuiPacket.SERVER_INDEX) {
                 index = extra;
             } else if (packetType == SorterGuiPacket.CLIENT_INDEX) {
-                windowId = extra2;
+                windowId = extra;
                 index = extra2;
             }
         }
@@ -102,6 +115,9 @@ public class PacketLogisticalSorterGui implements IMessageHandler<LogisticalSort
                 container = new ContainerNull(playerMP, (TileEntityContainerBlock) obj.getTileEntity(world));
             } else if (guiType == 1 || guiType == 2 || guiType == 3 || guiType == 5) {
                 container = new ContainerFilter(playerMP.inventory, (TileEntityContainerBlock) obj.getTileEntity(world));
+            }
+            if (container == null) {
+                return;
             }
             playerMP.getNextWindowId();
             int window = playerMP.currentWindowId;
@@ -163,7 +179,7 @@ public class PacketLogisticalSorterGui implements IMessageHandler<LogisticalSort
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            packetType = SorterGuiPacket.values()[dataStream.readInt()];
+            packetType = MekanismUtils.getByIndex(SorterGuiPacket.values(), dataStream.readInt(), SorterGuiPacket.SERVER);
 
             coord4D = Coord4D.read(dataStream);
 

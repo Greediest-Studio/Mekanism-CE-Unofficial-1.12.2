@@ -35,7 +35,7 @@ public abstract class TileEntityRestrictedTick extends TileEntitySynchronized im
     public abstract void doRestrictedTick();
 
     protected boolean shouldDumpRadiation() {
-        return true;
+        return false;
     }
 
     @Override

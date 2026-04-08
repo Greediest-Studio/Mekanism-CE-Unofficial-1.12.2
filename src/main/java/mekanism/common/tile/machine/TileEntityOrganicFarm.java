@@ -32,6 +32,9 @@ public class TileEntityOrganicFarm extends TileEntityFarmMachine<FarmRecipe> {
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             return gasTank.receive(stack, doTransfer);
         }

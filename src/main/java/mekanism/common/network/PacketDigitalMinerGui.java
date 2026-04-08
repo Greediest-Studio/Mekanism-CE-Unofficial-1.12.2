@@ -11,10 +11,12 @@ import mekanism.common.PacketHandler;
 import mekanism.common.inventory.container.ContainerDigitalMiner;
 import mekanism.common.inventory.container.ContainerFilter;
 import mekanism.common.inventory.container.ContainerNull;
+import mekanism.common.network.PacketDataRequest.DataRequestMessage;
 import mekanism.common.network.PacketDigitalMinerGui.DigitalMinerGuiMessage;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.machine.TileEntityDigitalMiner;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -33,22 +35,33 @@ public class PacketDigitalMinerGui implements IMessageHandler<DigitalMinerGuiMes
     @Override
     public IMessage onMessage(DigitalMinerGuiMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             if (!player.world.isRemote) {
                 World worldServer = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(message.coord4D.dimensionId);
-                if (message.coord4D.getTileEntity(worldServer) instanceof TileEntityDigitalMiner) {
+                if (worldServer != null && message.coord4D.getTileEntity(worldServer) instanceof TileEntityDigitalMiner tile
+                        && PacketHandler.canAccessTile(player, tile)) {
                     DigitalMinerGuiMessage.openServerGui(message.packetType, message.guiType, worldServer, (EntityPlayerMP) player, message.coord4D, message.index);
                 }
             } else if (message.coord4D.getTileEntity(player.world) instanceof TileEntityDigitalMiner) {
                 try {
+                    GuiScreen gui = null;
                     if (message.packetType == MinerGuiPacket.CLIENT) {
-                        FMLCommonHandler.instance().showGuiScreen(DigitalMinerGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
-                                message.coord4D.getPos(), -1));
+                        gui = DigitalMinerGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
+                                message.coord4D.getPos(), -1);
                     } else if (message.packetType == MinerGuiPacket.CLIENT_INDEX) {
-                        FMLCommonHandler.instance().showGuiScreen(DigitalMinerGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
-                                message.coord4D.getPos(), message.index));
+                        gui = DigitalMinerGuiMessage.getGui(message.packetType, message.guiType, player, player.world,
+                                message.coord4D.getPos(), message.index);
                     }
-                    player.openContainer.windowId = message.windowId;
+                    if (gui != null) {
+                        FMLCommonHandler.instance().showGuiScreen(gui);
+                        if (player.openContainer != null) {
+                            player.openContainer.windowId = message.windowId;
+                        }
+                        Mekanism.packetHandler.sendToServer(new DataRequestMessage(message.coord4D));
+                    }
                 } catch (Exception e) {
                     Mekanism.logger.error("FIXME: Packet handling error", e);
                 }
@@ -175,7 +188,7 @@ public class PacketDigitalMinerGui implements IMessageHandler<DigitalMinerGuiMes
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            packetType = MinerGuiPacket.values()[dataStream.readInt()];
+            packetType = MekanismUtils.getByIndex(MinerGuiPacket.values(), dataStream.readInt(), MinerGuiPacket.SERVER);
 
             coord4D = Coord4D.read(dataStream);
 

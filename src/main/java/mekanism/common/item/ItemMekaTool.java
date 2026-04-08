@@ -75,7 +75,7 @@ public class ItemMekaTool extends ItemEnergized implements IModuleContainerItem,
 
 
     public ItemMekaTool() {
-        super(MekanismConfig.current().general.toolBatteryCapacity.val());
+        super(MekanismConfig.current().meka.mekaToolBaseEnergyCapacity.val());
         setRarity(EnumRarity.EPIC);
         setMaxStackSize(1);
         setNoRepair();
@@ -215,6 +215,57 @@ public class ItemMekaTool extends ItemEnergized implements IModuleContainerItem,
         return Collections.emptyMap();
     }
 
+    @Override
+    public Map<BlockPos, IBlockState> getBlastedBlocksForRendering(World world, EntityPlayer player, ItemStack stack, BlockPos pos, IBlockState state) {
+        VeinMiningTargets targets = getVeinMiningTargets(world, player, stack, pos, state);
+        if (targets == null || targets.veinedBlocks.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<BlockPos, IBlockState> blocks = new HashMap<>(targets.veinedBlocks.size());
+        for (BlockPos targetPos : targets.veinedBlocks.keySet()) {
+            IBlockState targetState = world.getBlockState(targetPos);
+            if (!targetState.getBlock().isAir(targetState, world, targetPos)) {
+                blocks.put(targetPos, targetState);
+            }
+        }
+        return blocks;
+    }
+
+    private VeinMiningTargets getVeinMiningTargets(World world, EntityPlayer player, ItemStack stack, BlockPos pos, IBlockState state) {
+        Map<BlockPos, IBlockState> blocks = getBlastedBlocks(world, player, stack, pos, state);
+        if (blocks.isEmpty() && ModuleVeinMiningUnit.canVeinBlock(state)) {
+            Map<BlockPos, IBlockState> fallback = new HashMap<>();
+            fallback.put(pos, state);
+            blocks = fallback;
+        }
+        if (blocks.isEmpty()) {
+            return null;
+        }
+        Block block = state.getBlock();
+        if (block == Blocks.LIT_REDSTONE_ORE) {
+            block = Blocks.REDSTONE_ORE;
+        }
+        RayTraceResult raytrace = doRayTrace(state, pos, player);
+        ItemStack pickedStack = block.getPickBlock(state, raytrace, player.world, pos, player);
+        List<String> names = OreDictCache.getOreDictName(pickedStack);
+        boolean isOre = names.stream().anyMatch(s -> s.startsWith("ore") || s.equals("logWood"));
+        Reference2BooleanMap<Block> oreTracker = blocks.values().stream().collect(Collectors.toMap(IBlockState::getBlock, bs -> isOre, (l, r) -> l, Reference2BooleanArrayMap::new));
+        Object2IntMap<BlockPos> veinedBlocks = getVeinedBlocks(world, stack, blocks, oreTracker);
+        return new VeinMiningTargets(oreTracker, veinedBlocks, isOre);
+    }
+
+    private static class VeinMiningTargets {
+        private final Reference2BooleanMap<Block> oreTracker;
+        private final Object2IntMap<BlockPos> veinedBlocks;
+        private final boolean isOre;
+
+        private VeinMiningTargets(Reference2BooleanMap<Block> oreTracker, Object2IntMap<BlockPos> veinedBlocks, boolean isOre) {
+            this.oreTracker = oreTracker;
+            this.veinedBlocks = veinedBlocks;
+            this.isOre = isOre;
+        }
+    }
+
 
     private Object2IntMap<BlockPos> getVeinedBlocks(World world, ItemStack stack, Map<BlockPos, IBlockState> blocks, Reference2BooleanMap<Block> oreTracker) {
         IModule<ModuleVeinMiningUnit> veinMiningUnit = getModule(stack, MekanismModules.VEIN_MINING_UNIT);
@@ -239,25 +290,12 @@ public class ItemMekaTool extends ItemEnergized implements IModuleContainerItem,
             double modDestroyEnergy = getDestroyEnergy(itemstack, silk);
             double energyRequired = getDestroyEnergy(modDestroyEnergy, state.getBlockHardness(world, pos));
             if (energyContainer.extract(itemstack, energyRequired, false) >= (energyRequired)) {
-                Map<BlockPos, IBlockState> blocks = getBlastedBlocks(world, player, itemstack, pos, state);
-                Map<BlockPos, IBlockState> map = new HashMap<>();
-                map.put(pos, state);
-                blocks = blocks.isEmpty() && ModuleVeinMiningUnit.canVeinBlock(state) ? map : blocks;
-                Block block = state.getBlock();
-                if (block == Blocks.LIT_REDSTONE_ORE) {
-                    block = Blocks.REDSTONE_ORE;
-                }
-                RayTraceResult raytrace = doRayTrace(state, pos, player);
-                ItemStack stack = block.getPickBlock(state, raytrace, player.world, pos, player);
-                List<String> names = OreDictCache.getOreDictName(stack);
-                boolean isOre = names.stream().anyMatch(s -> s.startsWith("ore") || s.equals("logWood"));
-                Reference2BooleanMap<Block> oreTracker = blocks.values().stream().collect(Collectors.toMap(IBlockState::getBlock, bs -> isOre, (l, r) -> l, Reference2BooleanArrayMap::new));
-                Object2IntMap<BlockPos> veinedBlocks = getVeinedBlocks(world, itemstack, blocks, oreTracker);
-                if (!veinedBlocks.isEmpty()) {
+                VeinMiningTargets targets = getVeinMiningTargets(world, player, itemstack, pos, state);
+                if (targets != null && !targets.veinedBlocks.isEmpty()) {
                     double baseDestroyEnergy = getDestroyEnergy(silk);
-                    MekanismUtils.veinMineArea(energyContainer, energyRequired, world, pos, (EntityPlayerMP) player, itemstack, this, veinedBlocks,
+                    MekanismUtils.veinMineArea(energyContainer, energyRequired, world, pos, (EntityPlayerMP) player, itemstack, this, targets.veinedBlocks,
                             hardness -> getDestroyEnergy(modDestroyEnergy, hardness),
-                            (hardness, distance, bs) -> getDestroyEnergy(baseDestroyEnergy, hardness) * (0.5 * Math.pow(distance, oreTracker.getBoolean(isOre) ? 1.5 : 2)));
+                            (hardness, distance, bs) -> getDestroyEnergy(baseDestroyEnergy, hardness) * (0.5 * Math.pow(distance, targets.oreTracker.getBoolean(targets.isOre) ? 1.5 : 2)));
 
                 }
             }

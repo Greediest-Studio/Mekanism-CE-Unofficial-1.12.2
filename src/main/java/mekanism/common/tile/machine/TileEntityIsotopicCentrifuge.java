@@ -10,6 +10,7 @@ import mekanism.common.SideData;
 import mekanism.common.Upgrade;
 import mekanism.common.Upgrade.IUpgradeInfoHandler;
 import mekanism.common.base.IBoundingBlock;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
 import mekanism.common.block.states.BlockStateMachine;
@@ -24,17 +25,32 @@ import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityBasicMachine;
 import mekanism.common.util.*;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 
-public class TileEntityIsotopicCentrifuge extends TileEntityBasicMachine<GasInput, GasOutput, IsotopicRecipe> implements ISustainedData, IBoundingBlock, IGasHandler, IUpgradeInfoHandler, ITankManager {
+public class TileEntityIsotopicCentrifuge extends TileEntityBasicMachine<GasInput, GasOutput, IsotopicRecipe> implements ISustainedData, IBoundingBlock, IGasHandler, IUpgradeInfoHandler, ITankManager, ISpecialSelectionWireframeTile {
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_SOUTH = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(180, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_WEST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(90, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_EAST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(270, 0.5D, 0.5D, 0.5D)
+    };
+
     public static final int MAX_GAS = 10000;
     public GasTank inputTank = new GasTank(MAX_GAS);
     public GasTank outputTank = new GasTank(MAX_GAS);
@@ -209,6 +225,9 @@ public class TileEntityIsotopicCentrifuge extends TileEntityBasicMachine<GasInpu
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             int recipeAmount = RecipeHandler.Recipe.ISOTOPIC_CENTRIFUGE.get().get(new GasInput(stack)).recipeInput.ingredient.amount;
             int receivable = inputTank.receive(stack, false);
@@ -349,4 +368,30 @@ public class TileEntityIsotopicCentrifuge extends TileEntityBasicMachine<GasInpu
         return false;
     }
 
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelIsotopicCentrifuge.class;
+    }
+
+    @Override
+    public boolean shouldApplyDefaultSelectionWireframeFacingRotation(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return false;
+    }
+
+    @Override
+    public ISpecialSelectionWireframeTile.SelectionTransform[] getSelectionWireframeTransforms(IBlockState state, IBlockAccess world, BlockPos pos) {
+        EnumFacing currentFacing = facing == null ? EnumFacing.NORTH : facing;
+        return switch (currentFacing) {
+            case SOUTH -> SELECTION_ROTATE_SOUTH;
+            case WEST -> SELECTION_ROTATE_WEST;
+            case EAST -> SELECTION_ROTATE_EAST;
+            default -> SelectionTransform.EMPTY;
+        };
+    }
 }

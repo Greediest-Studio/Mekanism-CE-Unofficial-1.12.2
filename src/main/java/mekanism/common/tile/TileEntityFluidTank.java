@@ -238,9 +238,9 @@ public class TileEntityFluidTank extends TileEntityContainerBlock implements IAc
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        tier = FluidTankTier.values()[nbtTags.getInteger("tier")];
+        tier = MekanismUtils.getByIndex(FluidTankTier.values(), nbtTags.getInteger("tier"), tier);
         clientActive = isActive = nbtTags.getBoolean("isActive");
-        editMode = ContainerEditMode.values()[nbtTags.getInteger("editMode")];
+        editMode = MekanismUtils.getByIndex(ContainerEditMode.values(), nbtTags.getInteger("editMode"), editMode);
         //Needs to be outside the hasKey check because this is just based on the tier which is known information
         fluidTank.setCapacity(tier.getStorage());
         if (nbtTags.hasKey("fluidTank")) {
@@ -253,12 +253,12 @@ public class TileEntityFluidTank extends TileEntityContainerBlock implements IAc
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             FluidTankTier prevTier = tier;
-            tier = FluidTankTier.values()[dataStream.readInt()];
+            tier = MekanismUtils.getByIndex(FluidTankTier.values(), dataStream.readInt(), tier);
             fluidTank.setCapacity(tier.getStorage());
 
             clientActive = dataStream.readBoolean();
             valve = dataStream.readInt();
-            editMode = ContainerEditMode.values()[dataStream.readInt()];
+            editMode = MekanismUtils.getByIndex(ContainerEditMode.values(), dataStream.readInt(), editMode);
             if (valve > 0) {
                 valveFluid = TileUtils.readFluidStack(dataStream);
             } else {

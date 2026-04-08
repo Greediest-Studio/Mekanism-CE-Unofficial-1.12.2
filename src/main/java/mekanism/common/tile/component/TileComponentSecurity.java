@@ -120,9 +120,9 @@ public class TileComponentSecurity implements ITileComponent {
 
     @Override
     public void read(NBTTagCompound nbtTags) {
-        securityMode = SecurityMode.values()[nbtTags.getInteger("securityMode")];
+        securityMode = MekanismUtils.getByIndex(SecurityMode.values(), nbtTags.getInteger("securityMode"), securityMode);
         if (nbtTags.hasKey("ownerUUID")) {
-            ownerUUID = UUID.fromString(nbtTags.getString("ownerUUID"));
+            ownerUUID = MekanismUtils.parseUUID(nbtTags.getString("ownerUUID"));
         }
         if (nbtTags.hasKey("securityFreq")) {
             frequency = new SecurityFrequency(nbtTags.getCompoundTag("securityFreq"));
@@ -132,10 +132,10 @@ public class TileComponentSecurity implements ITileComponent {
 
     @Override
     public void read(ByteBuf dataStream) {
-        securityMode = SecurityMode.values()[dataStream.readInt()];
+        securityMode = MekanismUtils.getByIndex(SecurityMode.values(), dataStream.readInt(), securityMode);
 
         if (dataStream.readBoolean()) {
-            ownerUUID = UUID.fromString(PacketHandler.readString(dataStream));
+            ownerUUID = MekanismUtils.parseUUID(PacketHandler.readString(dataStream));
             clientOwner = PacketHandler.readString(dataStream);
         } else {
             ownerUUID = null;

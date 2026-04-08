@@ -1,0 +1,33 @@
+{
+  "forge_marker": 1,
+  "variants": {
+    "mode": {
+      "input": {
+        "textures": {
+          "all": "mekanismgenerators:blocks/fission_reactor_port_input"
+        },
+        "model": "mekanism:basic_cube"
+      },
+      "output_coolant": {
+        "textures": {
+          "all": "mekanismgenerators:blocks/fission_reactor_port_output_coolant"
+        },
+        "model": "mekanism:basic_cube"
+      },
+      "output_waste": {
+        "textures": {
+          "all": "mekanismgenerators:blocks/fission_reactor_port_output_waste"
+        },
+        "model": "mekanism:basic_cube"
+      }
+    },
+    "inventory": [
+      {
+        "textures": {
+          "all": "mekanismgenerators:blocks/fission_reactor_port_input"
+        },
+        "model": "mekanism:basic_cube"
+      }
+    ]
+  }
+}

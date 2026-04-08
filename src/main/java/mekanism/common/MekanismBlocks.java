@@ -40,6 +40,8 @@ public class MekanismBlocks {
 
     public static Block BasicBlock3 = BlockBasic.getBlockBasic(BASIC_BLOCK_3);
 
+    public static Block SuperFumo = new BlockSuperFumo();
+
     /**
      * Adds and registers all blocks.
      *
@@ -69,6 +71,7 @@ public class MekanismBlocks {
         registry.register(init(SaltBlock, "SaltBlock"));
 
         registry.register(init(BasicBlock3, "BasicBlock3"));
+        registry.register(init(SuperFumo,"SuperFumo"));
     }
 
     /**
@@ -100,6 +103,7 @@ public class MekanismBlocks {
 
         registry.register(MekanismItems.init(new ItemBlockBasic(BasicBlock3), "BasicBlock3"));
         registry.register(MekanismItems.init(new ItemBlockMachine(MachineBlock4), "MachineBlock4"));
+        registry.register(MekanismItems.init(new ItemBlockSuperFumo(SuperFumo),"SuperFumo"));
     }
 
     public static Block init(Block block, String name) {

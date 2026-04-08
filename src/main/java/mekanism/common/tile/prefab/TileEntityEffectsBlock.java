@@ -209,7 +209,7 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
         if (!(this instanceof IUpgradeTile tile)) {
             return false;
         }
-        if (tile.getComponent().supports(Upgrade.MUFFLING)) {
+        if (tile.supportsUpgrade(Upgrade.MUFFLING)) {
             return tile.getComponent().getUpgrades(Upgrade.MUFFLING) == Upgrade.MUFFLING.getMaxInstalled();
         }
         return false;

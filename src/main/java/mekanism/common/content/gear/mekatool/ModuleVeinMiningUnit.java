@@ -22,6 +22,8 @@ import mekanism.common.block.BlockBounding;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.item.ItemAtomicDisassembler.DisassemblerMode;
 import mekanism.common.lib.radial.data.RadialDataHelper;
+import mekanism.common.network.PacketLightningRender.LightningPreset;
+import mekanism.common.network.PacketLightningRender.LightningRenderMessage;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.WorldUtils;
@@ -30,6 +32,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
@@ -37,10 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
 @ParametersAreNonnullByDefault
@@ -149,8 +149,14 @@ public class ModuleVeinMiningUnit implements ICustomModule<ModuleVeinMiningUnit>
                         Optional<IBlockState> nextState = WorldUtils.getBlockState(world, nextPos);
                         if (nextState.isPresent() && nextState.get().getBlock() == block) {
                             //Make sure to add it as immutable
-                            frontier.put(nextPos.toImmutable(), nextState.get());
-                            //渲染？
+                            BlockPos immutablePos = nextPos.toImmutable();
+                            frontier.put(immutablePos, nextState.get());
+                            if (!world.isRemote) {
+                                Vec3d start = new Vec3d(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D);
+                                Vec3d end = new Vec3d(immutablePos.getX() + 0.5D, immutablePos.getY() + 0.5D, immutablePos.getZ() + 0.5D);
+                                Mekanism.packetHandler.sendToAllTracking(new LightningRenderMessage(LightningPreset.TOOL_AOE, Objects.hash(blockPos, immutablePos), start, end, 10),
+                                      world.provider.getDimension(), blockPos.getX(), blockPos.getY(), blockPos.getZ());
+                            }
                         }
                     }
                 }
@@ -219,3 +225,4 @@ public class ModuleVeinMiningUnit implements ICustomModule<ModuleVeinMiningUnit>
         }
     }
 }
+

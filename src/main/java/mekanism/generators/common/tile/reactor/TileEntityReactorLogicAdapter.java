@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.util.LangUtils;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -58,7 +59,7 @@ public class TileEntityReactorLogicAdapter extends TileEntityReactorBlock implem
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        logicType = ReactorLogic.values()[nbtTags.getInteger("logicType")];
+        logicType = MekanismUtils.getByIndex(ReactorLogic.values(), nbtTags.getInteger("logicType"), ReactorLogic.DISABLED);
         activeCooled = nbtTags.getBoolean("activeCooled");
     }
 
@@ -77,7 +78,7 @@ public class TileEntityReactorLogicAdapter extends TileEntityReactorBlock implem
             if (type == 0) {
                 activeCooled = !activeCooled;
             } else if (type == 1) {
-                logicType = ReactorLogic.values()[dataStream.readInt()];
+                logicType = MekanismUtils.getByIndex(ReactorLogic.values(), dataStream.readInt(), ReactorLogic.DISABLED);
             }
             return;
         }
@@ -85,7 +86,7 @@ public class TileEntityReactorLogicAdapter extends TileEntityReactorBlock implem
         super.handlePacketData(dataStream);
 
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            logicType = ReactorLogic.values()[dataStream.readInt()];
+            logicType = MekanismUtils.getByIndex(ReactorLogic.values(), dataStream.readInt(), ReactorLogic.DISABLED);
             activeCooled = dataStream.readBoolean();
             prevOutputting = dataStream.readBoolean();
         }

@@ -6,6 +6,7 @@ import mekanism.common.PacketHandler;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IRedstoneControl.RedstoneControl;
 import mekanism.common.network.PacketRedstoneControl.RedstoneControlMessage;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -17,8 +18,14 @@ public class PacketRedstoneControl implements IMessageHandler<RedstoneControlMes
     @Override
     public IMessage onMessage(RedstoneControlMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
+            if (!PacketHandler.canAccessTile(player, tileEntity)) {
+                return;
+            }
             if (tileEntity instanceof IRedstoneControl control) {
                 control.setControlType(message.value);
             }
@@ -48,7 +55,7 @@ public class PacketRedstoneControl implements IMessageHandler<RedstoneControlMes
         @Override
         public void fromBytes(ByteBuf dataStream) {
             coord4D = Coord4D.read(dataStream);
-            value = RedstoneControl.values()[dataStream.readInt()];
+            value = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), RedstoneControl.DISABLED);
         }
     }
 }

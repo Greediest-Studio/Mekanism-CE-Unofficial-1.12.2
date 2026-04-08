@@ -91,7 +91,11 @@ public class ItemPortableTeleporter extends ItemEnergized implements IOwnerItem 
     @Override
     public UUID getOwnerUUID(ItemStack stack) {
         if (ItemDataUtils.hasData(stack, "ownerUUID")) {
-            return UUID.fromString(ItemDataUtils.getString(stack, "ownerUUID"));
+            try {
+                return UUID.fromString(ItemDataUtils.getString(stack, "ownerUUID"));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
         }
         return null;
     }

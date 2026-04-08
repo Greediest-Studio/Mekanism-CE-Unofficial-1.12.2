@@ -8,6 +8,7 @@ import mekanism.common.Mekanism;
 import mekanism.common.PacketHandler;
 import mekanism.common.lib.radial.IGenericRadialModeItem;
 import mekanism.common.network.PacketRadialModeChange.RadialModeChangeMessage;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
@@ -21,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PacketRadialModeChange implements IMessageHandler<RadialModeChangeMessage, IMessage> {
+
+    private static final int MAX_PATH_SIZE = 32;
 
 
     @Override
@@ -83,9 +86,12 @@ public class PacketRadialModeChange implements IMessageHandler<RadialModeChangeM
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            slot = EntityEquipmentSlot.values()[dataStream.readInt()];
+            slot = MekanismUtils.getByIndex(EntityEquipmentSlot.values(), dataStream.readInt(), EntityEquipmentSlot.MAINHAND);
             int size = new PacketBuffer(dataStream).readVarInt();
-            List<ResourceLocation> locations = new ArrayList<>();
+            if (size < 0 || size > MAX_PATH_SIZE) {
+                throw new IllegalArgumentException("Invalid radial path size: " + size);
+            }
+            List<ResourceLocation> locations = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 locations.add(new PacketBuffer(dataStream).readResourceLocation());
             }

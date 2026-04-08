@@ -21,7 +21,7 @@ import net.minecraft.world.chunk.Chunk;
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-public class ItemBlockLargeWindGenerator extends ItemBlockLargeBase {
+public class ItemBlockLargeWindGenerator extends ItemBlockLargeBaseEnergy {
 
     public ItemBlockLargeWindGenerator(Block block) {
         super(block, "LargeWindGenerator");

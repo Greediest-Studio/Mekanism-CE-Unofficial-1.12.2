@@ -2,13 +2,13 @@
       "forge_marker": 1,
       "defaults": {
             "textures": {
-                  "east": "mekanism:blocks/combiner/CombinerLeft",
-                  "south": "mekanism:blocks/combiner/CombinerBack",
-                  "west": "mekanism:blocks/combiner/CombinerRight",
-                  "sides": "mekanism:blocks/combiner/CombinerRight",
-                  "front": "mekanism:blocks/combiner/CombinerFront",
-                  "up": "mekanism:blocks/combiner/CombinerTop",
-                  "down": "mekanism:blocks/combiner/CombinerBottom"
+                  "east": "mekanism:blocks/rolling/side",
+                  "south": "mekanism:blocks/rolling/back",
+                  "west": "mekanism:blocks/rolling/side",
+                  "sides": "mekanism:blocks/rolling/side",
+                  "front": "mekanism:blocks/rolling/front",
+                  "up": "mekanism:blocks/rolling/top",
+                  "down": "mekanism:blocks/rolling/bottom"
             },
             "model": "mekanism:machine"
       },
@@ -21,11 +21,10 @@
             },
             "active": {
                   "true": {"textures": {
-                        "east": "mekanism:blocks/combiner/CombinerLeft",
-                        "south": "mekanism:blocks/combiner/CombinerBack",
-                        "west": "mekanism:blocks/combiner/CombinerRight",
-                        "front": "mekanism:blocks/combiner/CombinerFrontOn",
-                        "up": "mekanism:blocks/combiner/CombinerTop"
+                    "east": "mekanism:blocks/rolling/side_active",
+                    "west": "mekanism:blocks/rolling/side_active",
+                    "sides": "mekanism:blocks/rolling/side_active",
+                    "front": "mekanism:blocks/rolling/front_active"
                   }},
                   "false": {}
             },

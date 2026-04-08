@@ -264,10 +264,29 @@ public class APIHandler implements MekanismRecipeHelper {
         checkPhase();
         RecipeHandler.addItemStackToEnergyRecipe(input, outputEnergy);
     }
+
     @Override
-    public void  addGasStackFuelToEnergyRecipe(GasStack input ,double outputEnergy){
+    public void addGasStackFuelToEnergyRecipe(GasStack input, double outputEnergy) {
         checkPhase();
         RecipeHandler.addGasStackFuelToEnergyRecipe(input, outputEnergy);
+    }
+
+    @Override
+    public void addItemReplicatorRecipe(ItemStack input, GasStack uu, double extraEnergy, int ticks) {
+        checkPhase();
+        RecipeHandler.addItemReplicatorRecipe(input, uu, extraEnergy, ticks);
+    }
+
+    @Override
+    public void addGasReplicatorRecipe(GasStack input, GasStack uu, double extraEnergy, int ticks) {
+        checkPhase();
+        RecipeHandler.addGasReplicatorRecipe(input, uu, extraEnergy, ticks);
+    }
+
+    @Override
+    public void addFluidReplicatorRecipe(FluidStack input, GasStack uu, double extraEnergy, int ticks) {
+        checkPhase();
+        RecipeHandler.addFluidReplicatorRecipe(input, uu, extraEnergy, ticks);
     }
     /**
      * ADD END

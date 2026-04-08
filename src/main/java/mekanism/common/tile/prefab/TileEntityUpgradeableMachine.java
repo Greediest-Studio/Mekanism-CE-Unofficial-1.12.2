@@ -16,8 +16,6 @@ import mekanism.common.tile.factory.TileEntityFactory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidTank;
 
-import java.util.Objects;
-
 /**
  * 可用升级的机器类型 ，一般用于工厂
  */
@@ -37,6 +35,7 @@ public abstract class TileEntityUpgradeableMachine<INPUT extends MachineInput<IN
         super(soundPath, type, upgradeSlot, baseTicksRequired);
     }
 
+    public boolean isUpgrade = true;
 
     @Override
     public boolean upgrade(BaseTier upgradeTier) {
@@ -44,54 +43,57 @@ public abstract class TileEntityUpgradeableMachine<INPUT extends MachineInput<IN
             return false;
         }
         RecipeType type = RecipeType.getFromMachine(getBlockType(), getBlockMetadata());
-
+        isUpgrade = false;
         world.setBlockToAir(getPos());
         world.setBlockState(getPos(), MekanismBlocks.MachineBlock.getStateFromMeta(5), 3);
-        TileEntityFactory factory = Objects.requireNonNull((TileEntityFactory) world.getTileEntity(getPos()));
+        if (world.getTileEntity(getPos()) instanceof TileEntityFactory factory) {
+            //Basic
+            factory.facing = facing;
+            factory.clientFacing = clientFacing;
+            factory.ticker = ticker;
+            factory.redstone = redstone;
+            factory.redstoneLastTick = redstoneLastTick;
+            factory.doAutoSync = doAutoSync;
 
-        //Basic
-        factory.facing = facing;
-        factory.clientFacing = clientFacing;
-        factory.ticker = ticker;
-        factory.redstone = redstone;
-        factory.redstoneLastTick = redstoneLastTick;
-        factory.doAutoSync = doAutoSync;
+            //Electric
+            factory.electricityStored.set(electricityStored.get());
 
-        //Electric
-        factory.electricityStored.set(electricityStored.get());
+            //Machine
+            factory.progress[0] = operatingTicks;
+            factory.isActive = isActive;
+            factory.setControlType(getControlType());
+            factory.prevEnergy = prevEnergy;
+            factory.upgradeComponent.readFrom(upgradeComponent);
+            factory.upgradeComponent.setUpgradeSlot(0);
+            factory.ejectorComponent.readFrom(ejectorComponent);
 
-        //Machine
-        factory.progress[0] = operatingTicks;
-        factory.isActive = isActive;
-        factory.setControlType(getControlType());
-        factory.prevEnergy = prevEnergy;
-        factory.upgradeComponent.readFrom(upgradeComponent);
-        factory.upgradeComponent.setUpgradeSlot(0);
-        factory.ejectorComponent.readFrom(ejectorComponent);
+            factory.ejectorComponent.setOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(2));
+            factory.ejectorComponent.setInputOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(6));
+            factory.ejectorComponent.setInputExtraOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(11));
 
-        factory.ejectorComponent.setOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(2));
-        factory.ejectorComponent.setInputOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(6));
-        factory.ejectorComponent.setInputExtraOutputData(TransmissionType.ITEM, factory.configComponent.getOutputs(TransmissionType.ITEM).get(11));
+            factory.ejectorComponent.setOutputData(TransmissionType.GAS, factory.configComponent.getOutputs(TransmissionType.GAS).get(2));
+            factory.ejectorComponent.setInputOutputData(TransmissionType.GAS, factory.configComponent.getOutputs(TransmissionType.GAS).get(3));
 
-        factory.ejectorComponent.setOutputData(TransmissionType.GAS, factory.configComponent.getOutputs(TransmissionType.GAS).get(2));
-        factory.ejectorComponent.setInputOutputData(TransmissionType.GAS, factory.configComponent.getOutputs(TransmissionType.GAS).get(3));
+            factory.setRecipeType(type);
+            factory.upgradeComponent.setSupported(Upgrade.GAS, type.fuelEnergyUpgrades());
+            factory.securityComponent.readFrom(securityComponent);
+            configComponent.getTransmissions().forEach(transmission -> {
+                factory.configComponent.setConfig(transmission, configComponent.getConfig(transmission).asByteArray());
+                factory.configComponent.setEjecting(transmission, configComponent.isEjecting(transmission));
+            });
 
-        factory.setRecipeType(type);
-        factory.upgradeComponent.setSupported(Upgrade.GAS, type.fuelEnergyUpgrades());
-        factory.securityComponent.readFrom(securityComponent);
-        configComponent.getTransmissions().forEach(transmission -> {
-            factory.configComponent.setConfig(transmission, configComponent.getConfig(transmission).asByteArray());
-            factory.configComponent.setEjecting(transmission, configComponent.isEjecting(transmission));
-        });
+            upgradeInventory(factory);
 
-        upgradeInventory(factory);
+            factory.upgradeComponent.getSupportedTypes().forEach(factory::recalculateUpgradables);
 
-        factory.upgradeComponent.getSupportedTypes().forEach(factory::recalculateUpgradables);
+            factory.upgraded = true;
+            factory.isUpgrade = true;
+            factory.markNoUpdateSync();
+            Mekanism.packetHandler.sendUpdatePacket(factory);
+            return true;
+        }
 
-        factory.upgraded = true;
-        factory.markNoUpdateSync();
-        Mekanism.packetHandler.sendUpdatePacket(factory);
-        return true;
+        return false;
     }
 
     protected abstract void upgradeInventory(TileEntityFactory factory);
@@ -132,5 +134,9 @@ public abstract class TileEntityUpgradeableMachine<INPUT extends MachineInput<IN
         factory.gasOutTank.setGas(gasTank.getGas());
     }
 
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return isUpgrade;
+    }
 
 }

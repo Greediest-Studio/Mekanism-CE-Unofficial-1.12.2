@@ -70,7 +70,7 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
 
     @Method(modid = MekanismHooks.IC2_MOD_ID)
     public void register() {
-        if (!isRemote() && !ic2Registered) {
+        if (!isRemote() && world != null && !ic2Registered) {
             MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
             ic2Registered = true;
         }
@@ -78,7 +78,7 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
 
     @Method(modid = MekanismHooks.IC2_MOD_ID)
     public void deregister() {
-        if (!isRemote() && ic2Registered) {
+        if (!isRemote() && world != null && ic2Registered) {
             MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(this));
             ic2Registered = false;
         }
@@ -193,7 +193,8 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
      * @return scaled energy
      */
     public int getScaledEnergyLevel(int i) {
-        return (int) (getEnergy() * i / getMaxEnergy());
+        double maxEnergy = getMaxEnergy();
+        return maxEnergy <= 0 ? 0 : (int) (getEnergy() * i / maxEnergy);
     }
 
     @Override

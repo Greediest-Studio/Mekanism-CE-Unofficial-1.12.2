@@ -27,6 +27,7 @@ import mekanism.common.util.ItemDataUtils;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.SecurityUtils;
+import mekanism.generators.common.block.states.BlockStateGenerator.GeneratorBlock;
 import mekanism.generators.common.block.states.BlockStateGenerator.GeneratorType;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -154,9 +155,13 @@ public class ItemBlockGenerator extends ItemBlock implements IEnergizedItem, ISp
                 return false;
             }
         }
+        GeneratorType type = GeneratorType.get(stack);
+        if (type == null) {
+            return false;
+        }
         boolean place = true;
         Block block = world.getBlockState(pos).getBlock();
-        if (stack.getItemDamage() == GeneratorType.ADVANCED_SOLAR_GENERATOR.meta) {
+        if (type == GeneratorType.ADVANCED_SOLAR_GENERATOR) {
             if (!(block.isReplaceable(world, pos) && world.isAirBlock(pos.add(0, 1, 0)))) {
                 return false;
             }
@@ -169,7 +174,7 @@ public class ItemBlockGenerator extends ItemBlock implements IEnergizedItem, ISp
                     }
                 }
             }
-        } else if (stack.getItemDamage() == GeneratorType.WIND_GENERATOR.meta) {
+        } else if (type == GeneratorType.WIND_GENERATOR) {
             if (!block.isReplaceable(world, pos)) {
                 return false;
             }
@@ -253,7 +258,11 @@ public class ItemBlockGenerator extends ItemBlock implements IEnergizedItem, ISp
 
     @Override
     public boolean hasTank(Object... data) {
-        return data[0] instanceof ItemStack stack && stack.getItem() instanceof ISustainedTank && (stack.getItemDamage() == 2);
+        if (!(data[0] instanceof ItemStack stack) || !(stack.getItem() instanceof ISustainedTank)) {
+            return false;
+        }
+        GeneratorType type = GeneratorType.get(stack);
+        return type != null && type.blockType == GeneratorBlock.GENERATOR_BLOCK_1 && type.meta == 2;
     }
 
     @Override
@@ -364,7 +373,7 @@ public class ItemBlockGenerator extends ItemBlock implements IEnergizedItem, ISp
         if (!MekanismConfig.current().general.allowProtection.val()) {
             return SecurityMode.PUBLIC;
         }
-        return SecurityMode.values()[ItemDataUtils.getInt(stack, "security")];
+        return MekanismUtils.getByIndex(SecurityMode.values(), ItemDataUtils.getInt(stack, "security"), SecurityMode.PUBLIC);
     }
 
     @Override

@@ -1,0 +1,38 @@
+{
+  "result": {
+    "item": "mekanismmultiblockmachine:largesolarneutronactivator"
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "EFE"
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "A": {
+      "ore": "alloyUltimate",
+      "type": "forge:ore_dict"
+    },
+    "B": {
+      "item": "mekanismgenerators:solarpanel"
+    },
+    "C": {
+      "ore": "circuitUltimate",
+      "type": "forge:ore_dict"
+    },
+    "D": {
+      "item": "mekanism:machineblock4",
+      "data": 10
+    },
+    "E": {
+      "nbt": {"tier": 3},
+      "item": "mekanism:gastank",
+      "data": 0,
+      "type": "mekanism:item_nbt"
+    },
+    "F": {
+      "item": "mekanism:basicblock",
+      "data": 8
+    }
+  }
+}

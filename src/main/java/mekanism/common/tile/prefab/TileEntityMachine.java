@@ -65,7 +65,7 @@ public abstract class TileEntityMachine extends TileEntityEffectsBlock implement
     public void handlePacketData(ByteBuf dataStream) {
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             energyPerTick = dataStream.readDouble();
             maxEnergy = dataStream.readDouble();
         }
@@ -83,7 +83,7 @@ public abstract class TileEntityMachine extends TileEntityEffectsBlock implement
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
     }
 
 

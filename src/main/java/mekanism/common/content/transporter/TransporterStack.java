@@ -11,6 +11,7 @@ import mekanism.common.content.transporter.TransitRequest.TransitResponse;
 import mekanism.common.content.transporter.TransporterPathfinder.Destination;
 import mekanism.common.tile.TileEntityLogisticalSorter;
 import mekanism.common.util.CapabilityUtils;
+import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.TransporterUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -76,14 +77,14 @@ public class TransporterStack {
     public void read(ByteBuf dataStream) {
         int c = dataStream.readInt();
         if (c != -1) {
-            color = TransporterUtils.colors.get(c);
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, c, null);
         } else {
             color = null;
         }
 
         progress = dataStream.readInt();
         originalLocation = Coord4D.read(dataStream);
-        pathType = Path.values()[dataStream.readInt()];
+        pathType = MekanismUtils.getByIndex(Path.values(), dataStream.readInt(), Path.NONE);
 
         if (dataStream.readBoolean()) {
             clientNext = Coord4D.read(dataStream);
@@ -112,19 +113,19 @@ public class TransporterStack {
 
     public void read(NBTTagCompound nbtTags) {
         if (nbtTags.hasKey("color")) {
-            color = TransporterUtils.colors.get(nbtTags.getInteger("color"));
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, nbtTags.getInteger("color"), null);
         }
 
         progress = nbtTags.getInteger("progress");
         originalLocation = Coord4D.read(nbtTags.getCompoundTag("originalLocation"));
 
         if (nbtTags.hasKey("idleDir")) {
-            idleDir = EnumFacing.VALUES[nbtTags.getInteger("idleDir")];
+            idleDir = MekanismUtils.getByIndex(EnumFacing.VALUES, nbtTags.getInteger("idleDir"), null);
         }
         if (nbtTags.hasKey("homeLocation")) {
             homeLocation = Coord4D.read(nbtTags.getCompoundTag("homeLocation"));
         }
-        pathType = Path.values()[nbtTags.getInteger("pathType")];
+        pathType = MekanismUtils.getByIndex(Path.values(), nbtTags.getInteger("pathType"), Path.NONE);
         itemStack = new ItemStack(nbtTags);
     }
 

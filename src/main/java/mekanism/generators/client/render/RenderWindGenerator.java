@@ -1,6 +1,7 @@
 package mekanism.generators.client.render;
 
 import mekanism.client.render.MekanismRenderer;
+import mekanism.common.config.MekanismConfig;
 import mekanism.generators.client.model.ModelWindGenerator;
 import mekanism.generators.common.tile.TileEntityWindGenerator;
 import mekanism.generators.common.util.MekanismGeneratorUtils;
@@ -12,7 +13,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class RenderWindGenerator extends TileEntitySpecialRenderer<TileEntityWindGenerator> {
-
+    
     private ModelWindGenerator model = new ModelWindGenerator();
 
     @Override
@@ -26,7 +27,9 @@ public class RenderWindGenerator extends TileEntitySpecialRenderer<TileEntityWin
         if (tileEntity.getActive()) {
             angle = (tileEntity.getAngle() + ((tileEntity.getPos().getY() + 4F) / TileEntityWindGenerator.SPEED_SCALED) * partialTick) % 360;
         }
-        model.renderBlock(0.0625F, angle);
+        int bladeRenderDistance = MekanismConfig.current().client.windGeneratorBladeRenderDistance.val();
+        boolean renderBlades = bladeRenderDistance <= 0 || tileEntity.getDistanceSq(rendererDispatcher.entityX, rendererDispatcher.entityY, rendererDispatcher.entityZ) <= (double) bladeRenderDistance * bladeRenderDistance;
+        model.renderBlock(0.0625F, angle, renderBlades);
         GlStateManager.popMatrix();
     }
 }

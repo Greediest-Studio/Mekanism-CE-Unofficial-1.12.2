@@ -1,34 +1,26 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryLeft",
-                  "south": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryBack",
-                  "west": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryRight",
-                  "sides": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryRight",
-                  "front": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryFront",
-                  "up": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/ultimate"
+    },
+    "model": "mekanism:factory_turning"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/ultimate"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryBackOn",
-                        "west": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryRightOn",
-                        "front": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/ultimate/enriching/UltimateEnrichingFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }

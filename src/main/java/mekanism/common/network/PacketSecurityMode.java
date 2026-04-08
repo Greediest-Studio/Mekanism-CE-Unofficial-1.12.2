@@ -7,6 +7,8 @@ import mekanism.common.network.PacketSecurityMode.SecurityModeMessage;
 import mekanism.common.security.ISecurityItem;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.security.ISecurityTile.SecurityMode;
+import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.SecurityUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -22,9 +24,15 @@ public class PacketSecurityMode implements IMessageHandler<SecurityModeMessage, 
     @Override
     public IMessage onMessage(SecurityModeMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             if (message.packetType == SecurityPacketType.BLOCK) {
                 TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
+                if (!PacketHandler.canAccessTile(player, tileEntity)) {
+                    return;
+                }
                 if (tileEntity instanceof ISecurityTile securityTile) {
                     UUID owner = securityTile.getSecurity().getOwnerUUID();
                     if (owner != null && player.getUniqueID().equals(owner)) {
@@ -34,7 +42,7 @@ public class PacketSecurityMode implements IMessageHandler<SecurityModeMessage, 
                 }
             } else {
                 ItemStack stack = player.getHeldItem(message.currentHand);
-                if (stack.getItem() instanceof ISecurityItem item) {
+                if (!stack.isEmpty() && stack.getItem() instanceof ISecurityItem item && SecurityUtils.canAccess(player, stack)) {
                     item.setSecurity(stack, message.value);
                 }
             }
@@ -82,13 +90,13 @@ public class PacketSecurityMode implements IMessageHandler<SecurityModeMessage, 
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            packetType = SecurityPacketType.values()[dataStream.readInt()];
+            packetType = MekanismUtils.getByIndex(SecurityPacketType.values(), dataStream.readInt(), SecurityPacketType.BLOCK);
             if (packetType == SecurityPacketType.BLOCK) {
                 coord4D = Coord4D.read(dataStream);
             } else {
-                currentHand = EnumHand.values()[dataStream.readInt()];
+                currentHand = MekanismUtils.getByIndex(EnumHand.values(), dataStream.readInt(), EnumHand.MAIN_HAND);
             }
-            value = SecurityMode.values()[dataStream.readInt()];
+            value = MekanismUtils.getByIndex(SecurityMode.values(), dataStream.readInt(), SecurityMode.PUBLIC);
         }
     }
 }

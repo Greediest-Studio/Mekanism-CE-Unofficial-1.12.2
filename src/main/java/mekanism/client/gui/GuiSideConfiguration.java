@@ -79,7 +79,9 @@ public class GuiSideConfiguration extends GuiMekanismTile<TileEntityContainerBlo
     @Override
     public void initGui() {
         super.initGui();
+        buttonID = 0;
         buttonList.clear();
+        sideDataButtons.clear();
         buttonList.add(backButton = new GuiDisableableButton(buttonID++, guiLeft + 6, guiTop + 6, 14).with(GuiDisableableButton.ImageOverlay.BACK));
         buttonList.add(autoEjectButton = new GuiDisableableButton(buttonID++, guiLeft + 136, guiTop + 6, 14).with(GuiDisableableButton.ImageOverlay.AUTO_EJECT));
         for (int i = 0; i < slotPosMap.size(); i++) {
@@ -208,12 +210,10 @@ public class GuiSideConfiguration extends GuiMekanismTile<TileEntityContainerBlo
 
     private void updateEnabledButtons() {
         autoEjectButton.enabled = configurable.getConfig().canEject(currentType);
+        SideConfig sideConfig = configurable.getConfig().getConfig(currentType);
         for (GuiSideDataButton sideDataButton : sideDataButtons) {
-            SideConfig sideConfig = configurable.getConfig().getConfig(currentType);
-            for (EnumFacing facing : EnumFacing.values()){
-                sideDataButton.enabled = (sideConfig.get(facing) != -1);
-                break;
-            }
+            EnumFacing facing = EnumFacing.byIndex(sideDataButton.getSlotPosMapIndex());
+            sideDataButton.enabled = sideConfig.get(facing) != -1;
         }
     }
 

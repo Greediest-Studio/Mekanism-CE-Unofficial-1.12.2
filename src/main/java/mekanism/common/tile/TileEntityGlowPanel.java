@@ -44,8 +44,11 @@ public class TileEntityGlowPanel extends TileEntity implements ITileNetwork {
 
     @Override
     public void handlePacketData(ByteBuf dataStream) {
-        side = EnumFacing.byIndex(dataStream.readInt());
-        colour = EnumColor.DYES[dataStream.readInt()];
+        EnumFacing newSide = EnumFacing.byIndex(dataStream.readInt());
+        if (newSide != null) {
+            side = newSide;
+        }
+        colour = MekanismUtils.getByIndex(EnumColor.DYES, dataStream.readInt(), colour);
         MekanismUtils.updateBlock(world, pos);
     }
 
@@ -85,8 +88,11 @@ public class TileEntityGlowPanel extends TileEntity implements ITileNetwork {
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);
-        side = EnumFacing.byIndex(nbt.getInteger("side"));
-        colour = EnumColor.DYES[nbt.getInteger("colour")];
+        EnumFacing newSide = EnumFacing.byIndex(nbt.getInteger("side"));
+        if (newSide != null) {
+            side = newSide;
+        }
+        colour = MekanismUtils.getByIndex(EnumColor.DYES, nbt.getInteger("colour"), colour);
     }
 
     @Override

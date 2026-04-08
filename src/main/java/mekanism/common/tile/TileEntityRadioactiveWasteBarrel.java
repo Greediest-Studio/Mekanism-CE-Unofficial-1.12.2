@@ -54,6 +54,9 @@ public class TileEntityRadioactiveWasteBarrel extends TileEntityBasicBlock imple
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             return gasTank.receive(stack, doTransfer);
         }
@@ -203,5 +206,10 @@ public class TileEntityRadioactiveWasteBarrel extends TileEntityBasicBlock imple
     @Override
     public int getRedstoneLevel() {
         return MekanismUtils.redstoneLevelFromContents(gasTank.getStored(), gasTank.getMaxGas());
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

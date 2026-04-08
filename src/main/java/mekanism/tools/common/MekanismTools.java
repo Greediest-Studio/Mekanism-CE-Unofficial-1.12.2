@@ -32,7 +32,12 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import java.util.List;
 import java.util.Random;
 
-@Mod(modid = MekanismTools.MODID, useMetadata = true, guiFactory = "mekanism.tools.client.gui.ToolsGuiFactory")
+@Mod(modid = MekanismTools.MODID, useMetadata = true, guiFactory = "mekanism.tools.client.gui.ToolsGuiFactory",customProperties = {
+        @Mod.CustomProperty(k = "license", v = "EUPL-1.2"),
+        @Mod.CustomProperty(k = "issueTrackerUrl", v = "https://github.com/sddsd2332/Mekanism-CE-Unofficial-1.12.2/issues"),
+        @Mod.CustomProperty(k = "iconFile", v = "assets/mekanism/icon.png"),
+        @Mod.CustomProperty(k = "backgroundFile", v = "assets/mekanism/background.png")
+})
 @Mod.EventBusSubscriber()
 public class MekanismTools implements IModule {
 
@@ -138,7 +143,7 @@ public class MekanismTools implements IModule {
             Random random = event.getWorld().rand;
             double chance = random.nextDouble();
             if (chance < MekanismConfig.current().tools.armorSpawnRate.val()) {
-                int armorType = random.nextInt(4);
+                int armorType = random.nextInt(5);
                 if (armorType == 0) {
                     setEntityArmorWithChance(random, entity, ToolsItem.GLOWSTONE_SWORD, ToolsItem.GLOWSTONE_HELMET, ToolsItem.GLOWSTONE_CHESTPLATE,
                             ToolsItem.GLOWSTONE_LEGGINGS, ToolsItem.GLOWSTONE_BOOTS);
@@ -151,7 +156,7 @@ public class MekanismTools implements IModule {
                 } else if (armorType == 3) {
                     setEntityArmorWithChance(random, entity, ToolsItem.STEEL_SWORD, ToolsItem.STEEL_HELMET, ToolsItem.STEEL_CHESTPLATE,
                             ToolsItem.STEEL_LEGGINGS, ToolsItem.STEEL_BOOTS);
-                } else if (armorType == 4) {
+                } else {
                     setEntityArmorWithChance(random, entity, ToolsItem.BRONZE_SWORD, ToolsItem.BRONZE_HELMET, ToolsItem.BRONZE_CHESTPLATE,
                             ToolsItem.BRONZE_LEGGINGS, ToolsItem.BRONZE_BOOTS);
                 }

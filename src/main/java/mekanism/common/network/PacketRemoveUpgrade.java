@@ -7,6 +7,7 @@ import mekanism.common.Upgrade;
 import mekanism.common.base.IUpgradeTile;
 import mekanism.common.network.PacketRemoveUpgrade.RemoveUpgradeMessage;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -19,10 +20,19 @@ public class PacketRemoveUpgrade implements IMessageHandler<RemoveUpgradeMessage
     @Override
     public IMessage onMessage(RemoveUpgradeMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
+            if (!PacketHandler.canAccessTile(player, tileEntity)) {
+                return;
+            }
             if (tileEntity instanceof IUpgradeTile upgradeTile && tileEntity instanceof TileEntityBasicBlock) {
-                Upgrade upgrade = Upgrade.values()[message.upgradeType];
+                Upgrade upgrade = MekanismUtils.getByIndex(Upgrade.values(), message.upgradeType, null);
+                if (upgrade == null) {
+                    return;
+                }
                 if (upgradeTile.getComponent().getUpgrades(upgrade) > 0) {
                     ItemStack up = upgrade.getStack();
                     up.setCount(upgradeTile.getComponent().getUpgrades(upgrade));

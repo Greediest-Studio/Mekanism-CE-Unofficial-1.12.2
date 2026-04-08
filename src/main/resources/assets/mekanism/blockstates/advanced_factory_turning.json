@@ -1,34 +1,26 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryLeft",
-                  "south": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryBack",
-                  "west": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryRight",
-                  "sides": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryRight",
-                  "front": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryFront",
-                  "up": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/advanced"
+    },
+    "model": "mekanism:factory_turning"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/advanced"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryBackOn",
-                        "west": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryRightOn",
-                        "front": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/advanced/enriching/AdvancedEnrichingFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }

@@ -177,9 +177,9 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         if (nbtTags.hasKey("color")) {
-            color = TransporterUtils.colors.get(nbtTags.getInteger("color"));
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, nbtTags.getInteger("color"), null);
         }
 
         autoEject = nbtTags.getBoolean("autoEject");
@@ -187,11 +187,15 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
         singleItem = nbtTags.getBoolean("singleItem");
 
         rrIndex = nbtTags.getInteger("rrIndex");
+        filters.clear();
 
         if (nbtTags.hasKey("filters")) {
             NBTTagList tagList = nbtTags.getTagList("filters", NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.tagCount(); i++) {
-                filters.add(TransporterFilter.readFromNBT(tagList.getCompoundTagAt(i)));
+                TransporterFilter filter = TransporterFilter.readFromNBT(tagList.getCompoundTagAt(i));
+                if (filter != null) {
+                    filters.add(filter);
+                }
             }
         }
     }
@@ -217,13 +221,17 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
             } else if (type == 3) {
                 // Move filter up
                 int filterIndex = dataStream.readInt();
-                filters.swap(filterIndex, filterIndex - 1);
-                playersUsing.forEach(this::openInventory);
+                if (filterIndex > 0 && filterIndex < filters.size()) {
+                    filters.swap(filterIndex, filterIndex - 1);
+                    playersUsing.forEach(this::openInventory);
+                }
             } else if (type == 4) {
                 // Move filter down
                 int filterIndex = dataStream.readInt();
-                filters.swap(filterIndex, filterIndex + 1);
-                playersUsing.forEach(this::openInventory);
+                if (filterIndex >= 0 && filterIndex < filters.size() - 1) {
+                    filters.swap(filterIndex, filterIndex + 1);
+                    playersUsing.forEach(this::openInventory);
+                }
             } else if (type == 5) {
                 singleItem = !singleItem;
             }
@@ -258,10 +266,10 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     }
 
     private void readState(ByteBuf dataStream) {
-        controlType = RedstoneControl.values()[dataStream.readInt()];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
         int c = dataStream.readInt();
         if (c != -1) {
-            color = TransporterUtils.colors.get(c);
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, c, null);
         } else {
             color = null;
         }
@@ -274,7 +282,10 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
         filters.clear();
         int amount = dataStream.readInt();
         for (int i = 0; i < amount; i++) {
-            filters.add(TransporterFilter.readFromPacket(dataStream));
+            TransporterFilter filter = TransporterFilter.readFromPacket(dataStream);
+            if (filter != null) {
+                filters.add(filter);
+            }
         }
     }
 
@@ -433,17 +444,21 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     @Override
     public void setConfigurationData(NBTTagCompound nbtTags) {
         if (nbtTags.hasKey("color")) {
-            color = TransporterUtils.colors.get(nbtTags.getInteger("color"));
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, nbtTags.getInteger("color"), null);
         }
         autoEject = nbtTags.getBoolean("autoEject");
         roundRobin = nbtTags.getBoolean("roundRobin");
         singleItem = nbtTags.getBoolean("singleItem");
         rrIndex = nbtTags.getInteger("rrIndex");
+        filters.clear();
 
         if (nbtTags.hasKey("filters")) {
             NBTTagList tagList = nbtTags.getTagList("filters", NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.tagCount(); i++) {
-                filters.add(TransporterFilter.readFromNBT(tagList.getCompoundTagAt(i)));
+                TransporterFilter filter = TransporterFilter.readFromNBT(tagList.getCompoundTagAt(i));
+                if (filter != null) {
+                    filters.add(filter);
+                }
             }
         }
     }
@@ -479,15 +494,19 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     public void readSustainedData(ItemStack itemStack) {
         if (ItemDataUtils.hasData(itemStack, "hasSorterConfig")) {
             if (ItemDataUtils.hasData(itemStack, "color")) {
-                color = TransporterUtils.colors.get(ItemDataUtils.getInt(itemStack, "color"));
+                color = MekanismUtils.getByIndex(TransporterUtils.colors, ItemDataUtils.getInt(itemStack, "color"), null);
             }
             autoEject = ItemDataUtils.getBoolean(itemStack, "autoEject");
             roundRobin = ItemDataUtils.getBoolean(itemStack, "roundRobin");
             singleItem = ItemDataUtils.getBoolean(itemStack, "singleItem");
+            filters.clear();
             if (ItemDataUtils.hasData(itemStack, "filters")) {
                 NBTTagList tagList = ItemDataUtils.getList(itemStack, "filters");
                 for (int i = 0; i < tagList.tagCount(); i++) {
-                    filters.add(TransporterFilter.readFromNBT(tagList.getCompoundTagAt(i)));
+                    TransporterFilter filter = TransporterFilter.readFromNBT(tagList.getCompoundTagAt(i));
+                    if (filter != null) {
+                        filters.add(filter);
+                    }
                 }
             }
         }

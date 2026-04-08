@@ -8,6 +8,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
 import mekanism.common.base.IActiveState;
 import mekanism.common.base.ITankManager;
+import mekanism.common.block.states.BlockStateBasic.BasicBlockType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.recipe.RecipeHandler;
@@ -18,12 +19,17 @@ import mekanism.common.tile.TileEntityStructuralGlass;
 import mekanism.common.util.*;
 import mekanism.common.util.FluidContainerUtils.FluidChecker;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
@@ -35,6 +41,9 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class TileEntityThermalEvaporationController extends TileEntityThermalEvaporationBlock implements IActiveState, ITankManager {
@@ -77,6 +86,21 @@ public class TileEntityThermalEvaporationController extends TileEntityThermalEva
     public float prevScale;
 
     public float totalLoss = 0;
+
+    @SideOnly(Side.CLIENT)
+    private static final double THERMAL_FLUID_EDGE_MARGIN = 0.02D;
+    @SideOnly(Side.CLIENT)
+    private static final double THERMAL_ABOVE_VERTICAL_MARGIN = 0.05D;
+    @SideOnly(Side.CLIENT)
+    private static final double THERMAL_ABOVE_HORIZONTAL_MARGIN = 1.0D;
+    @SideOnly(Side.CLIENT)
+    private static final int THERMAL_GLASS_RAY_MAX_STEPS = 24;
+    @SideOnly(Side.CLIENT)
+    private static final double THERMAL_GLASS_SIDE_PROBE_EDGE_RATIO = 0.18D;
+    @SideOnly(Side.CLIENT)
+    private static final double THERMAL_GLASS_SIDE_PROBE_INSET = 0.01D;
+    @SideOnly(Side.CLIENT)
+    private static final double THERMAL_TOP_OPENING_MIN_EYE_HEIGHT = 0.05D;
 
     public TileEntityThermalEvaporationController() {
         super("ThermalEvaporationController");
@@ -422,6 +446,283 @@ public class TileEntityThermalEvaporationController extends TileEntityThermalEva
         return renderLocation;
     }
 
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean shouldCullForOcclusion() {
+        // Keep the controller TESR alive when internal fluid is actually visible via structural glass.
+        if (MekanismConfig.current().client.GazeCullingTracking.val() && shouldRenderInternalFluid()) {
+            return false;
+        }
+        return super.shouldCullForOcclusion();
+    }
+
+    @SideOnly(Side.CLIENT)
+    public boolean shouldRenderInternalFluid() {
+        if (!structured || world == null || inputTank.getFluid() == null || inputTank.getFluidAmount() <= 0 || height - 2 < 1) {
+            return false;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null) {
+            return false;
+        }
+        Entity renderView = mc.getRenderViewEntity();
+        if (renderView == null) {
+            return false;
+        }
+        FluidViewBounds fluidBounds = getClientFluidBounds();
+        if (fluidBounds == null) {
+            return false;
+        }
+        Vec3d eyePos = renderView.getPositionEyes(1.0F);
+        if (canSeeFluidFromTopOpening(fluidBounds, eyePos)) {
+            return true;
+        }
+        if (!MekanismConfig.current().mekce.EnableGlassInThermal.val()) {
+            return false;
+        }
+        return canSeeFluidThroughStructuralGlass(fluidBounds, eyePos);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isViewerDirectlyAbove(FluidViewBounds bounds, Vec3d eyePos) {
+        double topLayerY = renderY + (height - 2);
+        return eyePos.y >= topLayerY + 1D + THERMAL_ABOVE_VERTICAL_MARGIN
+                && eyePos.x >= bounds.minX - THERMAL_ABOVE_HORIZONTAL_MARGIN && eyePos.x <= bounds.maxX + THERMAL_ABOVE_HORIZONTAL_MARGIN
+                && eyePos.z >= bounds.minZ - THERMAL_ABOVE_HORIZONTAL_MARGIN && eyePos.z <= bounds.maxZ + THERMAL_ABOVE_HORIZONTAL_MARGIN;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean canSeeFluidFromTopOpening(FluidViewBounds bounds, Vec3d eyePos) {
+        double topLayerY = renderY + (height - 2);
+        if (eyePos.y <= topLayerY + THERMAL_TOP_OPENING_MIN_EYE_HEIGHT) {
+            return false;
+        }
+        if (isViewerDirectlyAbove(bounds, eyePos)) {
+            return true;
+        }
+        List<Vec3d> probes = buildFluidProbePoints(bounds);
+        for (Vec3d probe : probes) {
+            if (canSeePointThroughTransparentPath(eyePos, probe)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Nullable
+    @SideOnly(Side.CLIENT)
+    private FluidViewBounds getClientFluidBounds() {
+        Coord4D renderLocation = getRenderLocation();
+        if (renderLocation == null || inputTank.getFluid() == null || height - 2 < 1) {
+            return null;
+        }
+        int maxFluid = getMaxFluid();
+        if (maxFluid <= 0) {
+            return null;
+        }
+        int innerHeight = height - 2;
+        float scale = Math.min(1F, (float) inputTank.getFluidAmount() / (float) maxFluid);
+        if (scale <= 0) {
+            return null;
+        }
+        boolean gaseous = inputTank.getFluid().getFluid() != null && inputTank.getFluid().getFluid().isGaseous(inputTank.getFluid());
+        double renderedFluidHeight = gaseous ? innerHeight : Math.max(0.02D, scale * innerHeight);
+        double minX = renderLocation.x + THERMAL_FLUID_EDGE_MARGIN;
+        double minY = renderLocation.y + THERMAL_FLUID_EDGE_MARGIN;
+        double minZ = renderLocation.z + THERMAL_FLUID_EDGE_MARGIN;
+        double maxX = renderLocation.x + 2D - THERMAL_FLUID_EDGE_MARGIN;
+        double maxY = renderLocation.y + renderedFluidHeight - THERMAL_FLUID_EDGE_MARGIN;
+        double maxZ = renderLocation.z + 2D - THERMAL_FLUID_EDGE_MARGIN;
+        if (maxY <= minY) {
+            maxY = minY + 0.02D;
+        }
+        return new FluidViewBounds(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean canSeeFluidThroughStructuralGlass(FluidViewBounds bounds, Vec3d eyePos) {
+        List<Vec3d> probes = buildFluidProbePoints(bounds);
+        for (Vec3d probe : probes) {
+            if (canSeePointThroughStructuralGlass(eyePos, probe)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private List<Vec3d> buildFluidProbePoints(FluidViewBounds bounds) {
+        double centerX = (bounds.minX + bounds.maxX) * 0.5D;
+        double centerZ = (bounds.minZ + bounds.maxZ) * 0.5D;
+        double[] xs = new double[]{bounds.minX, centerX, bounds.maxX};
+        double[] zs = new double[]{bounds.minZ, centerZ, bounds.maxZ};
+        double[] ys = new double[]{
+                bounds.minY + (bounds.maxY - bounds.minY) * 0.15D,
+                bounds.minY + (bounds.maxY - bounds.minY) * 0.5D,
+                bounds.minY + (bounds.maxY - bounds.minY) * 0.85D
+        };
+        List<Vec3d> probes = new ArrayList<>(72);
+        for (double y : ys) {
+            for (double x : xs) {
+                for (double z : zs) {
+                    addFluidProbePoint(probes, bounds, x, y, z);
+                }
+            }
+        }
+
+        // Extra side probes near structural-glass faces reduce false negatives when the center line is blocked.
+        double width = Math.max(0.01D, bounds.maxX - bounds.minX);
+        double depth = Math.max(0.01D, bounds.maxZ - bounds.minZ);
+        double edgeInsetX = Math.min(width * 0.45D, width * THERMAL_GLASS_SIDE_PROBE_EDGE_RATIO);
+        double edgeInsetZ = Math.min(depth * 0.45D, depth * THERMAL_GLASS_SIDE_PROBE_EDGE_RATIO);
+        double sideMinX = bounds.minX + edgeInsetX;
+        double sideMaxX = bounds.maxX - edgeInsetX;
+        double sideMinZ = bounds.minZ + edgeInsetZ;
+        double sideMaxZ = bounds.maxZ - edgeInsetZ;
+        double westProbeX = bounds.minX + THERMAL_GLASS_SIDE_PROBE_INSET;
+        double eastProbeX = bounds.maxX - THERMAL_GLASS_SIDE_PROBE_INSET;
+        double northProbeZ = bounds.minZ + THERMAL_GLASS_SIDE_PROBE_INSET;
+        double southProbeZ = bounds.maxZ - THERMAL_GLASS_SIDE_PROBE_INSET;
+        double[] sideYLevels = new double[]{
+                bounds.minY + (bounds.maxY - bounds.minY) * 0.2D,
+                bounds.minY + (bounds.maxY - bounds.minY) * 0.5D,
+                bounds.minY + (bounds.maxY - bounds.minY) * 0.8D
+        };
+        for (double y : sideYLevels) {
+            addFluidProbePoint(probes, bounds, westProbeX, y, sideMinZ);
+            addFluidProbePoint(probes, bounds, westProbeX, y, centerZ);
+            addFluidProbePoint(probes, bounds, westProbeX, y, sideMaxZ);
+            addFluidProbePoint(probes, bounds, eastProbeX, y, sideMinZ);
+            addFluidProbePoint(probes, bounds, eastProbeX, y, centerZ);
+            addFluidProbePoint(probes, bounds, eastProbeX, y, sideMaxZ);
+
+            addFluidProbePoint(probes, bounds, sideMinX, y, northProbeZ);
+            addFluidProbePoint(probes, bounds, centerX, y, northProbeZ);
+            addFluidProbePoint(probes, bounds, sideMaxX, y, northProbeZ);
+            addFluidProbePoint(probes, bounds, sideMinX, y, southProbeZ);
+            addFluidProbePoint(probes, bounds, centerX, y, southProbeZ);
+            addFluidProbePoint(probes, bounds, sideMaxX, y, southProbeZ);
+        }
+
+        // Top-surface probes help when only a thin visible strip remains.
+        double topY = bounds.maxY - THERMAL_GLASS_SIDE_PROBE_INSET;
+        addFluidProbePoint(probes, bounds, sideMinX, topY, sideMinZ);
+        addFluidProbePoint(probes, bounds, sideMinX, topY, centerZ);
+        addFluidProbePoint(probes, bounds, sideMinX, topY, sideMaxZ);
+        addFluidProbePoint(probes, bounds, centerX, topY, sideMinZ);
+        addFluidProbePoint(probes, bounds, centerX, topY, centerZ);
+        addFluidProbePoint(probes, bounds, centerX, topY, sideMaxZ);
+        addFluidProbePoint(probes, bounds, sideMaxX, topY, sideMinZ);
+        addFluidProbePoint(probes, bounds, sideMaxX, topY, centerZ);
+        addFluidProbePoint(probes, bounds, sideMaxX, topY, sideMaxZ);
+        return probes;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void addFluidProbePoint(List<Vec3d> probes, FluidViewBounds bounds, double x, double y, double z) {
+        double clampedX = clamp(x, bounds.minX, bounds.maxX);
+        double clampedY = clamp(y, bounds.minY, bounds.maxY);
+        double clampedZ = clamp(z, bounds.minZ, bounds.maxZ);
+        probes.add(new Vec3d(clampedX, clampedY, clampedZ));
+    }
+
+    @SideOnly(Side.CLIENT)
+    private double clamp(double value, double min, double max) {
+        if (value < min) {
+            return min;
+        }
+        if (value > max) {
+            return max;
+        }
+        return value;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean canSeePointThroughStructuralGlass(Vec3d eyePos, Vec3d target) {
+        Vec3d start = eyePos;
+        Vec3d direction = target.subtract(eyePos);
+        double distanceSq = direction.lengthSquared();
+        if (distanceSq <= 1.0E-8D) {
+            return false;
+        }
+        Vec3d directionNorm = direction.scale(1.0D / Math.sqrt(distanceSq));
+        boolean passedStructuralGlass = false;
+        for (int i = 0; i < THERMAL_GLASS_RAY_MAX_STEPS; i++) {
+            RayTraceResult trace = world.rayTraceBlocks(start, target, false, true, false);
+            if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK) {
+                return passedStructuralGlass;
+            }
+            BlockPos hitPos = trace.getBlockPos();
+            IBlockState hitState = world.getBlockState(hitPos);
+            if (isStructuralGlass(hitState)) {
+                passedStructuralGlass = true;
+            }
+            if (!isTransparentForThermalRay(hitState)) {
+                return false;
+            }
+            if (trace.hitVec == null) {
+                return false;
+            }
+            start = trace.hitVec.add(directionNorm.scale(0.01D));
+            if (start.squareDistanceTo(target) < 1.0E-6D) {
+                return passedStructuralGlass;
+            }
+        }
+        return passedStructuralGlass;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean canSeePointThroughTransparentPath(Vec3d eyePos, Vec3d target) {
+        Vec3d start = eyePos;
+        Vec3d direction = target.subtract(eyePos);
+        double distanceSq = direction.lengthSquared();
+        if (distanceSq <= 1.0E-8D) {
+            return true;
+        }
+        Vec3d directionNorm = direction.scale(1.0D / Math.sqrt(distanceSq));
+        for (int i = 0; i < THERMAL_GLASS_RAY_MAX_STEPS; i++) {
+            RayTraceResult trace = world.rayTraceBlocks(start, target, false, true, false);
+            if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK) {
+                return true;
+            }
+            BlockPos hitPos = trace.getBlockPos();
+            IBlockState hitState = world.getBlockState(hitPos);
+            if (!isTransparentForThermalRay(hitState)) {
+                return false;
+            }
+            if (trace.hitVec == null) {
+                return false;
+            }
+            start = trace.hitVec.add(directionNorm.scale(0.01D));
+            if (start.squareDistanceTo(target) < 1.0E-6D) {
+                return true;
+            }
+        }
+        return true;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isStructuralGlass(IBlockState state) {
+        return BasicBlockType.get(state) == BasicBlockType.STRUCTURAL_GLASS;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private boolean isTransparentForThermalRay(IBlockState state) {
+        if (state.getMaterial().isLiquid()) {
+            return true;
+        }
+        if (isStructuralGlass(state)) {
+            return true;
+        }
+        if (!state.isFullCube()) {
+            return true;
+        }
+        if (!state.isOpaqueCube()) {
+            return true;
+        }
+        return state.getBlock().isTranslucent(state);
+    }
+
     @Override
     public void handlePacketData(ByteBuf dataStream) {
         super.handlePacketData(dataStream);
@@ -575,5 +876,25 @@ public class TileEntityThermalEvaporationController extends TileEntityThermalEva
             return false;
         }
         return super.isCapabilityDisabled(capability, side);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private static class FluidViewBounds {
+
+        private final double minX;
+        private final double minY;
+        private final double minZ;
+        private final double maxX;
+        private final double maxY;
+        private final double maxZ;
+
+        private FluidViewBounds(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+        }
     }
 }

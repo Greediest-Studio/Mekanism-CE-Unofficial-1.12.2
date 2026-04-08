@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock implements IUpgradeTile, IRedstoneControl, ISecurityTile, IElectricMachine<GasInput, GasOutput, SolarNeutronRecipe>, IComputerIntegration, ISideConfiguration, IConfigCardAccess,
-        IMachineSlotTip, IBoundingBlock, IGasHandler, ISustainedData, ITankManager, IUpgradeInfoHandler, IComparatorSupport, IActiveState {
+        IMachineSlotTip, IBoundingBlock, IGasHandler, ISustainedData, ITankManager, IUpgradeInfoHandler, IComparatorSupport, IActiveState, ISpecialSelectionWireframeTile {
 
     public static final int MAX_GAS = 10000;
     public GasTank inputTank = new GasTank(MAX_GAS);
@@ -201,7 +201,7 @@ public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock im
                 }
                 lastActive = -1;
             }
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             operatingTicks = dataStream.readInt();
             ticksRequired = dataStream.readInt();
             TileUtils.readTankData(dataStream, inputTank);
@@ -225,7 +225,7 @@ public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock im
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
         isActive = nbtTags.getBoolean("isActive");
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         operatingTicks = nbtTags.getInteger("operatingTicks");
         inputTank.read(nbtTags.getCompoundTag("inputTank"));
         outputTank.read(nbtTags.getCompoundTag("outputTank"));
@@ -256,6 +256,9 @@ public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock im
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             int recipeAmount = RecipeHandler.Recipe.SOLAR_NEUTRON_ACTIVATOR.get().get(new GasInput(stack)).recipeInput.ingredient.amount;
             int receivable = inputTank.receive(stack, false);
@@ -478,5 +481,21 @@ public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock im
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelSolarNeutronActivator.class;
+    }
+
+    @Override
+    public String[] getSelectionWireframeIgnoredRendererFieldNames() {
+        return new String[]{"laserBeamToggle"};
     }
 }

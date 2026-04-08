@@ -381,15 +381,18 @@ public class RecipeRegistryHelper {
     }
 
     public static void registerSPS(IModRegistry registry) {
-        if (!MachineType.SPS.isEnabled()) {
-            return;
-        }
         List<SPSRecipeWrapper> wrappers = new ArrayList<>();
         wrappers.add(new SPSRecipeWrapper(MekanismFluids.Polonium, MekanismFluids.Antimatter));
         String name = "mekanism.sps";
         registry.addRecipes(wrappers, name);
-        registry.addRecipeClickArea(GuiSPS.class, 27, 17, 122, 60, name);
-        registry.addRecipeCatalyst(MachineType.SPS.getStack(), name);
+        if (MachineType.SPS.isEnabled()) {
+            registry.addRecipeClickArea(GuiSPS.class, 27, 17, 122, 60, name);
+            registry.addRecipeCatalyst(MachineType.SPS.getStack(), name);
+        }
+        registry.addRecipeClickArea(GuiSPSMultiblock.class, 27, 17, 122, 60, name);
+        registry.addRecipeCatalyst(BasicBlockType.SPS_CASING.getStack(1), name);
+        registry.addRecipeCatalyst(BasicBlockType.SPS_PORT.getStack(1), name);
+        registry.addRecipeCatalyst(MachineType.SUPERCHARGED_COIL.getStack(), name);
     }
 
     /**

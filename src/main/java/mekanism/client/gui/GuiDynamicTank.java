@@ -32,76 +32,81 @@ public class GuiDynamicTank extends GuiMekanismTile<TileEntityDynamicTank> {
         addGuiElement(new GuiNumberGauge(new GuiNumberGauge.INumberInfoHandler() {
             @Override
             public TextureAtlasSprite getIcon() {
-                return MekanismRenderer.getFluidTexture(tileEntity.structure != null ? tileEntity.structure.fluidStored : null, MekanismRenderer.FluidType.STILL);
-            }
-
-            @Override
-            public double getLevel() {
-                if (tileEntity.structure != null && tileEntity.structure.fluidStored != null) {
-                    return tileEntity.structure.fluidStored.amount;
-                } else {
-                    return 0;
+                if (tileEntity.structure == null) {
+                    return null;
                 }
-            }
-
-            @Override
-            public double getMaxLevel() {
-                if (tileEntity.structure != null && tileEntity.structure.fluidStored != null) {
-                    return tileEntity.clientCapacity;
-                } else {
-                    return 0;
+                if (tileEntity.structure.fluidStored != null) {
+                    return MekanismRenderer.getFluidTexture(tileEntity.structure.fluidStored, MekanismRenderer.FluidType.STILL);
                 }
-            }
-
-            @Override
-            public String getText(double level) {
-                return tileEntity.structure != null ? (tileEntity.structure.fluidStored != null ? LangUtils.localizeFluidStack(tileEntity.structure.fluidStored) + ": " + tileEntity.structure.fluidStored.amount + "mB" : LangUtils.localize("gui.empty")) : "";
-            }
-        }, GuiGauge.Type.STANDARD, this, resource, 7, 13).withColor(GuiGauge.TypeColor.BLUE));
-
-        addGuiElement(new GuiNumberGauge(new GuiNumberGauge.INumberInfoHandler() {
-            @Override
-            public TextureAtlasSprite getIcon() {
-                if (tileEntity.structure != null){
-                    MekanismRenderer.color(tileEntity.structure.gasstored.getGas());
+                if (tileEntity.structure.gasstored != null && tileEntity.structure.gasstored.getGas() != null) {
                     return tileEntity.structure.gasstored.getGas().getSprite();
                 }
-                return  null;
+                return null;
             }
 
             @Override
             public double getLevel() {
-                if (tileEntity.structure != null && tileEntity.structure.gasstored != null) {
-                    return tileEntity.structure.gasstored.amount;
-                } else {
-                    return 0;
+                if (tileEntity.structure != null) {
+                    if (tileEntity.structure.fluidStored != null) {
+                        return tileEntity.structure.fluidStored.amount;
+                    }
+                    if (tileEntity.structure.gasstored != null) {
+                        return tileEntity.structure.gasstored.amount;
+                    }
                 }
+                return 0;
             }
 
             @Override
             public double getMaxLevel() {
-                if (tileEntity.structure != null && tileEntity.structure.gasstored != null) {
+                if (tileEntity.structure != null && (tileEntity.structure.fluidStored != null || tileEntity.structure.gasstored != null)) {
                     return tileEntity.clientCapacity;
-                } else {
-                    return 0;
                 }
+                return 0;
             }
 
             @Override
             public String getText(double level) {
-                return tileEntity.structure != null ? (tileEntity.structure.gasstored != null ? tileEntity.structure.gasstored.getGas().getLocalizedName() + ": " + tileEntity.structure.gasstored.amount + "mB" : LangUtils.localize("gui.empty")) : "";
+                if (tileEntity.structure == null) {
+                    return "";
+                }
+                if (tileEntity.structure.fluidStored != null) {
+                    return LangUtils.localizeFluidStack(tileEntity.structure.fluidStored) + ": " + tileEntity.structure.fluidStored.amount + "mB";
+                }
+                if (tileEntity.structure.gasstored != null) {
+                    return tileEntity.structure.gasstored.getGas().getLocalizedName() + ": " + tileEntity.structure.gasstored.amount + "mB";
+                }
+                return LangUtils.localize("gui.empty");
             }
-        }, GuiGauge.Type.STANDARD, this, resource, 25, 13).withColor(GuiGauge.TypeColor.ORANGE));
+        }, GuiGauge.Type.MEDIUM, this, resource, 7, 13) {
+            @Override
+            protected void applyRenderColor() {
+                if (tileEntity.structure != null && tileEntity.structure.fluidStored == null && tileEntity.structure.gasstored != null) {
+                    MekanismRenderer.color(tileEntity.structure.gasstored);
+                }
+            }
+        }.withColor(GuiGauge.TypeColor.BLUE));
     }
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         fontRenderer.drawString(tileEntity.getName(), (xSize / 2) - (fontRenderer.getStringWidth(tileEntity.getName()) / 2), 4, 0x404040);
         fontRenderer.drawString(LangUtils.localize("container.inventory"), 8, (ySize - 94) + 2, 0x404040);
-        FluidStack fluidStored = tileEntity.structure != null ? tileEntity.structure.fluidStored : null;
-        renderScaledText(fluidStored != null ? LangUtils.localizeFluidStack(fluidStored) + ":" : LangUtils.localize("gui.noFluid"), 53, fluidStored != null ? 26 : 35, 0xFF3CFE9A, 74);
-        if (fluidStored != null) {
-            fontRenderer.drawString(fluidStored.amount + "mB", 53, 35, 0xFF3CFE9A);
+        String storedName = null;
+        int storedAmount = 0;
+        if (tileEntity.structure != null) {
+            FluidStack fluidStored = tileEntity.structure.fluidStored;
+            if (fluidStored != null) {
+                storedName = LangUtils.localizeFluidStack(fluidStored);
+                storedAmount = fluidStored.amount;
+            } else if (tileEntity.structure.gasstored != null) {
+                storedName = tileEntity.structure.gasstored.getGas().getLocalizedName();
+                storedAmount = tileEntity.structure.gasstored.amount;
+            }
+        }
+        renderScaledText(storedName != null ? storedName + ":" : LangUtils.localize("gui.empty"), 53, storedName != null ? 26 : 35, 0xFF3CFE9A, 74);
+        if (storedName != null) {
+            fontRenderer.drawString(storedAmount + "mB", 53, 35, 0xFF3CFE9A);
         }
         fontRenderer.drawString(LangUtils.localize("gui.capacity") + ": ", 53, 44, 0xFF3CFE9A);
         fontRenderer.drawString(tileEntity.clientCapacity + "mB", 53, 53, 0xFF3CFE9A);

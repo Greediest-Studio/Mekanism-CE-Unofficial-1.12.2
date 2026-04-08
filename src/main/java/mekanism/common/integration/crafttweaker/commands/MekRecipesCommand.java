@@ -59,7 +59,10 @@ public class MekRecipesCommand extends CraftTweakerCommand {
                 "fusioncooling",
                 "ambientaccumulator",
                 "itemstacktoenergy",
-                "gastoenergy"
+                "gastoenergy",
+                "replicatoritemstack",
+                "replicatorgases",
+                "replicatorfluidstack"
         ).collect(Collectors.toList());
     }
 
@@ -416,6 +419,39 @@ public class MekRecipesCommand extends CraftTweakerCommand {
                     CraftTweakerAPI.logCommand(String.format("mods.mekanism.GasToEnergy.addRecipe(%s, %s)",
                             RecipeInfoHelper.getGasName(recipe.getInput().ingredient),
                             recipe.getOutput().energyOutput
+                    ));
+                }
+            }
+            case "replicatoritemstack" -> {
+                type = Recipe.REPLICATOR_ITEMSTACK_RECIPE;
+                for (ReplicatorItemStackRecipe recipe : Recipe.REPLICATOR_ITEMSTACK_RECIPE.get().values()) {
+                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.replicator.itemstack.addRecipe(%s, %s, %s, %s)",
+                            RecipeInfoHelper.getItemName(recipe.getInput().getSolid()),
+                            RecipeInfoHelper.getGasName(recipe.getInput().getGas()),
+                            recipe.extraEnergy,
+                            recipe.ticks
+                    ));
+                }
+            }
+            case "replicatorgases" -> {
+                type = Recipe.REPLICATOR_GASES_RECIPE;
+                for (ReplicatorGasStackRecipe recipe : Recipe.REPLICATOR_GASES_RECIPE.get().values()) {
+                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.replicator.gases.addRecipe(%s, %s, %s, %s)",
+                            RecipeInfoHelper.getGasName(recipe.getInput().input),
+                            RecipeInfoHelper.getGasName(recipe.getInput().uu),
+                            recipe.extraEnergy,
+                            recipe.ticks
+                    ));
+                }
+            }
+            case "replicatorfluidstack" -> {
+                type = Recipe.REPLICATOR_FLUIDSTACK_RECIPE;
+                for (ReplicatorFluidStackRecipe recipe : Recipe.REPLICATOR_FLUIDSTACK_RECIPE.get().values()) {
+                    CraftTweakerAPI.logCommand(String.format("mods.mekanism.replicator.fluidstack.addRecipe(%s, %s, %s, %s)",
+                            RecipeInfoHelper.getGasName(recipe.getInput().ingredientGas),
+                            RecipeInfoHelper.getFluidName(recipe.getInput().ingredientFluid),
+                            recipe.extraEnergy,
+                            recipe.ticks
                     ));
                 }
             }

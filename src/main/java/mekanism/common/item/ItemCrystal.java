@@ -2,6 +2,7 @@ package mekanism.common.item;
 
 import mekanism.common.Resource;
 import mekanism.common.base.IMetaItem;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
@@ -18,7 +19,7 @@ public class ItemCrystal extends ItemMekanism implements IMetaItem {
 
     @Override
     public String getTexture(int meta) {
-        return Resource.values()[meta].getName() + "Crystal";
+        return MekanismUtils.getByIndex(Resource.values(), meta, Resource.IRON).getName() + "Crystal";
     }
 
     @Override
@@ -38,9 +39,7 @@ public class ItemCrystal extends ItemMekanism implements IMetaItem {
     @Nonnull
     @Override
     public String getTranslationKey(ItemStack item) {
-        if (item.getItemDamage() <= Resource.values().length - 1) {
-            return "item." + Resource.values()[item.getItemDamage()].getName().toLowerCase(Locale.ROOT) + "Crystal";
-        }
-        return "Invalid";
+        Resource resource = MekanismUtils.getByIndex(Resource.values(), item.getItemDamage(), null);
+        return resource == null ? "Invalid" : "item." + resource.getName().toLowerCase(Locale.ROOT) + "Crystal";
     }
 }

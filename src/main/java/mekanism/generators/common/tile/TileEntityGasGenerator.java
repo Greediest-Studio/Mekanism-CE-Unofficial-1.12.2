@@ -5,6 +5,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.IMachineSlotTip;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
@@ -17,10 +18,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 
-public class TileEntityGasGenerator extends TileEntityGenerator implements IGasHandler, ISustainedData, IComparatorSupport, IMachineSlotTip {
+public class TileEntityGasGenerator extends TileEntityGenerator implements IGasHandler, ISustainedData, IComparatorSupport, IMachineSlotTip, ISpecialSelectionWireframeTile {
 
     private static final String[] methods = new String[]{"getEnergy", "getOutput", "getMaxEnergy", "getEnergyNeeded", "getGas", "getGasNeeded"};
     /**
@@ -210,6 +213,9 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         boolean isTankEmpty = fuelTank.getGas() == null;
         if (canReceiveGas(side, stack.getGas()) && (isTankEmpty || fuelTank.getGas().isGasEqual(stack))) {
             int fuelReceived = fuelTank.receive(stack, doTransfer);
@@ -233,7 +239,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
         fuelTank.read(nbtTags.getCompoundTag("fuelTank"));
         boolean isTankEmpty = fuelTank.getGas() == null;
         GasStackFuelToEnergyRecipe recipe = RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas());
-        if (!isTankEmpty) {
+        if (!isTankEmpty && recipe != null) {
             output = recipe.getOutput().energyOutput * 2;
         }
     }
@@ -299,7 +305,7 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
             boolean isTankEmpty = fuelTank.getGas() == null;
             //Update energy output based on any existing fuel in tank
             GasStackFuelToEnergyRecipe recipe = RecipeHandler.getGasStackFuelToEnergyRecipe(fuelTank.getGas());
-            if (!isTankEmpty) {
+            if (!isTankEmpty && recipe != null) {
                 output = recipe.getOutput().energyOutput * 2;
             }
         }
@@ -344,5 +350,16 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
 
     public int getMaxBurnTicks() {
         return maxBurnTicks;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.generators.client.model.ModelGasGenerator.class;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

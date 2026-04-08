@@ -17,7 +17,7 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 
-public class ItemBlockLargeElectrolyticSeparator extends ItemBlockLargeBase {
+public class ItemBlockLargeElectrolyticSeparator extends ItemBlockLargeBaseEnergy {
 
     public ItemBlockLargeElectrolyticSeparator(Block block) {
         super(block, "LargeElectrolyticSeparator");

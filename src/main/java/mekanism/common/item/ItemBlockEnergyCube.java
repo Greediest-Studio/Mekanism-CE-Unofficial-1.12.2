@@ -147,7 +147,11 @@ public class ItemBlockEnergyCube extends ItemBlock implements IEnergizedItem, IS
         if (!itemstack.hasTagCompound()) {
             return BaseTier.BASIC;
         }
-        return BaseTier.values()[itemstack.getTagCompound().getInteger("tier")];
+        int tier = itemstack.getTagCompound().getInteger("tier");
+        if (tier >= 0 && tier < BaseTier.values().length) {
+            return BaseTier.values()[tier];
+        }
+        return BaseTier.BASIC;
     }
 
     @Override
@@ -305,7 +309,11 @@ public class ItemBlockEnergyCube extends ItemBlock implements IEnergizedItem, IS
     @Override
     public UUID getOwnerUUID(ItemStack stack) {
         if (ItemDataUtils.hasData(stack, "ownerUUID")) {
-            return UUID.fromString(ItemDataUtils.getString(stack, "ownerUUID"));
+            try {
+                return UUID.fromString(ItemDataUtils.getString(stack, "ownerUUID"));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
         }
         return null;
     }
@@ -324,7 +332,11 @@ public class ItemBlockEnergyCube extends ItemBlock implements IEnergizedItem, IS
         if (!MekanismConfig.current().general.allowProtection.val()) {
             return SecurityMode.PUBLIC;
         }
-        return SecurityMode.values()[ItemDataUtils.getInt(stack, "security")];
+        int security = ItemDataUtils.getInt(stack, "security");
+        if (security >= 0 && security < SecurityMode.values().length) {
+            return SecurityMode.values()[security];
+        }
+        return SecurityMode.PUBLIC;
     }
 
     @Override

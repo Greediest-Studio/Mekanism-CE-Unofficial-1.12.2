@@ -3,10 +3,12 @@ package mekanism.coremod;
 
 
 import mekanism.common.event.ItemGUIRenderEvent;
+import mekanism.common.interfaces.IOcclusionCulling;
 import mekanism.common.interfaces.IOverlayRenderAware;
 import mekanism.common.interfaces.IRenderEffectIntoGUI;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
@@ -40,5 +42,12 @@ public class MekanismCoreMethods {
             }
             MinecraftForge.EVENT_BUS.post(new ItemGUIRenderEvent.Pre(stack, xPosition, yPosition));
         }
+    }
+
+    public static boolean shouldCullTileEntityForOcclusion(TileEntity tileEntity) {
+        if (tileEntity instanceof IOcclusionCulling cullingTile) {
+            return cullingTile.shouldCullForOcclusion();
+        }
+        return false;
     }
 }

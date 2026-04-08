@@ -23,6 +23,7 @@ public class MultiblockMachineConfig extends BaseConfig {
     public final DoubleOption LargeWindGenerationMax = new DoubleOption(this,  "LargeWindGenerationMax", 294000.0D, "Maximum base generation value of the Large Wind Generator.");
 
     public final IntOption LargeGasGeneratorProcesses = new IntOption(this,"LargeGasGeneratorProcesses",1024,"The number of threads in large gas generator affects the machine's power generation, maximum energy storage, and energy output.").setRequiresGameRestart();
+    public final IntOption LargeSolarNeutronProcesses = new IntOption(this,"LargeSolarNeutronProcesses",256,"The number of threads in a large solar neutron affects the machine's maximum energy, energy usage, and how quickly it can operate per use.", 10, 102400).setRequiresGameRestart();
 
     @Override
     public String getCategory() {

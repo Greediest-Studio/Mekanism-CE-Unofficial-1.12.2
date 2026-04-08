@@ -1,0 +1,11 @@
+{
+  "tile.machine.fission_reactor": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "mekanismgenerators:fission_reactor",
+        "stream": false
+      }
+    ]
+  }
+}

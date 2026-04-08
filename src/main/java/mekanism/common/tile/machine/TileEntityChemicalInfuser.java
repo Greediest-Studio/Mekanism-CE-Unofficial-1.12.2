@@ -328,4 +328,9 @@ public class TileEntityChemicalInfuser extends TileEntityBasicMachine<ChemicalPa
     public boolean getOuputSlot() {
         return false;
     }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
+    }
 }

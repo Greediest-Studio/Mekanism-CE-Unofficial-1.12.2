@@ -39,9 +39,15 @@ public class NucleosynthesizerInput extends MachineInput<NucleosynthesizerInput>
     }
 
     public boolean use(NonNullList<ItemStack> inventory, int index, GasTank gasTank, boolean deplete) {
+        return use(inventory,index,gasTank,deplete,deplete);
+    }
+
+    public boolean use(NonNullList<ItemStack> inventory, int index, GasTank gasTank, boolean deplete,boolean useGas) {
         if (meets(new NucleosynthesizerInput(inventory.get(index), gasTank.getGas()))) {
             if (deplete) {
                 inventory.set(index, StackUtils.subtract(inventory.get(index), theSolid));
+            }
+            if (useGas){
                 gasTank.draw(theGas.amount, true);
             }
             return true;

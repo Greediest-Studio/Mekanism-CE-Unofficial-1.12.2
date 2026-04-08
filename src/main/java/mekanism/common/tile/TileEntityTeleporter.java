@@ -320,20 +320,23 @@ public class TileEntityTeleporter extends TileEntityElectricBlock implements ICo
         }
         entitiesInPortal.forEach(entity -> {
             World teleWorld = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(closestCoords.dimensionId);
-            TileEntityTeleporter teleporter = (TileEntityTeleporter) closestCoords.getTileEntity(teleWorld);
-            if (teleporter != null) {
-                teleporter.didTeleport.add(entity.getPersistentID());
-                teleporter.teleDelay = 5;
-                if (entity instanceof EntityPlayerMP mp) {
-                    teleportPlayerTo(mp, closestCoords, teleporter);
-                    alignPlayer(mp, closestCoords);
-                } else {
-                    teleportEntityTo(entity, closestCoords, teleporter);
-                }
-                frequency.activeCoords.forEach(coords -> Mekanism.packetHandler.sendToAllTracking(new PortalFXMessage(coords), coords));
-                setEnergy(getEnergy() - calculateEnergyCost(entity, closestCoords));
-                world.playSound(entity.posX, entity.posY, entity.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, entity.getSoundCategory(), 1.0F, 1.0F, false);
+            if (teleWorld == null) {
+                return;
             }
+            if (!(closestCoords.getTileEntity(teleWorld) instanceof TileEntityTeleporter teleporter)) {
+                return;
+            }
+            teleporter.didTeleport.add(entity.getPersistentID());
+            teleporter.teleDelay = 5;
+            if (entity instanceof EntityPlayerMP mp) {
+                teleportPlayerTo(mp, closestCoords, teleporter);
+                alignPlayer(mp, closestCoords);
+            } else {
+                teleportEntityTo(entity, closestCoords, teleporter);
+            }
+            frequency.activeCoords.forEach(coords -> Mekanism.packetHandler.sendToAllTracking(new PortalFXMessage(coords), coords));
+            setEnergy(getEnergy() - calculateEnergyCost(entity, closestCoords));
+            world.playSound(entity.posX, entity.posY, entity.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, entity.getSoundCategory(), 1.0F, 1.0F, false);
         });
     }
 
@@ -391,8 +394,10 @@ public class TileEntityTeleporter extends TileEntityElectricBlock implements ICo
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
-        color = colors.get(nbtTags.getInteger("color"));
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
+        if (nbtTags.hasKey("color")) {
+            color = MekanismUtils.getByIndex(colors, nbtTags.getInteger("color"), color);
+        }
         if (nbtTags.hasKey("frequency")) {
             frequency = new Frequency(nbtTags.getCompoundTag("frequency"));
             frequency.valid = false;
@@ -453,8 +458,8 @@ public class TileEntityTeleporter extends TileEntityElectricBlock implements ICo
 
             status = dataStream.readByte();
             shouldRender = dataStream.readBoolean();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            color = EnumColor.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
+            color = MekanismUtils.getByIndex(EnumColor.values(), dataStream.readInt(), color);
             publicCache.clear();
             privateCache.clear();
 

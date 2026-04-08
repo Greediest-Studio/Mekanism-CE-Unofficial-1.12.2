@@ -231,9 +231,9 @@ public class TileEntityLaserAmplifier extends TileEntityContainerBlock implement
             time = dataStream.readInt();
             collectedEnergy = dataStream.readDouble();
             lastFired = dataStream.readDouble();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             emittingRedstone = dataStream.readBoolean();
-            outputMode = RedstoneOutput.values()[dataStream.readInt()];
+            outputMode = MekanismUtils.getByIndex(RedstoneOutput.values(), dataStream.readInt(), outputMode);
         }
     }
 
@@ -246,8 +246,8 @@ public class TileEntityLaserAmplifier extends TileEntityContainerBlock implement
         time = nbtTags.getInteger("time");
         collectedEnergy = nbtTags.getDouble("collectedEnergy");
         lastFired = nbtTags.getDouble("lastFired");
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
-        outputMode = RedstoneOutput.values()[nbtTags.getInteger("outputMode")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
+        outputMode = MekanismUtils.getByIndex(RedstoneOutput.values(), nbtTags.getInteger("outputMode"), outputMode);
     }
 
 

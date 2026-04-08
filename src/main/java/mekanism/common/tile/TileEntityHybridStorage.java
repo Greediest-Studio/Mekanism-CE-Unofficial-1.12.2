@@ -6,10 +6,12 @@ import mekanism.api.IConfigCardAccess;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
+import mekanism.common.Mekanism;
 import mekanism.common.SideData;
 import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.config.MekanismConfig;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentConfig;
@@ -23,13 +25,16 @@ import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -51,6 +56,11 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
     public RedstoneControl controlType;
     public ContainerEditMode editMode = ContainerEditMode.BOTH;
 
+    public int delayTicks;
+    protected int successCounter = 0;
+    protected boolean inventoryChanged = false;
+
+
     //TODO：Maybe remove this,Because it's not good to have both input and output in the same place at the same time
     public TileEntityHybridStorage() {
         super(MachineType.HYBRID_STORAGE.getBlockName(), MachineType.HYBRID_STORAGE.getStorage());
@@ -60,6 +70,9 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
         configComponent.addOutput(TransmissionType.ITEM, new SideData(DataType.INPUT, INV_SLOTS));
         configComponent.addOutput(TransmissionType.ITEM, new SideData(DataType.OUTPUT, INV_SLOTS));
         configComponent.addOutput(TransmissionType.ITEM, new SideData(INV_SLOTS, INV_SLOTS_INPUT_OUTPUT));
+        configComponent.addOutput(TransmissionType.ITEM, new SideData(DataType.INPUT_ENHANCED, INV_SLOTS));
+        configComponent.addOutput(TransmissionType.ITEM, new SideData(DataType.INPUT_ENHANCED_OUTPUT_ENHANCED, INV_SLOTS,INV_SLOTS_INPUT_OUTPUT));
+        configComponent.addOutput(TransmissionType.ITEM, new SideData(DataType.OUTPUT_ENHANCED, INV_SLOTS));
         configComponent.setConfig(TransmissionType.ITEM, new byte[]{1, 1, 1, 1, 1, 2});
 
         configComponent.setIOConfig(TransmissionType.ENERGY);
@@ -101,15 +114,203 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
         }
     }
 
+
+
+
     @Override
     public void addTileSyncTask() {
         energyOupt();
+        AutomaticallyExtractItems(4);
+        AutomaticallyExtractItems(5);
+        BetterEjectingItem();
         handleGasTank(gasTank1, configComponent.getSidesForData(TransmissionType.GAS, facing, 4), true);
         handleGasTank(gasTank2, configComponent.getSidesForData(TransmissionType.GAS, facing, 5), true);
     }
 
+    protected boolean canWork(int minWorkDelay, int maxWorkDelay) {
+        if (inventoryChanged) {
+            inventoryChanged = false;
+            return true;
+        }
+
+        if (successCounter <= 0) {
+            return ticksExisted % maxWorkDelay == 0;
+        }
+        int workDelay = Math.max(minWorkDelay, maxWorkDelay - (successCounter * 5));
+        return ticksExisted % workDelay == 0;
+    }
+
+    protected void AutomaticallyExtractItems(int dataIndex) {
+        if (getWorld().isRemote || !canWork(5, 60)) {
+            return;
+        }
+        InputItems(dataIndex);
+    }
+
+    private void InputItems(int dataIndex) {
+        for (EnumFacing facing : configComponent.getSidesForData(TransmissionType.ITEM, facing, dataIndex)) {
+            BlockPos offset = getPos().offset(facing);
+            TileEntity te = getWorld().getTileEntity(offset);
+            if (!InventoryUtils.isItemHandler(te, facing.getOpposite())) {
+                continue;
+            }
+            IItemHandler itemHandler = InventoryUtils.getItemHandler(te, facing.getOpposite());
+            if (itemHandler == null) {
+                continue;
+            }
+            inputFromExternal(itemHandler);
+        }
+    }
+
+    private synchronized void inputFromExternal(IItemHandler external) {
+        boolean successAtLeastOnce = false;
+
+        external:
+        for (int i = external.getSlots() - 1; i >= 0; i--) {
+            ItemStack externalStack = external.getStackInSlot(i);
+            if (externalStack.isEmpty()) {
+                continue;
+            }
+
+            for (int internalSlotId : INV_SLOTS) {
+                ItemStack internalStack = inventory.get(internalSlotId);
+                int maxCanExtract = Math.min(externalStack.getCount(), externalStack.getMaxStackSize());
+                if (internalStack.isEmpty()) {
+                    // Extract external item and insert to internal.
+                    if (!isItemValidForSlot(internalSlotId, externalStack)) {
+                        continue;
+                    }
+                    ItemStack extracted = external.extractItem(i, maxCanExtract, false);
+                    inventory.set(internalSlotId, extracted);
+                    successAtLeastOnce = true;
+                    // If there are no more items in the current slot, check the next external slot.
+                    if (external.getStackInSlot(i).isEmpty()) {
+                        continue external;
+                    }
+                    continue;
+                }
+                if (internalStack.getCount() >= internalStack.getMaxStackSize() || !matchStacks(internalStack, externalStack)) {
+                    continue;
+                }
+                int extractAmt = Math.min(internalStack.getMaxStackSize() - internalStack.getCount(), maxCanExtract);
+                // Extract external item and insert to internal.
+                ItemStack extracted = external.extractItem(i, extractAmt, false);
+                inventory.set(internalSlotId, copyStackWithSize(extracted, internalStack.getCount() + extracted.getCount()));
+                successAtLeastOnce = true;
+                // If there are no more items in the current slot, check the next external slot.
+                if (external.getStackInSlot(i).isEmpty()) {
+                    continue external;
+                }
+            }
+        }
+
+        if (successAtLeastOnce) {
+            incrementSuccessCounter(60, 5);
+            markNoUpdate();
+        } else {
+            decrementSuccessCounter();
+        }
+    }
+
+    protected void incrementSuccessCounter(int maxWorkDelay, int minWorkDelay) {
+        int max = (maxWorkDelay - minWorkDelay) / 5;
+        if (successCounter < max) {
+            successCounter++;
+        }
+    }
+
+    protected void decrementSuccessCounter() {
+        if (successCounter > 0) {
+            successCounter--;
+        }
+    }
+
+    public static ItemStack copyStackWithSize(ItemStack stack, int amount) {
+        if (stack.isEmpty() || amount <= 0) return ItemStack.EMPTY;
+        ItemStack s = stack.copy();
+        s.setCount(amount);
+        return s;
+    }
+
+    private void BetterEjectingItem() {
+        if (delayTicks == 0 || MekanismConfig.current().mekce.ItemsEjectWithoutDelay.val()) {
+            outputItems(5);
+            outputItems(6);
+            if (!MekanismConfig.current().mekce.ItemsEjectWithoutDelay.val()) {
+                delayTicks = MekanismConfig.current().mekce.ItemEjectionDelay.val();
+            }
+        } else {
+            delayTicks--;
+        }
+    }
+
+    private void outputItems(int dataIndex) {
+        if (!configComponent.isEjecting(TransmissionType.ITEM)) {
+            return;
+        }
+        for (EnumFacing facing : configComponent.getSidesForData(TransmissionType.ITEM, facing, dataIndex)) {
+            BlockPos offset = getPos().offset(facing);
+            TileEntity te = getWorld().getTileEntity(offset);
+            if (!InventoryUtils.isItemHandler(te, facing.getOpposite())) {
+                continue;
+            }
+            IItemHandler itemHandler = InventoryUtils.getItemHandler(te, facing.getOpposite());
+            if (itemHandler == null) {
+                continue;
+            }
+            try {
+                outputToExternal(itemHandler);
+            } catch (Exception e) {
+                Mekanism.logger.error("Exception when insert item: ", e);
+            }
+        }
+    }
+
+    private synchronized void outputToExternal(IItemHandler external) {
+        for (int externalSlotId = 0; externalSlotId < external.getSlots(); externalSlotId++) {
+            ItemStack externalStack = external.getStackInSlot(externalSlotId);
+            int slotLimit = external.getSlotLimit(externalSlotId);
+            if (!externalStack.isEmpty() && externalStack.getCount() >= slotLimit) {
+                continue;
+            }
+            for (int internalSlotId : INV_SLOTS) {
+                ItemStack internalStack = inventory.get(internalSlotId);
+                if (internalStack.isEmpty()) {
+                    continue;
+                }
+                if (externalStack.isEmpty()) {
+                    ItemStack notInserted = external.insertItem(externalSlotId, internalStack, false);
+                    // Safeguard against Storage Drawers virtual slot
+                    if (notInserted.getCount() == internalStack.getCount()) {
+                        break;
+                    }
+                    inventory.set(internalSlotId, notInserted);
+                    if (notInserted.isEmpty()) {
+                        break;
+                    }
+                    continue;
+                }
+                if (!matchStacks(internalStack, externalStack)) {
+                    continue;
+                }
+                // Extract internal item to external.
+                ItemStack notInserted = external.insertItem(externalSlotId, internalStack, false);
+                inventory.set(internalSlotId, notInserted);
+                if (notInserted.isEmpty()) {
+                    break;
+                }
+            }
+        }
+
+    }
+
+    public static boolean matchStacks(@Nonnull ItemStack stack, @Nonnull ItemStack other) {
+        if (!ItemStack.areItemsEqual(stack, other)) return false;
+        return ItemStack.areItemStackTagsEqual(stack, other);
+    }
+
     private void energyOupt() {
-        if (configComponent.isEjecting(TransmissionType.ENERGY) && MekanismUtils.canFunction(this)) {
+        if (configComponent.isEjecting(TransmissionType.ENERGY) && MekanismUtils.canFunction(this) && getEnergy() > 0) {
             CableUtils.emit(this);
         }
     }
@@ -136,17 +337,17 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
     @Override
     public boolean canExtractItem(int slotID, @Nonnull ItemStack itemstack, @Nonnull EnumFacing side) {
         Item gasitem = itemstack.getItem();
-        if (slotID <= 120) {
+        if (slotID <= 119) {
             return true;
         } else if (slotID == 121 || slotID == 123) {
             return gasitem instanceof IGasItem item && item.getGas(itemstack) != null && item.getGas(itemstack).amount == item.getMaxGas(itemstack);
-        } else if (slotID == 122 || slotID == 124) {
+        } else if (slotID == 120 || slotID == 122) {
             return gasitem instanceof IGasItem item && item.getGas(itemstack) == null;
-        } else if (slotID == 126) {
+        } else if (slotID == 125) {
             return true;
-        } else if (slotID == 127) {
+        } else if (slotID == 126) {
             return ChargeUtils.canBeOutputted(itemstack, true);
-        } else if (slotID == 128) {
+        } else if (slotID == 127) {
             return ChargeUtils.canBeOutputted(itemstack, false);
         }
         return false;
@@ -155,21 +356,21 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
     @Override
     public boolean isItemValidForSlot(int slotID, @Nonnull ItemStack itemstack) {
         Item item = itemstack.getItem();
-        if (slotID <= 120) {
+        if (slotID <= 119) {
             return true;
+        } else if (slotID == 120) {
+            return item instanceof IGasItem gasItem && (gasTank1.getGas() == null || gasItem.canProvideGas(itemstack, gasTank1.getGas().getGas()));
         } else if (slotID == 121) {
             return item instanceof IGasItem gasItem && (gasTank1.getGas() == null || gasItem.canReceiveGas(itemstack, gasTank1.getGas().getGas()));
         } else if (slotID == 122) {
-            return item instanceof IGasItem gasItem && (gasTank1.getGas() == null || gasItem.canProvideGas(itemstack, gasTank1.getGas().getGas()));
+            return item instanceof IGasItem gasItem && (gasTank2.getGas() == null || gasItem.canProvideGas(itemstack, gasTank2.getGas().getGas()));
         } else if (slotID == 123) {
             return item instanceof IGasItem gasItem && (gasTank2.getGas() == null || gasItem.canReceiveGas(itemstack, gasTank2.getGas().getGas()));
         } else if (slotID == 124) {
-            return item instanceof IGasItem gasItem && (gasTank2.getGas() == null || gasItem.canProvideGas(itemstack, gasTank2.getGas().getGas()));
-        } else if (slotID == 125) {
             return FluidContainerUtils.isFluidContainer(itemstack);
-        } else if (slotID == 127) {
+        } else if (slotID == 126) {
             return ChargeUtils.canBeCharged(itemstack);
-        } else if (slotID == 128) {
+        } else if (slotID == 127) {
             return ChargeUtils.canBeDischarged(itemstack);
         }
         return false;
@@ -289,8 +490,8 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
             TileUtils.readTankData(dataStream, fluidTank);
             TileUtils.readTankData(dataStream, gasTank1);
             TileUtils.readTankData(dataStream, gasTank2);
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            editMode = ContainerEditMode.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
+            editMode = MekanismUtils.getByIndex(ContainerEditMode.values(), dataStream.readInt(), editMode);
         }
     }
 
@@ -300,8 +501,8 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
         fluidTank.readFromNBT(nbtTags.getCompoundTag("fluidTank"));
         gasTank1.read(nbtTags.getCompoundTag("gasTank1"));
         gasTank2.read(nbtTags.getCompoundTag("gasTank2"));
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
-        editMode = ContainerEditMode.values()[nbtTags.getInteger("editMode")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
+        editMode = MekanismUtils.getByIndex(ContainerEditMode.values(), nbtTags.getInteger("editMode"), editMode);
     }
 
 
@@ -464,5 +665,10 @@ public class TileEntityHybridStorage extends TileEntityElectricBlock implements 
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return MachineType.get(block, metadata) != null ? MachineType.get(block, metadata).guiId : -1;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

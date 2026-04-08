@@ -38,6 +38,8 @@ import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +47,7 @@ import javax.annotation.Nonnull;
 import java.util.*;
 
 public class TileEntityLargeElectrolyticSeparator extends TileEntityBasicMachine<FluidInput, ChemicalPairOutput, SeparatorRecipe>
-        implements IFluidHandlerWrapper, ISustainedData, IGasHandler, IUpgradeInfoHandler, ITankManager, ISpecialConfigData, IAdvancedBoundingBlock {
+        implements IFluidHandlerWrapper, ISustainedData, IGasHandler, IUpgradeInfoHandler, ITankManager, ISpecialConfigData, IAdvancedBoundingBlock, ISpecialSelectionWireframeTile {
 
     private static final String[] methods = new String[]{"getEnergy", "getOutput", "getMaxEnergy", "getEnergyNeeded", "getWater", "getWaterNeeded", "getHydrogen", "getHydrogenNeeded", "getOxygen", "getOxygenNeeded"};
     private final EjectSpeedController gasSpeedController = new EjectSpeedController();
@@ -311,8 +313,8 @@ public class TileEntityLargeElectrolyticSeparator extends TileEntityBasicMachine
             TileUtils.readTankData(dataStream, fluidTank);
             TileUtils.readTankData(dataStream, leftTank);
             TileUtils.readTankData(dataStream, rightTank);
-            dumpLeft = GasMode.values()[dataStream.readInt()];
-            dumpRight = GasMode.values()[dataStream.readInt()];
+            dumpLeft = MekanismUtils.getByIndex(GasMode.values(), dataStream.readInt(), GasMode.IDLE);
+            dumpRight = MekanismUtils.getByIndex(GasMode.values(), dataStream.readInt(), GasMode.IDLE);
             clientEnergyUsed = dataStream.readDouble();
             numPowering = dataStream.readInt();
             if (updateDelay == 0) {
@@ -341,8 +343,8 @@ public class TileEntityLargeElectrolyticSeparator extends TileEntityBasicMachine
         fluidTank.readFromNBT(nbtTags.getCompoundTag("fluidTank"));
         leftTank.read(nbtTags.getCompoundTag("leftTank"));
         rightTank.read(nbtTags.getCompoundTag("rightTank"));
-        dumpLeft = GasMode.values()[nbtTags.getInteger("dumpLeft")];
-        dumpRight = GasMode.values()[nbtTags.getInteger("dumpRight")];
+        dumpLeft = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumpLeft"), GasMode.IDLE);
+        dumpRight = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumpRight"), GasMode.IDLE);
         numPowering = nbtTags.getInteger("numPowering");
     }
 
@@ -410,6 +412,9 @@ public class TileEntityLargeElectrolyticSeparator extends TileEntityBasicMachine
 
     @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
+        if (!canFill(from, resource)) {
+            return 0;
+        }
         return fluidTank.fill(resource, doFill);
     }
 
@@ -569,8 +574,8 @@ public class TileEntityLargeElectrolyticSeparator extends TileEntityBasicMachine
 
     @Override
     public void setConfigurationData(NBTTagCompound nbtTags) {
-        dumpLeft = GasMode.values()[nbtTags.getInteger("dumpLeft")];
-        dumpRight = GasMode.values()[nbtTags.getInteger("dumpRight")];
+        dumpLeft = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumpLeft"), GasMode.IDLE);
+        dumpRight = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumpRight"), GasMode.IDLE);
     }
 
     @Override
@@ -784,5 +789,16 @@ public class TileEntityLargeElectrolyticSeparator extends TileEntityBasicMachine
             Mekanism.packetHandler.sendUpdatePacket(this);
             updateDelay = 10;
         }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.multiblockmachine.client.model.machine.ModelLargeElectrolyticSeparator.class;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

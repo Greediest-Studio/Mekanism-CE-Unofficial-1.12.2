@@ -7,11 +7,9 @@ import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.inventory.slot.SlotEnergy.SlotDischarge;
 import mekanism.common.inventory.slot.SlotOutput;
 import mekanism.common.item.ItemBlockMachine;
-import mekanism.common.recipe.inputs.*;
 import mekanism.common.tier.FactoryTier;
 import mekanism.common.tile.factory.TileEntityFactory;
 import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.StackUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.IInventory;
@@ -22,7 +20,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
 
 public class ContainerFactory extends ContainerMekanism<TileEntityFactory> {
 
@@ -216,7 +213,6 @@ public class ContainerFactory extends ContainerMekanism<TileEntityFactory> {
 
         @Override
         public boolean isItemValid(ItemStack stack) {
-            ItemStack inputSlotStack = tileEntity.inventory.get(getOutputSlotIndex(this.processNumber));
             return /* tileEntity.inputProducesOutput(getInputSlotIndex(this.processNumber), stack, inputSlotStack, false) && itemValid ||*/ isInputItem(stack);
         }
 
@@ -227,48 +223,7 @@ public class ContainerFactory extends ContainerMekanism<TileEntityFactory> {
         }
 
         private boolean isInputItem(ItemStack itemstack) {
-            if (!tileEntity.NoItemInputMachine()) {
-                for (Object obj : tileEntity.getRecipeType().getrecipe().get().entrySet()) {
-                    if (((Map.Entry<?, ?>) obj).getKey() instanceof AdvancedMachineInput input) {
-                        ItemStack stack = input.itemStack;
-                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
-                            return true;
-                        }
-                    }
-                    if (((Map.Entry<?, ?>) obj).getKey() instanceof ItemStackInput input) {
-                        ItemStack stack = input.ingredient;
-                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
-                            return true;
-                        }
-                    }
-                    if (((Map.Entry<?, ?>) obj).getKey() instanceof DoubleMachineInput input) {
-                        ItemStack stack = input.itemStack;
-                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
-                            return true;
-                        }
-                    }
-                    if (((Map.Entry<?, ?>) obj).getKey() instanceof InfusionInput input) {
-                        ItemStack stack = input.inputStack;
-                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
-                            return true;
-                        }
-                    }
-                    if (((Map.Entry<?, ?>) obj).getKey() instanceof NucleosynthesizerInput input) {
-                        ItemStack stack = input.getSolid();
-                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
-                            return true;
-                        }
-                    }
-                    if (((Map.Entry<?, ?>) obj).getKey() instanceof PressurizedInput input) {
-                        ItemStack stack = input.getSolid();
-                        if (ItemHandlerHelper.canItemStacksStack(stack, itemstack)) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-            return false;
+            return !tileEntity.NoItemInputMachine() && tileEntity.getRecipeType().hasRecipeForInput(itemstack);
         }
     }
 

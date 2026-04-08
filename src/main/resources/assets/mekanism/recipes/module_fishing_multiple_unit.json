@@ -1,0 +1,29 @@
+{
+  "result": {
+    "item": "mekanism:module_fishing_multiple_unit"
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "EEE"
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "A": {
+      "item": "#CIRCUITULTIMATE"
+    },
+    "B": {
+      "item": "mekanism:robit"
+    },
+    "C": {
+      "item": "mekanism:hdpe_sheet"
+    },
+    "D": {
+      "item": "mekanism:modulebase"
+    },
+    "E": {
+      "ore": "string",
+      "type": "forge:ore_dict"
+    }
+  }
+}

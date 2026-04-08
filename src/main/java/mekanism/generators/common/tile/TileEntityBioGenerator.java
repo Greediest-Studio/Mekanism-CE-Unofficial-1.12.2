@@ -8,12 +8,15 @@ import mekanism.common.MekanismItems;
 import mekanism.common.base.*;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.*;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidRegistry;
@@ -23,13 +26,18 @@ import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 
-public class TileEntityBioGenerator extends TileEntityGenerator implements IFluidHandlerWrapper, ISustainedData, IComparatorSupport, IMachineSlotTip {
+public class TileEntityBioGenerator extends TileEntityGenerator implements IFluidHandlerWrapper, ISustainedData, IComparatorSupport, IMachineSlotTip, ISpecialSelectionWireframeTile {
 
     private static final String[] methods = new String[]{"getEnergy", "getOutput", "getMaxEnergy", "getEnergyNeeded", "getBioFuel", "getBioFuelNeeded"};
     private static FluidTankInfo[] ALL_TANKS = new FluidTankInfo[0];
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_180 = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(180.0D, 0.5D, 0.5D, 0.5D)
+    };
     /**
      * The FluidSlot biofuel instance for this generator.
      */
@@ -223,6 +231,9 @@ public class TileEntityBioGenerator extends TileEntityGenerator implements IFlui
 
     @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
+        if (!canFill(from, resource)) {
+            return 0;
+        }
         int fuelNeeded = bioFuelSlot.MAX_FLUID - bioFuelSlot.fluidStored;
         int fuelTransfer = Math.min(resource.amount, fuelNeeded);
         if (doFill) {
@@ -287,5 +298,16 @@ public class TileEntityBioGenerator extends TileEntityGenerator implements IFlui
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.generators.client.model.ModelBioGenerator.class;
+    }
+
+    @Override
+    public ISpecialSelectionWireframeTile.SelectionTransform[] getSelectionWireframeTransforms(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return SELECTION_ROTATE_180;
     }
 }

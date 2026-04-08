@@ -5,9 +5,9 @@
             "count": 4
       },
       "pattern": [
-            " C ",
-            "CAC",
-            " C "
+            "A#A",
+            "#X#",
+            "A#A"
       ],
       "type": "forge:ore_shaped",
       "key": {
@@ -15,7 +15,11 @@
                   "ore": "alloyUltimate",
                   "type": "forge:ore_dict"
             },
-            "C": {
+            "#": {
+                  "ore": "PoloniumPellet",
+                  "type": "forge:ore_dict"
+            },
+            "X": {
                   "item": "mekanism:basicblock",
                   "data": 8
             }

@@ -13,6 +13,7 @@ import mekanism.common.tier.PipeTier;
 import mekanism.common.transmitters.grid.FluidNetwork;
 import mekanism.common.util.CapabilityUtils;
 import mekanism.common.util.FluidTankSync;
+import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.PipeUtils;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -137,7 +138,7 @@ public class TileEntityMechanicalPipe extends TileEntityTransmitter<IFluidHandle
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
         if (nbtTags.hasKey("tier")) {
-            tier = PipeTier.values()[nbtTags.getInteger("tier")];
+            tier = MekanismUtils.getByIndex(PipeTier.values(), nbtTags.getInteger("tier"), tier);
         }
         buffer.setCapacity(getCapacity());
         if (nbtTags.hasKey("cacheFluid")) {
@@ -289,7 +290,7 @@ public class TileEntityMechanicalPipe extends TileEntityTransmitter<IFluidHandle
 
     @Override
     public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = PipeTier.values()[dataStream.readInt()];
+        tier = MekanismUtils.getByIndex(PipeTier.values(), dataStream.readInt(), tier);
         super.handlePacketData(dataStream);
     }
 

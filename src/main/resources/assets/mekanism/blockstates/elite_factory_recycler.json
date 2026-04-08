@@ -1,34 +1,34 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/elite/recycler/side",
-                  "south": "mekanism:blocks/factory/elite/recycler/side",
-                  "west": "mekanism:blocks/factory/elite/recycler/side",
-                  "sides": "mekanism:blocks/factory/elite/recycler/side",
-                  "front": "mekanism:blocks/factory/elite/recycler/front",
-                  "up": "mekanism:blocks/factory/elite/recycler/top",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/elite"
+    },
+    "model": "mekanism:factory_recycler"
+  },
+  "variants": {
+    "facing": {
+      "east": {
+        "y": 90
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/elite/recycler/side_active",
-                        "south": "mekanism:blocks/factory/elite/recycler/side_active",
-                        "west": "mekanism:blocks/factory/elite/recycler/side_active",
-                        "front": "mekanism:blocks/factory/elite/recycler/front_active",
-                        "up": "mekanism:blocks/factory/elite/recycler/top_active"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
+      "south": {
+        "y": 180
+      },
+      "north": {},
+      "west": {
+        "y": -90
       }
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/elite"
+        }
+      },
+      "false": {}
+    },
+    "inventory": [
+      {}
+    ]
+  }
 }

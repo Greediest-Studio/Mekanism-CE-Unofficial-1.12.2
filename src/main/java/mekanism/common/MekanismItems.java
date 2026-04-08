@@ -134,7 +134,7 @@ public class MekanismItems {
 
     public static final Item HDPE_REINFORCED_ELYTRA = new ItemHDPEElytra();
     public static final ItemMekaTool MEKA_TOOL = new ItemMekaTool();
-
+    public static final ItemMekaFishingRod MEKA_FISHING_ROD = new ItemMekaFishingRod();
     public static final ItemModule MODULE_HEALTH_REGENERATION = new ItemModule(MekanismModules.HEALTH_REGENERATION_UNIT);
 
     public static final Item HDPE_PELLET = new ItemMekanism().setRarity(EnumRarity.UNCOMMON);
@@ -154,6 +154,13 @@ public class MekanismItems {
     public static final Item HAZMAT_GOWN = new ItemHazmatSuitArmor(1, EntityEquipmentSlot.CHEST);
     public static final Item HAZMAT_PANTS = new ItemHazmatSuitArmor(2, EntityEquipmentSlot.LEGS);
     public static final Item HAZMAT_BOOTS = new ItemHazmatSuitArmor(3, EntityEquipmentSlot.FEET);
+
+
+
+    public static final ItemModule MODULE_FISHING_COLLECTING = new ItemModule(MekanismModules.FISHING_COLLECTING_UNIT);
+    public static final ItemModule MODULE_FISHING_SPEED = new ItemModule(MekanismModules.FISHING_SPEED_UNIT);
+    public static final ItemModule MODULE_FISHING_INTELLIGENT = new ItemModule(MekanismModules.FISHING_INTELLIGENT_UNIT);
+    public static final ItemModule MODULE_FISHING_MULTIPLE = new ItemModule(MekanismModules.FISHING_MULTIPLE_UNIT);
     /**
      * ADD END
      */
@@ -235,10 +242,6 @@ public class MekanismItems {
         registry.register(init(YellowCakeUranium, "YellowCakeUranium"));
         registry.register(init(PoloniumPellet, "PoloniumPellet"));
         registry.register(init(ArmoredFreeRunners, "ArmoredFreeRunners"));
-        //  registry.register(init(MekAsuitHelmet, "MekAsuitHelmet"));
-        //  registry.register(init(MekAsuitChestplate, "MekAsuitChestplate"));
-        //  registry.register(init(MekAsuitLeggings, "MekAsuitLeggings"));
-        //  registry.register(init(MekAsuitBoots, "MekAsuitBoots"));
         registry.register(init(ModuleBase, "ModuleBase"));
 
         registry.register(init(MEKASUIT_HELMET, "mekasuit_helmet"));
@@ -285,6 +288,7 @@ public class MekanismItems {
             registry.register(init(HDPE_REINFORCED_ELYTRA, "hdpe_elytra"));
         }
         registry.register(init(MEKA_TOOL, "meka_tool"));
+        registry.register(init(MEKA_FISHING_ROD,"mekafishingrod"));
         registry.register(initModule(MODULE_HEALTH_REGENERATION));
         registry.register(init(HDPE_PELLET, "hdpe_pellet"));
         registry.register(init(HDPE_ROD, "hdpe_rod"));
@@ -302,6 +306,11 @@ public class MekanismItems {
         registry.register(init(HAZMAT_GOWN, "hazmat_gown"));
         registry.register(init(HAZMAT_PANTS, "hazmat_pants"));
         registry.register(init(HAZMAT_BOOTS, "hazmat_boots"));
+
+        registry.register(initModule(MODULE_FISHING_COLLECTING));
+        registry.register(initModule(MODULE_FISHING_SPEED));
+        registry.register(initModule(MODULE_FISHING_INTELLIGENT));
+        registry.register(initModule(MODULE_FISHING_MULTIPLE));
         /**
          * ADD END
          */

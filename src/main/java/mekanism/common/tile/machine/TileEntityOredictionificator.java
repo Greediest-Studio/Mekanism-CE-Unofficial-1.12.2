@@ -190,7 +190,8 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
+        filters.clear();
         if (nbtTags.hasKey("filters")) {
             NBTTagList tagList = nbtTags.getTagList("filters", NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.tagCount(); i++) {
@@ -210,7 +211,7 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             int type = dataStream.readInt();
             if (type == 0) {
-                controlType = RedstoneControl.values()[dataStream.readInt()];
+                controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
                 didProcess = dataStream.readBoolean();
                 filters.clear();
 
@@ -219,7 +220,7 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
                     filters.add(OredictionificatorFilter.readFromPacket(dataStream));
                 }
             } else if (type == 1) {
-                controlType = RedstoneControl.values()[dataStream.readInt()];
+                controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
                 didProcess = dataStream.readBoolean();
             } else if (type == 2) {
                 filters.clear();
@@ -281,6 +282,7 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
 
     @Override
     public void setConfigurationData(NBTTagCompound nbtTags) {
+        filters.clear();
         if (nbtTags.hasKey("filters")) {
             NBTTagList tagList = nbtTags.getTagList("filters", NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.tagCount(); i++) {
@@ -311,6 +313,7 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
     @Override
     public void readSustainedData(ItemStack itemStack) {
         if (ItemDataUtils.hasData(itemStack, "hasOredictionificatorConfig")) {
+            filters.clear();
             if (ItemDataUtils.hasData(itemStack, "filters")) {
                 NBTTagList tagList = ItemDataUtils.getList(itemStack, "filters");
                 for (int i = 0; i < tagList.tagCount(); i++) {

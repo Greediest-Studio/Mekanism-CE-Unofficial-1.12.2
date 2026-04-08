@@ -1,12 +1,10 @@
 package mekanism.generators.common.tile.turbine;
 
-import ic2.api.energy.EnergyNet;
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergyAcceptor;
 import ic2.api.energy.tile.IEnergyConductor;
 import ic2.api.energy.tile.IEnergyEmitter;
-import ic2.api.energy.tile.IEnergyTile;
 import mekanism.api.Coord4D;
 import mekanism.common.base.FluidHandlerWrapper;
 import mekanism.common.base.IComparatorSupport;
@@ -90,28 +88,17 @@ public class TileEntityTurbineValve extends TileEntityTurbineCasing implements I
 
     @Method(modid = MekanismHooks.IC2_MOD_ID)
     public void register() {
-        if (!isRemote()) {
-            IEnergyTile registered = EnergyNet.instance.getTile(world, getPos());
-            if (registered != this) {
-                if (registered != null && ic2Registered) {
-                    MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(registered));
-                    ic2Registered = false;
-                } else {
-                    MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
-                    ic2Registered = true;
-                }
-            }
+        if (!isRemote() && world != null && !ic2Registered) {
+            MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
+            ic2Registered = true;
         }
     }
 
     @Method(modid = MekanismHooks.IC2_MOD_ID)
     public void deregister() {
-        if (!isRemote()) {
-            IEnergyTile registered = EnergyNet.instance.getTile(world, getPos());
-            if (registered != null && ic2Registered) {
-                MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(registered));
-                ic2Registered = false;
-            }
+        if (!isRemote() && world != null && ic2Registered) {
+            MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(this));
+            ic2Registered = false;
         }
     }
 
@@ -375,7 +362,7 @@ public class TileEntityTurbineValve extends TileEntityTurbineCasing implements I
         if ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) {
             if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY || capability == Capabilities.ENERGY_STORAGE_CAPABILITY
                     || capability == Capabilities.ENERGY_OUTPUTTER_CAPABILITY || capability == Capabilities.TESLA_HOLDER_CAPABILITY
-                    || (capability == Capabilities.TESLA_PRODUCER_CAPABILITY && sideIsOutput(facing)) || capability == CapabilityEnergy.ENERGY) {
+                    || (capability == Capabilities.TESLA_PRODUCER_CAPABILITY && sideIsOutput(side)) || capability == CapabilityEnergy.ENERGY) {
                 return true;
             }
         }
@@ -389,7 +376,7 @@ public class TileEntityTurbineValve extends TileEntityTurbineCasing implements I
                 return (T) this;
             } else if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
                 return CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY.cast(new FluidHandlerWrapper(this, side));
-            } else if (capability == Capabilities.TESLA_HOLDER_CAPABILITY || (capability == Capabilities.TESLA_PRODUCER_CAPABILITY && sideIsOutput(facing))) {
+            } else if (capability == Capabilities.TESLA_HOLDER_CAPABILITY || (capability == Capabilities.TESLA_PRODUCER_CAPABILITY && sideIsOutput(side))) {
                 return (T) teslaManager.getWrapper(this, facing);
             } else if (capability == CapabilityEnergy.ENERGY) {
                 return CapabilityEnergy.ENERGY.cast(forgeEnergyManager.getWrapper(this, facing));

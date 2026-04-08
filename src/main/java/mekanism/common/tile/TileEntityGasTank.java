@@ -281,11 +281,11 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             GasTankTier prevTier = tier;
-            tier = GasTankTier.values()[dataStream.readInt()];
+            tier = MekanismUtils.getByIndex(GasTankTier.values(), dataStream.readInt(), tier);
             gasTank.setMaxGas(tier.getStorage());
             TileUtils.readTankData(dataStream, gasTank);
-            dumping = GasMode.values()[dataStream.readInt()];
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            dumping = MekanismUtils.getByIndex(GasMode.values(), dataStream.readInt(), dumping);
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             if (prevTier != tier) {
                 MekanismUtils.updateBlock(world, getPos());
             }
@@ -295,10 +295,10 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        tier = GasTankTier.values()[nbtTags.getInteger("tier")];
+        tier = MekanismUtils.getByIndex(GasTankTier.values(), nbtTags.getInteger("tier"), tier);
         gasTank.read(nbtTags.getCompoundTag("gasTank"));
-        dumping = GasMode.values()[nbtTags.getInteger("dumping")];
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        dumping = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumping"), dumping);
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
     }
 
     @Override

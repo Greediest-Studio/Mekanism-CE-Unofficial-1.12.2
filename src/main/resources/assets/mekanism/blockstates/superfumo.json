@@ -1,0 +1,16 @@
+{
+  "forge_marker": 1,
+  "defaults": {
+    "model": "mekanism:modeler_doll"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "normal": [{}],
+    "inventory": [{}]
+  }
+}

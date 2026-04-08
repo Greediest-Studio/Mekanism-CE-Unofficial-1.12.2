@@ -46,8 +46,10 @@ public enum Upgrade {
                 NBTTagList list = nbtTags.getTagList("upgrades", NBT.TAG_COMPOUND);
                 for (int tagCount = 0; tagCount < list.tagCount(); tagCount++) {
                     NBTTagCompound compound = list.getCompoundTagAt(tagCount);
-                    Upgrade upgrade = Upgrade.values()[compound.getInteger("type")];
-                    upgrades.put(upgrade, compound.getInteger("amount"));
+                    Upgrade upgrade = MekanismUtils.getByIndex(Upgrade.values(), compound.getInteger("type"), null);
+                    if (upgrade != null) {
+                        upgrades.put(upgrade, compound.getInteger("amount"));
+                    }
                 }
             }
         }

@@ -83,7 +83,7 @@ public class PacketSecurityUpdate implements IMessageHandler<SecurityUpdateMessa
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            packetType = SecurityPacket.values()[dataStream.readInt()];
+            packetType = MekanismUtils.getByIndex(SecurityPacket.values(), dataStream.readInt(), SecurityPacket.UPDATE);
             if (packetType == SecurityPacket.UPDATE) {
                 playerUUID = UUID.fromString(PacketHandler.readString(dataStream));
                 playerUsername = PacketHandler.readString(dataStream);

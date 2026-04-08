@@ -20,7 +20,9 @@ import mekanism.common.network.PacketEntityMove.EntityMoveMessage;
 import mekanism.common.network.PacketFlyingSync.FlyingSyncMessage;
 import mekanism.common.network.PacketGearStateUpdate.GearStateUpdateMessage;
 import mekanism.common.network.PacketKey.KeyMessage;
+import mekanism.common.network.PacketLightningRender.LightningRenderMessage;
 import mekanism.common.network.PacketLogisticalSorterGui.LogisticalSorterGuiMessage;
+import mekanism.common.network.PacketMekaFishHook.PacketMekaFishHookMessage;
 import mekanism.common.network.PacketModeChange.ModeChangMessage;
 import mekanism.common.network.PacketNewFilter.NewFilterMessage;
 import mekanism.common.network.PacketOredictionificatorGui.OredictionificatorGuiMessage;
@@ -39,6 +41,8 @@ import mekanism.common.network.PacketStepHeightSync.StepHeightSyncMessage;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.network.PacketTransmitterUpdate.TransmitterUpdateMessage;
 import mekanism.common.network.PacketUpdateModuleSettings.UpdateModuleSettingsMessage;
+import mekanism.common.tile.prefab.TileEntityBasicBlock;
+import mekanism.common.util.SecurityUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -161,6 +165,24 @@ public class PacketHandler {
         Mekanism.proxy.handlePacket(runnable, player);
     }
 
+    public static boolean canAccessTile(EntityPlayer player, TileEntity tileEntity) {
+        return canAccessTile(player, tileEntity, false);
+    }
+
+    public static boolean canAccessTile(EntityPlayer player, TileEntity tileEntity, boolean requireContainerUser) {
+        if (player == null || tileEntity == null || tileEntity.isInvalid() || tileEntity.getWorld() != player.world) {
+            return false;
+        }
+        if (!SecurityUtils.canAccess(player, tileEntity)) {
+            return false;
+        }
+        // Ensure packets cannot modify arbitrary loaded tiles from long distance.
+        if (player.getDistanceSq(tileEntity.getPos()) > 256) {
+            return false;
+        }
+        return !requireContainerUser || !(tileEntity instanceof TileEntityBasicBlock basic) || basic.playersUsing.contains(player);
+    }
+
     public void initialize() {
         netHandler.registerMessage(PacketRobit.class, RobitMessage.class, 0, Side.SERVER);
         netHandler.registerMessage(PacketTransmitterUpdate.class, TransmitterUpdateMessage.class, 1, Side.CLIENT);
@@ -178,7 +200,7 @@ public class PacketHandler {
         netHandler.registerMessage(PacketPortableTeleporter.class, PortableTeleporterMessage.class, 10, Side.SERVER);
         netHandler.registerMessage(PacketRemoveUpgrade.class, RemoveUpgradeMessage.class, 11, Side.SERVER);
         netHandler.registerMessage(PacketRedstoneControl.class, RedstoneControlMessage.class, 12, Side.SERVER);
-        //FREE ID 13
+        netHandler.registerMessage(PacketLightningRender.class, LightningRenderMessage.class, 13, Side.CLIENT);
         netHandler.registerMessage(PacketLogisticalSorterGui.class, LogisticalSorterGuiMessage.class, 14, Side.CLIENT);
         netHandler.registerMessage(PacketLogisticalSorterGui.class, LogisticalSorterGuiMessage.class, 14, Side.SERVER);
         netHandler.registerMessage(PacketNewFilter.class, NewFilterMessage.class, 15, Side.SERVER);
@@ -220,6 +242,7 @@ public class PacketHandler {
         netHandler.registerMessage(PacketOpenGui.class, PacketOpenGui.OpenGui.class, 45, Side.CLIENT);
         netHandler.registerMessage(PacketOpenGui.class, PacketOpenGui.OpenGui.class, 45, Side.SERVER);
         netHandler.registerMessage(PacketRadiationData.class, PacketRadiationData.PacketRadiationDataMessage.class, 46, Side.CLIENT);
+        netHandler.registerMessage(PacketMekaFishHook.class, PacketMekaFishHookMessage.class, 47, Side.CLIENT);
     }
 
     @Optional.Method(modid = MekanismHooks.Baubles_MOD_ID)

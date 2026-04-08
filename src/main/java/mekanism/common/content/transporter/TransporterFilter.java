@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.common.content.filter.IFilter;
+import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.TransporterUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -22,15 +23,21 @@ public abstract class TransporterFilter implements IFilter {
 
     public boolean allowDefault;
 
+    @Nullable
     public static TransporterFilter readFromNBT(NBTTagCompound nbtTags) {
         TransporterFilter filter = getType(nbtTags.getInteger("type"));
-        filter.read(nbtTags);
+        if (filter != null) {
+            filter.read(nbtTags);
+        }
         return filter;
     }
 
+    @Nullable
     public static TransporterFilter readFromPacket(ByteBuf dataStream) {
         TransporterFilter filter = getType(dataStream.readInt());
-        filter.read(dataStream);
+        if (filter != null) {
+            filter.read(dataStream);
+        }
         return filter;
     }
 
@@ -69,7 +76,7 @@ public abstract class TransporterFilter implements IFilter {
     protected void read(NBTTagCompound nbtTags) {
         allowDefault = nbtTags.getBoolean("allowDefault");
         if (nbtTags.hasKey("color")) {
-            color = TransporterUtils.colors.get(nbtTags.getInteger("color"));
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, nbtTags.getInteger("color"), null);
         }
     }
 
@@ -86,7 +93,7 @@ public abstract class TransporterFilter implements IFilter {
         allowDefault = dataStream.readBoolean();
         int c = dataStream.readInt();
         if (c != -1) {
-            color = TransporterUtils.colors.get(c);
+            color = MekanismUtils.getByIndex(TransporterUtils.colors, c, null);
         } else {
             color = null;
         }

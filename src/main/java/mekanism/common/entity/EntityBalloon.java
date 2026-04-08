@@ -5,6 +5,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.Pos3D;
 import mekanism.common.MekanismSounds;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleRedstone;
@@ -114,7 +115,8 @@ public class EntityBalloon extends Entity implements IEntityAdditionalSpawnData 
                 latched = null;
             }
             if (dataManager.get(IS_LATCHED) == 2) {
-                latchedEntity = (EntityLivingBase) world.getEntityByID(dataManager.get(LATCHED_ID));
+                Entity entity = world.getEntityByID(dataManager.get(LATCHED_ID));
+                latchedEntity = entity instanceof EntityLivingBase living ? living : null;
             } else {
                 latchedEntity = null;
             }
@@ -251,7 +253,7 @@ public class EntityBalloon extends Entity implements IEntityAdditionalSpawnData 
 
     @Override
     protected void readEntityFromNBT(@Nonnull NBTTagCompound nbtTags) {
-        color = EnumColor.values()[nbtTags.getInteger("color")];
+        color = MekanismUtils.getByIndex(EnumColor.values(), nbtTags.getInteger("color"), color);
         if (nbtTags.hasKey("latched")) {
             latched = Coord4D.read(nbtTags.getCompoundTag("latched"));
         }
@@ -300,12 +302,13 @@ public class EntityBalloon extends Entity implements IEntityAdditionalSpawnData 
     @Override
     public void readSpawnData(ByteBuf data) {
         setPosition(data.readDouble(), data.readDouble(), data.readDouble());
-        color = EnumColor.values()[data.readInt()];
+        color = MekanismUtils.getByIndex(EnumColor.values(), data.readInt(), color);
         byte type = data.readByte();
         if (type == 1) {
             latched = Coord4D.read(data);
         } else if (type == 2) {
-            latchedEntity = (EntityLivingBase) world.getEntityByID(data.readInt());
+            Entity entity = world.getEntityByID(data.readInt());
+            latchedEntity = entity instanceof EntityLivingBase living ? living : null;
         } else {
             latched = null;
         }

@@ -7,6 +7,7 @@ import mekanism.common.Upgrade;
 import mekanism.common.base.ITileComponent;
 import mekanism.common.base.IUpgradeItem;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.EnumMap;
@@ -173,7 +174,11 @@ public class TileComponentUpgrade implements ITileComponent {
         int amount = dataStream.readInt();
 
         for (int i = 0; i < amount; i++) {
-            upgrades.put(Upgrade.values()[dataStream.readInt()], dataStream.readInt());
+            Upgrade upgrade = MekanismUtils.getByIndex(Upgrade.values(), dataStream.readInt(), null);
+            int installed = dataStream.readInt();
+            if (upgrade != null) {
+                upgrades.put(upgrade, installed);
+            }
         }
         upgradeTicks = dataStream.readInt();
         getSupportedTypes().forEach(upgrade -> tileEntity.recalculateUpgradables(upgrade));

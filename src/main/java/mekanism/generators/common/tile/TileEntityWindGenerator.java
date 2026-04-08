@@ -5,17 +5,23 @@ import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.base.IBoundingBlock;
 import mekanism.common.base.IMachineSlotTip;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.ChargeUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.NonNullListSynchronized;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 
-public class TileEntityWindGenerator extends TileEntityGenerator implements IBoundingBlock , IMachineSlotTip {
+public class TileEntityWindGenerator extends TileEntityGenerator implements IBoundingBlock, IMachineSlotTip, ISpecialSelectionWireframeTile {
 
     public static final float SPEED = 32F;
     public static final float SPEED_SCALED = 256F / SPEED;
@@ -104,10 +110,17 @@ public class TileEntityWindGenerator extends TileEntityGenerator implements IBou
             float maxG = (float) MekanismConfig.current().generators.windGenerationMax.val();
             //Prevents the possibility of writing opposite values; https://github.com/Thorfusion/Mekanism-Community-Edition/issues/150
             int rangeY = maxY < minY ? minY - maxY : maxY - minY;
+            if (rangeY <= 0 || minG <= 0 || Float.isNaN(minG) || Float.isInfinite(minG) || Float.isNaN(maxG) || Float.isInfinite(maxG)) {
+                return 0;
+            }
             float rangG = maxG < minG ? minG - maxG : maxG - minG;
             float slope = rangG / rangeY;
             float toGen = minG + (slope * (clampedY - minY));
-            return toGen / minG;
+            float multiplier = toGen / minG;
+            if (Float.isNaN(multiplier) || Float.isInfinite(multiplier)) {
+                return 0;
+            }
+            return multiplier;
         }
         return 0;
     }
@@ -203,5 +216,37 @@ public class TileEntityWindGenerator extends TileEntityGenerator implements IBou
         return false;
     }
 
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.generators.client.model.ModelWindGenerator.class;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public int getSelectionWireframeAnimationCacheKey(IBlockState state, IBlockAccess world, BlockPos pos) {
+        if (!MekanismConfig.current().client.windGeneratorRotating.val()) {
+            return 0;
+        }
+        return Math.floorMod((int) Math.round(getSelectionWireframeAngle() * 2D), 720);
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void applySelectionWireframeModelState(Object model, IBlockState state, IBlockAccess world, BlockPos pos) {
+        if (model instanceof mekanism.generators.client.model.ModelWindGenerator windModel) {
+            windModel.applySelectionBladeAngle(getSelectionWireframeAngle());
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    private double getSelectionWireframeAngle() {
+        double currentAngle = getAngle();
+        if (getActive()) {
+            float partial = Minecraft.getMinecraft().getRenderPartialTicks();
+            currentAngle = (currentAngle + ((getPos().getY() + 4F) / SPEED_SCALED) * partial) % 360D;
+        }
+        return currentAngle < 0D ? currentAngle + 360D : currentAngle;
+    }
 
 }

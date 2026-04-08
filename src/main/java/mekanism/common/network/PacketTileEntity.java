@@ -26,16 +26,28 @@ public class PacketTileEntity implements IMessageHandler<TileEntityMessage, IMes
         if (player == null) {
             return null;
         }
+        boolean serverSide = context.side.isServer();
         PacketHandler.handlePacket(() -> {
-            TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
-            if (CapabilityUtils.hasCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null)) {
-                ITileNetwork network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null);
-                try {
-                    network.handlePacketData(message.storedBuffer);
-                } catch (Exception e) {
-                    Mekanism.logger.error("FIXME: Packet handling error", e);
+            try {
+                TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
+                if (serverSide && !PacketHandler.canAccessTile(player, tileEntity)) {
+                    return;
                 }
-                message.storedBuffer.release();
+                if (CapabilityUtils.hasCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null)) {
+                    ITileNetwork network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null);
+                    if (network == null) {
+                        return;
+                    }
+                    try {
+                        network.handlePacketData(message.storedBuffer);
+                    } catch (Exception e) {
+                        Mekanism.logger.error("FIXME: Packet handling error", e);
+                    }
+                }
+            } finally {
+                if (message.storedBuffer != null && message.storedBuffer.refCnt() > 0) {
+                    message.storedBuffer.release();
+                }
             }
         }, player);
         return null;
@@ -71,7 +83,7 @@ public class PacketTileEntity implements IMessageHandler<TileEntityMessage, IMes
             MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
             if (server != null) {
                 World world = server.getWorld(coord4D.dimensionId);
-                PacketHandler.log("Sending TileEntity packet from coordinate " + coord4D + " (" + coord4D.getTileEntity(world) + ")");
+                PacketHandler.log("Sending TileEntity packet from coordinate " + coord4D + " (" + (world == null ? "null" : coord4D.getTileEntity(world)) + ")");
             }
 
             PacketHandler.encode(parameters.toArray(), dataStream);

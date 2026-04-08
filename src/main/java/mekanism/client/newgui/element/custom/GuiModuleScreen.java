@@ -107,6 +107,12 @@ public class GuiModuleScreen extends GuiElement {
     }
 
     @Override
+    public void onRelease(double mouseX, double mouseY) {
+        super.onRelease(mouseX, mouseY);
+        miniElements.forEach(element -> element.release(mouseX, mouseY));
+    }
+
+    @Override
     public void renderForeground(int mouseX, int mouseY) {
         super.renderForeground(mouseX, mouseY);
 

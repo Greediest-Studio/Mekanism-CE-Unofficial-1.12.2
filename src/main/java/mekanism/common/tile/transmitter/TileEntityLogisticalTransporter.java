@@ -171,11 +171,11 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
             int type = dataStream.readInt();
             if (type == 0) {
                 super.handlePacketData(dataStream);
-                tier = TransporterTier.values()[dataStream.readInt()];
+                tier = MekanismUtils.getByIndex(TransporterTier.values(), dataStream.readInt(), tier);
                 int c = dataStream.readInt();
                 EnumColor prev = getTransmitter().getColor();
                 if (c != -1) {
-                    getTransmitter().setColor(TransporterUtils.colors.get(c));
+                    getTransmitter().setColor(MekanismUtils.getByIndex(TransporterUtils.colors, c, null));
                 } else {
                     getTransmitter().setColor(null);
                 }
@@ -256,7 +256,7 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
         if (nbtTags.hasKey("tier")) {
-            tier = TransporterTier.values()[nbtTags.getInteger("tier")];
+            tier = MekanismUtils.getByIndex(TransporterTier.values(), nbtTags.getInteger("tier"), tier);
         }
         getTransmitter().readCustomNBT(nbtTags);
     }

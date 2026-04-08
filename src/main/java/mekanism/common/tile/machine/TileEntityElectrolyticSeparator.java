@@ -299,8 +299,8 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
             TileUtils.readTankData(dataStream, fluidTank);
             TileUtils.readTankData(dataStream, leftTank);
             TileUtils.readTankData(dataStream, rightTank);
-            dumpLeft = GasMode.values()[dataStream.readInt()];
-            dumpRight = GasMode.values()[dataStream.readInt()];
+            dumpLeft = MekanismUtils.getByIndex(GasMode.values(), dataStream.readInt(), dumpLeft);
+            dumpRight = MekanismUtils.getByIndex(GasMode.values(), dataStream.readInt(), dumpRight);
             clientEnergyUsed = dataStream.readDouble();
         }
     }
@@ -334,8 +334,8 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
         }
         leftTank.read(nbtTags.getCompoundTag("leftTank"));
         rightTank.read(nbtTags.getCompoundTag("rightTank"));
-        dumpLeft = GasMode.values()[nbtTags.getInteger("dumpLeft")];
-        dumpRight = GasMode.values()[nbtTags.getInteger("dumpRight")];
+        dumpLeft = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumpLeft"), dumpLeft);
+        dumpRight = MekanismUtils.getByIndex(GasMode.values(), nbtTags.getInteger("dumpRight"), dumpRight);
     }
 
     @Override
@@ -513,5 +513,10 @@ public class TileEntityElectrolyticSeparator extends TileEntityBasicMachine<Flui
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

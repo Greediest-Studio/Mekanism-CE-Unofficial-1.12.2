@@ -71,7 +71,11 @@ public class ItemBlockTransmitter extends ItemBlockMultipartAble implements ITie
     @SideOnly(Side.CLIENT)
     public void addInformation(@Nonnull ItemStack itemstack, World world, @Nonnull List<String> list, @Nonnull ITooltipFlag flag) {
         if (!MekKeyHandler.getIsKeyPressed(MekanismKeyHandler.sneakKey)) {
-            TransmissionType transmission = TransmitterType.values()[itemstack.getItemDamage()].getTransmission();
+            TransmitterType transmitterType = TransmitterType.get(itemstack.getItemDamage());
+            if (transmitterType == null) {
+                return;
+            }
+            TransmissionType transmission = transmitterType.getTransmission();
             BaseTier tier = getBaseTier(itemstack);
             if (transmission == TransmissionType.ENERGY) {
                 list.add(EnumColor.INDIGO + LangUtils.localize("tooltip.capacity") + ": " + EnumColor.GREY +
@@ -93,7 +97,10 @@ public class ItemBlockTransmitter extends ItemBlockMultipartAble implements ITie
             list.add(LangUtils.localize("tooltip.hold") + " " + EnumColor.AQUA + GameSettings.getKeyDisplayString(MekanismKeyHandler.sneakKey.getKeyCode()) +
                     EnumColor.GREY + " " + LangUtils.localize("tooltip.forDetails"));
         } else {
-            TransmitterType type = TransmitterType.values()[itemstack.getItemDamage()];
+            TransmitterType type = TransmitterType.get(itemstack.getItemDamage());
+            if (type == null) {
+                return;
+            }
             switch (type) {
                 case UNIVERSAL_CABLE -> {
                     list.add(EnumColor.DARK_GREY + LangUtils.localize("tooltip.capableTrans") + ":");
@@ -138,6 +145,9 @@ public class ItemBlockTransmitter extends ItemBlockMultipartAble implements ITie
     @Override
     public String getTranslationKey(ItemStack stack) {
         TransmitterType type = TransmitterType.get(stack.getItemDamage());
+        if (type == null) {
+            return super.getTranslationKey(stack);
+        }
         String name = type.getTranslationKey();
         if (type.hasTiers()) {
             BaseTier tier = getBaseTier(stack);
@@ -150,6 +160,9 @@ public class ItemBlockTransmitter extends ItemBlockMultipartAble implements ITie
     @Override
     public String getItemStackDisplayName(ItemStack stack) {
         TransmitterType type = TransmitterType.get(stack.getItemDamage());
+        if (type == null) {
+            return super.getItemStackDisplayName(stack);
+        }
         String name = type.getTranslationKey();
         if (type.hasTiers()) {
             BaseTier tier = getBaseTier(stack);
@@ -165,7 +178,11 @@ public class ItemBlockTransmitter extends ItemBlockMultipartAble implements ITie
         if (!itemstack.hasTagCompound()) {
             return BaseTier.BASIC;
         }
-        return BaseTier.values()[itemstack.getTagCompound().getInteger("tier")];
+        int tier = itemstack.getTagCompound().getInteger("tier");
+        if (tier >= 0 && tier < BaseTier.values().length) {
+            return BaseTier.values()[tier];
+        }
+        return BaseTier.BASIC;
     }
 
     @Override
@@ -185,11 +202,15 @@ public class ItemBlockTransmitter extends ItemBlockMultipartAble implements ITie
     @Override
     public boolean renderItemOverlayIntoGUI(@NotNull ItemStack stack, int xPosition, int yPosition) {
         if (stack.getItem() instanceof ItemBlockTransmitter transmitter) {
-            TransmissionType transmission = TransmitterType.values()[stack.getItemDamage()].getTransmission();
+            TransmitterType stackType = TransmitterType.get(stack.getItemDamage());
+            if (stackType == null) {
+                return false;
+            }
+            TransmissionType transmission = stackType.getTransmission();
             if (transmission == TransmissionType.GAS || transmission == TransmissionType.HEAT || transmission == TransmissionType.ENERGY) {
                 GlStateManager.pushMatrix();
                 GlStateManager.translate(0, 0, 200);
-                TransmitterType type = TransmitterType.get(stack.getItemDamage());
+                TransmitterType type = stackType;
                 String name = type.getTranslationKey();
                 if (type.hasTiers()) {
                     BaseTier tier = transmitter.getBaseTier(stack);

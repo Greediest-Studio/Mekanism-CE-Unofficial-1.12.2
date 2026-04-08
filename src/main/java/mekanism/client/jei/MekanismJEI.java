@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasRegistry;
 import mekanism.api.gas.GasStack;
+import mekanism.api.gear.ModuleData;
 import mekanism.client.gui.element.GuiProgress.ProgressBar;
 import mekanism.client.jei.gas.GasStackRenderer;
 import mekanism.client.jei.machine.*;
@@ -19,32 +20,41 @@ import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.base.ITierItem;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.content.gear.ModuleHelper;
 import mekanism.common.inventory.container.robit.ContainerRobitInventory;
 import mekanism.common.item.ItemBlockEnergyCube;
 import mekanism.common.item.ItemBlockGasTank;
 import mekanism.common.recipe.RecipeHandler.Recipe;
+import mekanism.common.util.LangUtils;
 import mezz.jei.api.*;
 import mezz.jei.api.ISubtypeRegistry.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.IIngredientBlacklist;
 import mezz.jei.api.ingredients.IModIngredientRegistration;
+import mezz.jei.api.ingredients.VanillaTypes;
 import mezz.jei.api.recipe.IIngredientType;
 import mezz.jei.api.recipe.IRecipeCategoryRegistration;
 import mezz.jei.api.recipe.IVanillaRecipeFactory;
 import mezz.jei.api.recipe.VanillaRecipeCategoryUid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.Ingredient;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import net.minecraftforge.registries.IForgeRegistryModifiable;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @JEIPlugin
 public class MekanismJEI implements IModPlugin {
 
     public static final IIngredientType<GasStack> TYPE_GAS = () -> GasStack.class;
+    private static final String NC_MOD_ID = "nuclearcraft";
+    private static final String NC_SHIELDING_RECIPE_CLASS = "nc.recipe.vanilla.recipe.ShapelessArmorRadShieldingRecipe";
+    private static final String NC_RAD_SHIELDING_ITEM = "rad_shielding";
+    private static final List<IRecipe> NC_SHIELDING_RECIPES_FOR_JEI = new ArrayList<>();
 
     public static final ISubtypeInterpreter NBT_INTERPRETER = itemStack -> {
         String ret = Integer.toString(itemStack.getMetadata());
@@ -181,6 +191,10 @@ public class MekanismJEI implements IModPlugin {
         ingredientBlacklist.addIngredientToBlacklist(new ItemStack(MekanismItems.ItemProxy));
         ingredientBlacklist.addIngredientToBlacklist(new ItemStack(MekanismBlocks.BoundingBlock));
 
+        if (Mekanism.hooks.NuclearCraft) {
+            cacheAndRemoveNuclearCraftShieldingRecipes();
+        }
+
         //Register the recipes and their catalysts if enabled
         RecipeRegistryHelper.registerEnrichmentChamber(registry);
         RecipeRegistryHelper.registerCrusher(registry);
@@ -247,5 +261,107 @@ public class MekanismJEI implements IModPlugin {
          * ADD END
          */
 
+        registry.addIngredientInfo(
+                ModuleHelper.INSTANCE.getAll().stream()
+                        .filter(Objects::nonNull)
+                        .map(ModuleData::getStack)
+                        .filter(stack -> stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null && !stack.getItem().equals(MekanismItems.ModuleBase))
+                        .collect(Collectors.toList())
+                , VanillaTypes.ITEM, LangUtils.localize("mekanism.module.info"));
+    }
+
+    @Override
+    public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
+        if (!Mekanism.hooks.NuclearCraft || jeiRuntime == null || NC_SHIELDING_RECIPES_FOR_JEI.isEmpty()) {
+            return;
+        }
+        IRecipeRegistry recipeRegistry = jeiRuntime.getRecipeRegistry();
+        int removed = 0;
+        for (IRecipe recipe : NC_SHIELDING_RECIPES_FOR_JEI) {
+            recipeRegistry.removeRecipe(recipe);
+            removed++;
+        }
+        if (removed > 0) {
+            Mekanism.logger.info("Removed {} NC shielding recipes for Mek armor from JEI runtime.", removed);
+        }
+        NC_SHIELDING_RECIPES_FOR_JEI.clear();
+    }
+
+    private static void cacheAndRemoveNuclearCraftShieldingRecipes() {
+        NC_SHIELDING_RECIPES_FOR_JEI.clear();
+        NC_SHIELDING_RECIPES_FOR_JEI.addAll(findNuclearCraftShieldingRecipes());
+        int removed = removeNuclearCraftShieldingRecipesFromForgeRegistry(NC_SHIELDING_RECIPES_FOR_JEI);
+        if (removed > 0) {
+            Mekanism.logger.info("Removed {} NC shielding recipes for Mek armor during JEI registration.", removed);
+        }
+    }
+
+    private static List<IRecipe> findNuclearCraftShieldingRecipes() {
+        List<IRecipe> matching = new ArrayList<>();
+        for (IRecipe recipe : ForgeRegistries.RECIPES.getValuesCollection()) {
+            if (isNuclearCraftShieldingRecipeForBlockedMekArmor(recipe)) {
+                matching.add(recipe);
+            }
+        }
+        return matching;
+    }
+
+    private static int removeNuclearCraftShieldingRecipesFromForgeRegistry(List<IRecipe> recipes) {
+        if (!(ForgeRegistries.RECIPES instanceof IForgeRegistryModifiable)) {
+            return 0;
+        }
+        @SuppressWarnings("unchecked")
+        IForgeRegistryModifiable<IRecipe> recipeRegistry = (IForgeRegistryModifiable<IRecipe>) ForgeRegistries.RECIPES;
+        int removed = 0;
+        Set<ResourceLocation> removedNames = new HashSet<>();
+        for (IRecipe recipe : recipes) {
+            ResourceLocation recipeName = recipe.getRegistryName();
+            if (recipeName != null && removedNames.add(recipeName)) {
+                recipeRegistry.remove(recipeName);
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    private static boolean isNuclearCraftShieldingRecipeForBlockedMekArmor(IRecipe recipe) {
+        if (recipe == null) {
+            return false;
+        }
+        ItemStack output = recipe.getRecipeOutput();
+        if (output.isEmpty() || !isMekArmorBlockedForNCShielding(output.getItem())) {
+            return false;
+        }
+        if (NC_SHIELDING_RECIPE_CLASS.equals(recipe.getClass().getName())) {
+            return true;
+        }
+        ResourceLocation recipeName = recipe.getRegistryName();
+        if (recipeName == null || !NC_MOD_ID.equals(recipeName.getNamespace())) {
+            return false;
+        }
+        return containsNuclearCraftRadShieldingIngredient(recipe) || recipe.getClass().getName().contains("RadShielding");
+    }
+
+    private static boolean containsNuclearCraftRadShieldingIngredient(IRecipe recipe) {
+        for (Ingredient ingredient : recipe.getIngredients()) {
+            if (ingredient == null || ingredient == Ingredient.EMPTY) {
+                continue;
+            }
+            for (ItemStack stack : ingredient.getMatchingStacks()) {
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                ResourceLocation itemName = stack.getItem().getRegistryName();
+                if (itemName != null && NC_MOD_ID.equals(itemName.getNamespace()) && NC_RAD_SHIELDING_ITEM.equals(itemName.getPath())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isMekArmorBlockedForNCShielding(Item item) {
+        return item == MekanismItems.HAZMAT_MASK || item == MekanismItems.HAZMAT_GOWN || item == MekanismItems.HAZMAT_PANTS || item == MekanismItems.HAZMAT_BOOTS ||
+                item == MekanismItems.MEKASUIT_HELMET || item == MekanismItems.MEKASUIT_BODYARMOR || item == MekanismItems.MEKASUIT_PANTS || item == MekanismItems.MEKASUIT_BOOTS;
     }
 }

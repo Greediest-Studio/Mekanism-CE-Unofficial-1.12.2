@@ -8,6 +8,7 @@ import mekanism.client.render.bloom.BloomRenderResistiveHeater;
 import mekanism.common.Mekanism;
 import mekanism.common.base.IMachineSlotTip;
 import mekanism.common.base.IRedstoneControl;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
@@ -22,10 +23,12 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 
-public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements IHeatTransfer, IComputerIntegration, IRedstoneControl, ISecurityTile, IMachineSlotTip {
+public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements IHeatTransfer, IComputerIntegration, IRedstoneControl, ISecurityTile, IMachineSlotTip, ISpecialSelectionWireframeTile {
 
     private static final int[] SLOTS = {0};
 
@@ -115,7 +118,7 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
         energyUsage = nbtTags.getDouble("energyUsage");
         temperature = nbtTags.getDouble("temperature");
         clientActive = isActive = nbtTags.getBoolean("isActive");
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         maxEnergy = energyUsage * 400;
     }
 
@@ -144,7 +147,7 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
             clientActive = dataStream.readBoolean();
             maxEnergy = dataStream.readDouble();
             soundScale = dataStream.readFloat();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             lastEnvironmentLoss = dataStream.readDouble();
             if (updateDelay == 0 && clientActive != isActive) {
                 updateDelay = MekanismConfig.current().general.UPDATE_DELAY.val();
@@ -342,5 +345,11 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelResistiveHeater.class;
     }
 }

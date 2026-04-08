@@ -30,7 +30,7 @@ public class TileEntityInductionCell extends TileEntityBasicBlock implements ISt
     public void handlePacketData(ByteBuf dataStream) {
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             InductionCellTier prevTier = tier;
-            tier = InductionCellTier.values()[dataStream.readInt()];
+            tier = MekanismUtils.getByIndex(InductionCellTier.values(), dataStream.readInt(), tier);
             super.handlePacketData(dataStream);
             electricityStored = dataStream.readDouble();
             if (prevTier != tier) {
@@ -50,7 +50,7 @@ public class TileEntityInductionCell extends TileEntityBasicBlock implements ISt
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        tier = InductionCellTier.values()[nbtTags.getInteger("tier")];
+        tier = MekanismUtils.getByIndex(InductionCellTier.values(), nbtTags.getInteger("tier"), tier);
         electricityStored = nbtTags.getDouble("electricityStored");
     }
 

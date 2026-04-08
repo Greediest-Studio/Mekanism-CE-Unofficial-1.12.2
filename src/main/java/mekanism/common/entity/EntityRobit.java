@@ -156,7 +156,7 @@ public class EntityRobit extends EntityCreature implements IInventory, ISustaine
 
             if (ticksExisted % 20 == 0) {
                 World serverWorld = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(homeLocation.dimensionId);
-                if (homeLocation.exists(serverWorld)) {
+                if (serverWorld != null && homeLocation.exists(serverWorld)) {
                     if (!(homeLocation.getTileEntity(serverWorld) instanceof TileEntityChargepad)) {
                         drop();
                         setDead();
@@ -452,7 +452,11 @@ public class EntityRobit extends EntityCreature implements IInventory, ISustaine
     }
 
     public UUID getOwnerUUID() {
-        return UUID.fromString(dataManager.get(OWNER_UUID));
+        try {
+            return UUID.fromString(dataManager.get(OWNER_UUID));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     public void setOwnerUUID(UUID uuid) {

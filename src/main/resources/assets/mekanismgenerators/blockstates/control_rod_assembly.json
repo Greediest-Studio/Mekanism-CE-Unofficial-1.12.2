@@ -1,0 +1,16 @@
+{
+  "forge_marker": 1,
+  "variants": {
+    "normal": [
+      {
+        "model": "mekanismgenerators:control_rod_assembly_legacy"
+      }
+    ],
+    "inventory": [
+      {
+        "model": "mekanismgenerators:control_rod_assembly_legacy"
+      }
+    ]
+  }
+}
+

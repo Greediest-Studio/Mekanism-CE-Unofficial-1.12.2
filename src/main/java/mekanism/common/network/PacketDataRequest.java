@@ -11,6 +11,7 @@ import mekanism.common.network.PacketDataRequest.DataRequestMessage;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.multiblock.TileEntityMultiblock;
 import mekanism.common.util.CapabilityUtils;
+import mekanism.common.util.SecurityUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
@@ -25,22 +26,33 @@ public class PacketDataRequest implements IMessageHandler<DataRequestMessage, IM
     @Override
     public IMessage onMessage(DataRequestMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             World worldServer = DimensionManager.getWorld(message.coord4D.dimensionId);
-            if (worldServer != null) {
-                TileEntity tileEntity = message.coord4D.getTileEntity(worldServer);
-                if (tileEntity instanceof TileEntityMultiblock<?> multiblock) {
-                    multiblock.sendStructure = true;
-                }
-                if (CapabilityUtils.hasCapability(tileEntity, Capabilities.GRID_TRANSMITTER_CAPABILITY, null)) {
-                    IGridTransmitter<?, ?, ?> transmitter = CapabilityUtils.getCapability(tileEntity, Capabilities.GRID_TRANSMITTER_CAPABILITY, null);
+            if (worldServer == null || player.world != worldServer) {
+                return;
+            }
+            TileEntity tileEntity = message.coord4D.getTileEntity(worldServer);
+            if (tileEntity == null || !SecurityUtils.canAccess(player, tileEntity)) {
+                return;
+            }
+            if (tileEntity instanceof TileEntityMultiblock<?> multiblock) {
+                multiblock.sendStructure = true;
+            }
+            if (CapabilityUtils.hasCapability(tileEntity, Capabilities.GRID_TRANSMITTER_CAPABILITY, null)) {
+                IGridTransmitter<?, ?, ?> transmitter = CapabilityUtils.getCapability(tileEntity, Capabilities.GRID_TRANSMITTER_CAPABILITY, null);
+                if (transmitter != null) {
                     transmitter.setRequestsUpdate();
                     if (transmitter.hasTransmitterNetwork()) {
                         transmitter.getTransmitterNetwork().addUpdate(player);
                     }
                 }
-                if (CapabilityUtils.hasCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null)) {
-                    ITileNetwork network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null);
+            }
+            if (CapabilityUtils.hasCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null)) {
+                ITileNetwork network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null);
+                if (network != null) {
                     Mekanism.packetHandler.sendTo(new TileEntityMessage(tileEntity, network.getNetworkedData()), (EntityPlayerMP) player);
                 }
             }

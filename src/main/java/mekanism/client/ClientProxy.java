@@ -10,9 +10,7 @@ import mekanism.client.gui.*;
 import mekanism.client.gui.chemical.*;
 import mekanism.client.gui.robit.*;
 import mekanism.client.newgui.GuiModuleTweaker;
-import mekanism.client.render.MekanismRenderer;
-import mekanism.client.render.RenderFirstPersonMekaSuitArms;
-import mekanism.client.render.RenderTickHandler;
+import mekanism.client.render.*;
 import mekanism.client.render.entity.RenderBalloon;
 import mekanism.client.render.entity.RenderFlame;
 import mekanism.client.render.entity.RenderObsidianTNTPrimed;
@@ -220,6 +218,8 @@ public class ClientProxy extends CommonProxy {
         ClientRegistry.bindTileEntitySpecialRenderer(TileEntityAmbientAccumulatorEnergy.class, new RenderConfigurableMachine<>());
         ClientRegistry.bindTileEntitySpecialRenderer(TileEntityHybridStorage.class, new RenderConfigurableMachine<>());
         ClientRegistry.bindTileEntitySpecialRenderer(TileEntitySPS.class, new RenderConfigurableMachine<>());
+        ClientRegistry.bindTileEntitySpecialRenderer(TileEntitySPSCasing.class, new RenderSPS());
+        ClientRegistry.bindTileEntitySpecialRenderer(TileEntitySPSPort.class, new RenderSPS());
     }
 
     @Override
@@ -305,7 +305,7 @@ public class ClientProxy extends CommonProxy {
 
 
         registerItemRender(MekanismItems.MODULE_ENERGY);
-            registerItemRender(MekanismItems.MODULE_MAGNETIC);
+        registerItemRender(MekanismItems.MODULE_MAGNETIC);
 
         // registerItemRender(MekanismItems.MODULE_COLOR_MODULATION);
         registerItemRender(MekanismItems.MODULE_LASER_DISSIPATION);
@@ -345,6 +345,7 @@ public class ClientProxy extends CommonProxy {
 
         registerItemRender(MekanismItems.MODULE_HEALTH_REGENERATION);
         registerItemRender(MekanismItems.MEKA_TOOL);
+        registerItemRender(MekanismItems.MEKA_FISHING_ROD);
         registerItemRender(MekanismItems.HDPE_PELLET);
         registerItemRender(MekanismItems.HDPE_ROD);
         registerItemRender(MekanismItems.HDPE_SHEET);
@@ -362,6 +363,11 @@ public class ClientProxy extends CommonProxy {
         registerItemRender(MekanismItems.HAZMAT_GOWN);
         registerItemRender(MekanismItems.HAZMAT_PANTS);
         registerItemRender(MekanismItems.HAZMAT_BOOTS);
+
+        registerItemRender(MekanismItems.MODULE_FISHING_COLLECTING);
+        registerItemRender(MekanismItems.MODULE_FISHING_SPEED);
+        registerItemRender(MekanismItems.MODULE_FISHING_INTELLIGENT);
+        registerItemRender(MekanismItems.MODULE_FISHING_MULTIPLE);
 
         /**
          * ADD END
@@ -387,11 +393,12 @@ public class ClientProxy extends CommonProxy {
         Item.getItemFromBlock(MekanismBlocks.MachineBlock2).setTileEntityItemStackRenderer(new RenderMachineItem());
         Item.getItemFromBlock(MekanismBlocks.MachineBlock3).setTileEntityItemStackRenderer(new RenderMachineItem());
         Item.getItemFromBlock(MekanismBlocks.BasicBlock2).setTileEntityItemStackRenderer(new RenderBasicBlockItem());
-
         Item.getItemFromBlock(MekanismBlocks.BasicBlock3).setTileEntityItemStackRenderer(new RenderBasicBlockItem());
         Item.getItemFromBlock(MekanismBlocks.MachineBlock4).setTileEntityItemStackRenderer(new RenderMachineItem());
         MekanismItems.ArmoredFreeRunners.setTileEntityItemStackRenderer(new RenderArmoredFreeRunners());
         MekanismItems.MEKA_TOOL.setTileEntityItemStackRenderer(new RenderMekaTool());
+        MekanismItems.MEKA_FISHING_ROD.setTileEntityItemStackRenderer(new RenderMekaFishingRod());
+
     }
 
     private ModelResourceLocation getInventoryMRL(String type) {
@@ -447,6 +454,8 @@ public class ClientProxy extends CommonProxy {
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MekanismBlocks.MachineBlock3), 9, getInventoryMRL("isotopic_centrifuge"));
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MekanismBlocks.MachineBlock3), 10, getInventoryMRL("nutritional_liquifier"));
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MekanismBlocks.MachineBlock3), 13, getInventoryMRL("antiprotonic_nucleosynthesizer"));
+
+        ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MekanismBlocks.SuperFumo), 0, getInventoryMRL("SuperFumo"));
         /**
          * ADD END
          * */
@@ -460,7 +469,7 @@ public class ClientProxy extends CommonProxy {
             String resource = "mekanism:" + type.getName();
             RecipeType recipePointer = null;
 
-            if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+            if (type.isFactory()) {
                 recipePointer = RecipeType.values()[0];
                 resource = "mekanism:" + type.getName() + "_" + recipePointer.getName();
             }
@@ -480,7 +489,7 @@ public class ClientProxy extends CommonProxy {
                     machineResources.put(resource, model);
                     modelsToAdd.add(model);
 
-                    if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+                    if (type.isFactory()) {
                         if (recipePointer.ordinal() < RecipeType.values().length - 1) {
                             recipePointer = RecipeType.values()[recipePointer.ordinal() + 1];
                             resource = "mekanism:" + type.getName() + "_" + recipePointer.getName();
@@ -512,6 +521,9 @@ public class ClientProxy extends CommonProxy {
                     }
                     if (type.hasRotations() || type == BasicBlockType.THERMAL_EVAPORATION_CONTROLLER) {
                         entries.add("facing=north");
+                    }
+                    if (type == BasicBlockType.BOILER_VALVE) {
+                        entries.add("mode=input");
                     }
 
                     //TODO: Is this check against bin's needed
@@ -590,7 +602,7 @@ public class ClientProxy extends CommonProxy {
             MachineType type = MachineType.get(stack);
             if (type != null) {
                 String resource = "mekanism:" + type.getName();
-                if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+                if (type.isFactory()) {
                     RecipeType recipe = ((ItemBlockMachine) stack.getItem()).getRecipeTypeOrNull(stack);
                     if (recipe != null) {
                         resource = "mekanism:" + type.getName() + "_" + recipe.getName();
@@ -845,6 +857,8 @@ public class ClientProxy extends CommonProxy {
             case 75 -> new GuiModificationStation(player.inventory, (TileEntityModificationStation) tileEntity);
             case 76 -> new GuiSPS(player.inventory, (TileEntitySPS) tileEntity);
             case 77 -> new GuiModuleTweaker(player.inventory);
+            case 78 -> new GuiSPSMultiblock(player.inventory, (TileEntitySPSCasing) tileEntity);
+            case 79 -> new GuiDimensionalStabilizer(player.inventory, (TileEntityDimensionalStabilizer) tileEntity);
             default -> null;
         };
     }
@@ -930,8 +944,15 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new ClientConnectionHandler());
         //  MinecraftForge.EVENT_BUS.register(new ClientPlayerTracker());
         MinecraftForge.EVENT_BUS.register(new ClientTickHandler());
-        MinecraftForge.EVENT_BUS.register(new RenderFirstPersonMekaSuitArms());
+        //单检查到Cleanroom的时候，使用Cleanroom的盔甲渲染事件
+        if (Mekanism.hooks.CLEANROOM) {
+            MinecraftForge.EVENT_BUS.register(new RenderArm());
+        } else {
+            MinecraftForge.EVENT_BUS.register(new RenderFirstPersonMekaSuitArms());
+        }
+
         MinecraftForge.EVENT_BUS.register(new RenderTickHandler());
+        MinecraftForge.EVENT_BUS.register(new MekanismRenderSelection());
         MinecraftForge.EVENT_BUS.register(SoundHandler.class);
 
         new MekanismKeyHandler();
@@ -998,6 +1019,10 @@ public class ClientProxy extends CommonProxy {
         ModelResourceLocation ArmorFreeRunnerRL = getInventoryMRL("ArmoredFreeRunners");
         modelRegistry.putObject(ArmorFreeRunnerRL, RenderArmoredFreeRunners.model = new ItemLayerWrapper(modelRegistry.getObject(FreeRunnerRL)));
 
+
+        ModelResourceLocation MekaFishingRod = getInventoryMRL("mekafishingrod");
+        modelRegistry.putObject(MekaFishingRod, RenderMekaFishingRod.model = new ItemLayerWrapper(modelRegistry.getObject(MekaFishingRod)));
+
         ModelResourceLocation Meka_Tool = getInventoryMRL("meka_tool");
         modelRegistry.putObject(Meka_Tool, RenderMekaTool.model = new ItemLayerWrapper(modelRegistry.getObject(Meka_Tool)));
 
@@ -1049,7 +1074,6 @@ public class ClientProxy extends CommonProxy {
     public double getReach(EntityPlayer player) {
         return Minecraft.getMinecraft().playerController.getBlockReachDistance();
     }
-
 
 
     @Override
@@ -1129,7 +1153,6 @@ public class ClientProxy extends CommonProxy {
 
         Particle.registerParticles();
     }
-
 
 
 }

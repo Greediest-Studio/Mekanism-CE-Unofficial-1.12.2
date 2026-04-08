@@ -31,6 +31,13 @@ public class EnergyElement extends LookingAtElement {
     }
 
     @Override
+    protected boolean applyRenderColor() {
+        // Ensure energy texture always renders with the same untinted color in all overlays.
+        MekanismRenderer.resetColor();
+        return true;
+    }
+
+    @Override
     public ITextComponent getText() {
         return new TextComponentGroup().translation(MekanismUtils.getEnergyDisplay(energy, maxEnergy));
     }

@@ -6,6 +6,7 @@ import mekanism.common.HashList;
 import mekanism.common.PacketHandler;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.security.ISecurityTile.SecurityMode;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
@@ -58,7 +59,7 @@ public class SecurityFrequency extends Frequency {
         securityMode = SecurityMode.PUBLIC;
 
         override = nbtTags.getBoolean("override");
-        securityMode = SecurityMode.values()[nbtTags.getInteger("securityMode")];
+        securityMode = MekanismUtils.getByIndex(SecurityMode.values(), nbtTags.getInteger("securityMode"), securityMode);
 
         if (nbtTags.hasKey("trusted")) {
             NBTTagList trustedList = nbtTags.getTagList("trusted", NBT.TAG_STRING);
@@ -87,7 +88,7 @@ public class SecurityFrequency extends Frequency {
         securityMode = SecurityMode.PUBLIC;
 
         override = dataStream.readBoolean();
-        securityMode = SecurityMode.values()[dataStream.readInt()];
+        securityMode = MekanismUtils.getByIndex(SecurityMode.values(), dataStream.readInt(), securityMode);
 
         int size = dataStream.readInt();
 

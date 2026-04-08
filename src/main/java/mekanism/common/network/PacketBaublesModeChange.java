@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.items.IItemHandler;
 
 public class PacketBaublesModeChange implements IMessageHandler<BaublesModeChangMessage, IMessage> {
 
@@ -23,7 +24,11 @@ public class PacketBaublesModeChange implements IMessageHandler<BaublesModeChang
         }
         PacketHandler.handlePacket(() -> {
             if (player != null && Mekanism.hooks.Baubles) {
-                ItemStack stack = BaublesApi.getBaublesHandler(player).getStackInSlot(message.slot);
+                IItemHandler baubles = BaublesApi.getBaublesHandler(player);
+                if (message.slot < 0 || message.slot >= baubles.getSlots()) {
+                    return;
+                }
+                ItemStack stack = baubles.getStackInSlot(message.slot);
                 if (!stack.isEmpty() && stack.getItem() instanceof IModeItem modeItem) {
                     modeItem.changeMode(player, stack, message.shift, message.displayChangeMessage? DisplayChange.OTHER : DisplayChange.NONE);
                 }

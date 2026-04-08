@@ -1,0 +1,15 @@
+{
+      "forge_marker": 1,
+      "defaults": {
+            "textures": {"all": "mekanism:blocks/sps_port"},
+            "model": "mekanism:basic_cube"
+      },
+      "variants": {
+            "normal": [{}],
+            "active": {
+                  "false": {},
+                  "true": {"textures": {"all": "mekanism:blocks/sps_port_output"}}
+            },
+            "inventory": [{}]
+      }
+}

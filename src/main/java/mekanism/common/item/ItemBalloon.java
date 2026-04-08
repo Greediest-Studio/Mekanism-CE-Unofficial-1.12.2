@@ -6,6 +6,7 @@ import mekanism.api.Pos3D;
 import mekanism.common.base.IMetaItem;
 import mekanism.common.entity.EntityBalloon;
 import mekanism.common.util.LangUtils;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.dispenser.BehaviorDefaultDispenseItem;
@@ -48,7 +49,7 @@ public class ItemBalloon extends ItemMekanismAddition implements IMetaItem {
     }
 
     public EnumColor getColor(ItemStack stack) {
-        return EnumColor.DYES[stack.getItemDamage()];
+        return MekanismUtils.getByIndex(EnumColor.DYES, stack.getItemDamage(), EnumColor.WHITE);
     }
 
     @Override

@@ -299,7 +299,7 @@ public abstract class TileEntitySidedPipe extends TileEntityRestrictedTick imple
             currentTransmitterConnections = dataStream.readByte();
             currentAcceptorConnections = dataStream.readByte();
             for (int i = 0; i < 6; i++) {
-                connectionTypes[i] = ConnectionType.values()[dataStream.readInt()];
+                connectionTypes[i] = MekanismUtils.getByIndex(ConnectionType.values(), dataStream.readInt(), connectionTypes[i]);
             }
             markNoUpdateSync();
             MekanismUtils.updateBlock(world, pos);
@@ -324,7 +324,7 @@ public abstract class TileEntitySidedPipe extends TileEntityRestrictedTick imple
         super.readCustomNBT(nbtTags);
         redstoneReactive = nbtTags.getBoolean("redstoneReactive");
         for (int i = 0; i < 6; i++) {
-            connectionTypes[i] = ConnectionType.values()[nbtTags.getInteger("connection" + i)];
+            connectionTypes[i] = MekanismUtils.getByIndex(ConnectionType.values(), nbtTags.getInteger("connection" + i), connectionTypes[i]);
         }
     }
 

@@ -1,34 +1,27 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryLeft",
-                  "south": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryBack",
-                  "west": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryRight",
-                  "sides": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryRight",
-                  "front": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryFront",
-                  "up": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/advanced"
+    },
+    "model": "mekanism:factory_stamping"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/advanced"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryBackOn",
-                        "west": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryRightOn",
-                        "front": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/advanced/crushing/AdvancedCrushingFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }
+

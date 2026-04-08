@@ -130,7 +130,7 @@ public abstract class TileEntityAdvancedElectricMachine<RECIPE extends AdvancedM
         handleSecondaryFuel();
         inactive = false;
         RECIPE recipe = getRecipe();
-        secondaryEnergyThisTick = useStatisticalMechanics() ? StatUtils.inversePoisson(secondaryEnergyPerTick) : (int) Math.ceil(secondaryEnergyPerTick);
+        secondaryEnergyThisTick = useStatisticalMechanics() ? StatUtils.inversePoisson(secondaryEnergyPerTick) : ceilSecondaryEnergyPerTick(secondaryEnergyPerTick);
         getProcess(recipe, gasTank.getStored() >= secondaryEnergyThisTick, energyPerTick, false, true);
         if (!(canOperate(recipe) && MekanismUtils.canFunction(this) && getEnergy() >= energyPerTick && gasTank.getStored() >= secondaryEnergyThisTick)) {
             inactive = true;
@@ -139,6 +139,13 @@ public abstract class TileEntityAdvancedElectricMachine<RECIPE extends AdvancedM
         if (!(gasTank.getGasType() == null || gasTank.getStored() == 0)) {
             prevGas = gasTank.getGasType();
         }
+    }
+
+    /**
+     * Avoids accidental over-rounding when upgrade scaling lands on an integer but is represented as integer + 1 ULP.
+     */
+    public static int ceilSecondaryEnergyPerTick(double secondaryEnergyPerTick) {
+        return (int) Math.ceil(Math.nextAfter(secondaryEnergyPerTick, Double.NEGATIVE_INFINITY));
     }
 
 

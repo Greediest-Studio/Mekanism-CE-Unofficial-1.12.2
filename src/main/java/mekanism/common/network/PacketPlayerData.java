@@ -63,7 +63,7 @@ public class PacketPlayerData implements IMessageHandler<PlayerDataMessage, IMes
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            PacketHandler.readUUID(dataStream);
+            uuid = PacketHandler.readUUID(dataStream);
             activeFlamethrower = dataStream.readBoolean();
             activeJetpack = dataStream.readBoolean();
             activeScubaMask = dataStream.readBoolean();

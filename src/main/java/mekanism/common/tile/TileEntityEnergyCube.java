@@ -6,10 +6,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
 import mekanism.common.SideData;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISideConfiguration;
-import mekanism.common.base.ITierUpgradeable;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.security.ISecurityTile;
@@ -22,16 +19,39 @@ import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 
 public class TileEntityEnergyCube extends TileEntityElectricBlock implements IComputerIntegration, IRedstoneControl, ISideConfiguration, ISecurityTile, ITierUpgradeable,
-        IConfigCardAccess, IComparatorSupport {
+        IConfigCardAccess, IComparatorSupport, ISpecialSelectionWireframeTile {
+
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_SOUTH = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(180, 0.5D, 1.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_WEST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(90, 0.5D, 1.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_EAST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(270, 0.5D, 1.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_UP = {
+            ISpecialSelectionWireframeTile.SelectionTransform.translate(0, 1.0D, 1.0D),
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateX(90, 0.5D, 1.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_DOWN = {
+            ISpecialSelectionWireframeTile.SelectionTransform.translate(0, 1.0D, -1.0D),
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateX(-90, 0.5D, 1.5D, 0.5D)
+    };
 
     private static final String[] methods = new String[]{"getEnergy", "getOutput", "getMaxEnergy", "getEnergyNeeded"};
     /**
@@ -80,7 +100,7 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
         super.onUpdateServer();
         ChargeUtils.charge(0, this);
         ChargeUtils.discharge(1, this);
-        if (MekanismUtils.canFunction(this) && configComponent.isEjecting(TransmissionType.ENERGY)) {
+        if (MekanismUtils.canFunction(this) && configComponent.isEjecting(TransmissionType.ENERGY) && getEnergy() > 0) {
             CableUtils.emit(this);
         }
         int newScale = getScaledEnergyLevel(20);
@@ -180,8 +200,8 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             EnergyCubeTier prevTier = tier;
-            tier = EnergyCubeTier.values()[dataStream.readInt()];
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            tier = MekanismUtils.getByIndex(EnergyCubeTier.values(), dataStream.readInt(), tier);
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             if (prevTier != tier) {
                 MekanismUtils.updateBlock(world, getPos());
             }
@@ -199,8 +219,8 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        tier = EnergyCubeTier.values()[nbtTags.getInteger("tier")];
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        tier = MekanismUtils.getByIndex(EnergyCubeTier.values(), nbtTags.getInteger("tier"), tier);
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
     }
 
     @Override
@@ -280,5 +300,43 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return 8;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelEnergyCube.class;
+    }
+
+    @Override
+    public String[] getSelectionWireframeSideArrayFieldNames() {
+        return new String[]{"connectors", "ports"};
+    }
+
+    @Override
+    public boolean shouldApplyDefaultSelectionWireframeFacingRotation(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return false;
+    }
+
+    @Override
+    public ISpecialSelectionWireframeTile.SelectionTransform[] getSelectionWireframeTransforms(IBlockState state, IBlockAccess world, BlockPos pos) {
+        EnumFacing currentFacing = facing == null ? EnumFacing.NORTH : facing;
+        return switch (currentFacing) {
+            case SOUTH -> SELECTION_ROTATE_SOUTH;
+            case WEST -> SELECTION_ROTATE_WEST;
+            case EAST -> SELECTION_ROTATE_EAST;
+            case UP -> SELECTION_ROTATE_UP;
+            case DOWN -> SELECTION_ROTATE_DOWN;
+            default -> ISpecialSelectionWireframeTile.SelectionTransform.EMPTY;
+        };
+    }
+
+    @Override
+    public boolean shouldRenderSelectionWireframeSide(EnumFacing side, IBlockState state, IBlockAccess world, BlockPos pos) {
+        if (configComponent == null) {
+            return false;
+        }
+        SideData sideData = configComponent.getOutput(TransmissionType.ENERGY, side);
+        return sideData != null && sideData.ioState != SideData.IOState.OFF;
     }
 }

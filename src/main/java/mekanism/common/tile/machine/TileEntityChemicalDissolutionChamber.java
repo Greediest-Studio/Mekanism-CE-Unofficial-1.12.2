@@ -9,6 +9,7 @@ import mekanism.common.MekanismFluids;
 import mekanism.common.SideData;
 import mekanism.common.Upgrade;
 import mekanism.common.base.IComparatorSupport;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
@@ -28,11 +29,13 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-public class TileEntityChemicalDissolutionChamber extends TileEntityUpgradeableMachine<ItemStackInput, GasOutput, DissolutionRecipe> implements IGasHandler, ISustainedData, ITankManager, IComparatorSupport {
+public class TileEntityChemicalDissolutionChamber extends TileEntityUpgradeableMachine<ItemStackInput, GasOutput, DissolutionRecipe> implements IGasHandler, ISustainedData, ITankManager, IComparatorSupport, ISpecialSelectionWireframeTile {
 
     public static final int MAX_GAS = 10000;
     public static final int BASE_INJECT_USAGE = 1;
@@ -240,6 +243,9 @@ public class TileEntityChemicalDissolutionChamber extends TileEntityUpgradeableM
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             return injectTank.receive(stack, doTransfer);
         }
@@ -368,5 +374,11 @@ public class TileEntityChemicalDissolutionChamber extends TileEntityUpgradeableM
     @Override
     public boolean getOuputSlot() {
         return false;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelChemicalDissolutionChamber.class;
     }
 }

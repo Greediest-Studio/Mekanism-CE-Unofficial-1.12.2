@@ -85,4 +85,8 @@ public abstract class TileEntityOperationalMachine extends TileEntityMachine imp
     public int getRedstoneLevel() {
         return Container.calcRedstoneFromInventory(this);
     }
+
+    public int getTicksRequired() {
+        return ticksRequired;
+    }
 }

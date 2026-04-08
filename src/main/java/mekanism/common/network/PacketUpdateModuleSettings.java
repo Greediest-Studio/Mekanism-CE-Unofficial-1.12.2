@@ -31,7 +31,7 @@ public class PacketUpdateModuleSettings implements IMessageHandler<UpdateModuleS
             return null;
         }
         PacketHandler.handlePacket(() -> {
-            if (message.dataIndex >= 0) {
+            if (message.dataIndex >= 0 && message.moduleType != null && message.slotId >= 0 && message.slotId < player.inventory.getSizeInventory()) {
                 ItemStack stack = player.inventory.getStackInSlot(message.slotId);
                 if (!stack.isEmpty() && stack.getItem() instanceof IModuleContainerItem) {
                     Module<?> module = ModuleHelper.get().load(stack, message.moduleType);

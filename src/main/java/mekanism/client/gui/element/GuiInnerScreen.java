@@ -5,6 +5,7 @@ import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.MekanismUtils.ResourceType;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -96,14 +97,25 @@ public class GuiInnerScreen extends GuiElement {
         if (renderStrings != null) {
             List<String> list = renderStrings.get();
             int startY = yPosition + padding;
+            int lineHeight = Math.max(1, Math.round(getFontRenderer().FONT_HEIGHT * textScale));
             if (centerY) {
                 int listSize = list.size();
-                int totalHeight = listSize * 8 + spacing * (listSize - 1);
+                int totalHeight = listSize * lineHeight + spacing * (listSize - 1);
                 startY = yPosition + (ySize - totalHeight) / 2;
             }
-            for (String text : renderStrings.get()) {
-                getFontRenderer().drawString(text, xPosition + padding, startY, SpecialColors.TEXT_SCREEN.argb());
-                startY += 8 + spacing;
+            for (String text : list) {
+                if (textScale == 1.0F) {
+                    getFontRenderer().drawString(text, xPosition + padding, startY, SpecialColors.TEXT_SCREEN.argb());
+                } else {
+                    float reverse = 1F / textScale;
+                    GlStateManager.pushMatrix();
+                    GlStateManager.scale(textScale, textScale, textScale);
+                    int scaledX = Math.round((xPosition + padding) * reverse);
+                    int scaledY = Math.round(startY * reverse);
+                    getFontRenderer().drawString(text, scaledX, scaledY, SpecialColors.TEXT_SCREEN.argb());
+                    GlStateManager.popMatrix();
+                }
+                startY += lineHeight + spacing;
             }
         }
     }

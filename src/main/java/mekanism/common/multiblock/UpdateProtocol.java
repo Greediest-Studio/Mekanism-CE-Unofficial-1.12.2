@@ -337,13 +337,18 @@ public abstract class UpdateProtocol<T extends SynchronizedData<T>> {
                     idsFound.add(block.cachedID);
                 }
             });
-            MultiblockCache<T> cache = getNewCache();
+            MultiblockCache<T> cache = null;
             String idToUse = null;
             if (idsFound.isEmpty()) {
+                cache = getNewCache();
                 idToUse = MultiblockManager.getUniqueInventoryID();
             } else {
                 List<ItemStack> rejectedItems = new ArrayList<>();
+                Set<String> checkedIds = new ObjectOpenHashSet<>();
                 for (String id : idsFound) {
+                    if (!checkedIds.add(id)) {
+                        continue;
+                    }
                     if (getManager().inventories.get(id) != null) {
                         if (cache == null) {
                             cache = getManager().pullInventory(pointer.getWorld(), id);
@@ -356,6 +361,28 @@ public abstract class UpdateProtocol<T extends SynchronizedData<T>> {
                 //TODO someday: drop all items in rejectedItems
                 //TODO seriously this needs to happen soon
                 //TODO perhaps drop from pointer?
+            }
+
+            // If no manager cache was available yet (possible during chunk-load ordering),
+            // recover from one of the tiles' local cachedData instead of applying an empty cache.
+            if (cache == null) {
+                if (!idsFound.isEmpty()) {
+                    String fallbackId = idsFound.get(0);
+                    for (Coord4D obj : structureFound.locations) {
+                        TileEntity tileEntity = obj.getTileEntity(pointer.getWorld());
+                        if (tileEntity instanceof TileEntityMultiblock<?> block && Objects.equals(block.cachedID, fallbackId)) {
+                            cache = (MultiblockCache<T>) block.cachedData;
+                            break;
+                        }
+                    }
+                    idToUse = fallbackId;
+                }
+                if (cache == null) {
+                    cache = getNewCache();
+                    if (idToUse == null) {
+                        idToUse = MultiblockManager.getUniqueInventoryID();
+                    }
+                }
             }
 
             cache.apply(structureFound);

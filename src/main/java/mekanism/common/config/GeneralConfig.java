@@ -277,8 +277,6 @@ public class GeneralConfig extends BaseConfig {
             "Chance that uranium generates in a chunk. (0 to Disable)", 0, Integer.MAX_VALUE);
     public final IntOption uraniumMaxVeinSize = new IntOption(this, "UraniumVeinSize", 8,
             "Max number of blocks in a uranium vein.", 1, Integer.MAX_VALUE);
-    public final DoubleOption toolBatteryCapacity = new DoubleOption(this, "toolBatteryCapacity", 10000000,
-            "Maximum amount (joules) of energy the Atomic Disassembler can contain", 0, Double.MAX_VALUE).setRequiresGameRestart();
     public final BooleanOption blacklistFlux = new BooleanOption(this, "BlacklistFluxPower", false,
             "Disables Flux Networks power integration. Requires world restart (server-side option in SMP).");
 
@@ -307,6 +305,7 @@ public class GeneralConfig extends BaseConfig {
     public final IntSetOption defaultAmbientDimBlacklist = new IntSetOption(this,"defaultAmbientDimBlacklist",new int[]{},"Default dimension gas collection recipe where the environmental collector does not work").setRequiresGameRestart();
 
     public final BooleanOption EnableDefaultAllAddAmbientGas = new BooleanOption(this,"EnableDefaultAllAddAmbientGas",true,"Enable the recipe to register the default environment collector for all dimensions").setRequiresGameRestart();
+
     @Override
     public String getCategory() {
         return "general";

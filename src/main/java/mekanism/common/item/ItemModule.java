@@ -35,7 +35,7 @@ public class ItemModule extends Item implements IModuleItem {
 
     @Override
     public int getItemStackLimit(ItemStack stack) {
-        return getModuleData().getMaxStackSize();
+        return Math.min(getModuleData().getMaxStackSize(), super.getItemStackLimit(stack));
     }
 
     @Override
@@ -62,7 +62,7 @@ public class ItemModule extends Item implements IModuleItem {
             }
         } else {
             ModuleData<?> moduleData = getModuleData();
-            if (getModuleData().getCanEnable() && !getModuleData().getNotEnabled().isEmpty()){
+            if (getModuleData().getCanEnable() && !getModuleData().getNotEnabled().isEmpty()) {
                 tooltip.add(EnumColor.DARK_RED + LangUtils.localize(getModuleData().getNotEnabled()));
             }
             tooltip.add(LangUtils.localize(moduleData.getDescriptionTranslationKey()));

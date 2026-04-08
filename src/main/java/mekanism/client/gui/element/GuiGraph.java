@@ -26,6 +26,7 @@ public class GuiGraph extends GuiElement {
     private final int ySize;
 
     private int currentScale = 10;
+    private int minScale = 10;
     private boolean fixedScale = false;
 
     public GuiGraph(IGuiWrapper gui, ResourceLocation def, int x, int y, int sizeX, int sizeY, GraphDataHandler handler) {
@@ -39,7 +40,14 @@ public class GuiGraph extends GuiElement {
 
     public void enableFixedScale(int scale) {
         fixedScale = true;
-        currentScale = scale;
+        currentScale = Math.max(1, scale);
+    }
+
+    public void setMinScale(int scale) {
+        minScale = Math.max(1, scale);
+        if (!fixedScale) {
+            currentScale = Math.max(currentScale, minScale);
+        }
     }
 
     public void addData(int data) {
@@ -49,6 +57,7 @@ public class GuiGraph extends GuiElement {
 
         graphData.add(data);
         if (!fixedScale) {
+            currentScale = minScale;
             for (int i : graphData) {
                 if (i > currentScale) {
                     currentScale = i;

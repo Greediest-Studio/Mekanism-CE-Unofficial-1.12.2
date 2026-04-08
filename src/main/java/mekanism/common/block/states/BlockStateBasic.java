@@ -33,10 +33,11 @@ import java.util.function.Supplier;
 public class BlockStateBasic extends ExtendedBlockState {
 
     public static final PropertyBool activeProperty = PropertyBool.create("active");
+    public static final PropertyEnum<BoilerValveModeProperty> boilerValveModeProperty = PropertyEnum.create("mode", BoilerValveModeProperty.class);
     public static final PropertyEnum<BaseTier> tierProperty = PropertyEnum.create("tier", BaseTier.class);
 
     public BlockStateBasic(BlockBasic block, PropertyEnum<BasicBlockType> typeProperty) {
-        super(block, new IProperty[]{BlockStateFacing.facingProperty, typeProperty, activeProperty, tierProperty}, new IUnlistedProperty[]{});
+        super(block, new IProperty[]{BlockStateFacing.facingProperty, typeProperty, activeProperty, tierProperty, boilerValveModeProperty}, new IUnlistedProperty[]{});
     }
 
     public enum BasicBlock {
@@ -88,15 +89,16 @@ public class BlockStateBasic extends ExtendedBlockState {
         SUPERHEATING_ELEMENT(BasicBlock.BASIC_BLOCK_2, 5, "SuperheatingElement", TileEntitySuperheatingElement::new, true, BlockStateUtils.NO_ROTATION, false, false, false),
         PRESSURE_DISPERSER(BasicBlock.BASIC_BLOCK_2, 6, "PressureDisperser", TileEntityPressureDisperser::new, true, BlockStateUtils.NO_ROTATION, false, false, false),
         BOILER_CASING(BasicBlock.BASIC_BLOCK_2, 7, "BoilerCasing", TileEntityBoilerCasing::new, true, BlockStateUtils.NO_ROTATION, false, false, false),
-        BOILER_VALVE(BasicBlock.BASIC_BLOCK_2, 8, "BoilerValve", TileEntityBoilerValve::new, true, BlockStateUtils.NO_ROTATION, true, false, false, true),
+        BOILER_VALVE(BasicBlock.BASIC_BLOCK_2, 8, "BoilerValve", TileEntityBoilerValve::new, true, BlockStateUtils.NO_ROTATION, false, false, false, true),
         SECURITY_DESK(BasicBlock.BASIC_BLOCK_2, 9, "SecurityDesk", TileEntitySecurityDesk::new, true, Plane.HORIZONTAL, false, false, false, false, false, false),
         URANIUM_BLOCK(BasicBlock.BASIC_BLOCK_2, 10, "UraniumBlock", null, false, BlockStateUtils.NO_ROTATION, false, false, true),
         lEAD_BLOCK(BasicBlock.BASIC_BLOCK_2, 11, "LeadBlock", null, false, BlockStateUtils.NO_ROTATION, false, false, true),
 
-        SPS_CASING(BasicBlock.BASIC_BLOCK_3, 0, "SpsCasing", null, false, BlockStateUtils.NO_ROTATION, false, false, false),
+        SPS_CASING(BasicBlock.BASIC_BLOCK_3, 0, "SpsCasing", TileEntitySPSCasing::new, true, BlockStateUtils.NO_ROTATION, false, false, false),
         FISSION_REACHER_CASING(BasicBlock.BASIC_BLOCK_3, 1, "FissionReacherCasing", null, false, BlockStateUtils.NO_ROTATION, false, false, false),
         CONTROL_ROD_ASSEMBLY(BasicBlock.BASIC_BLOCK_3, 2, "ControlRodAssembly"),
-        FISSION_FUEL_ASSEMBLY(BasicBlock.BASIC_BLOCK_3, 3, "FissionFuelAssembly");
+        FISSION_FUEL_ASSEMBLY(BasicBlock.BASIC_BLOCK_3, 3, "FissionFuelAssembly"),
+        SPS_PORT(BasicBlock.BASIC_BLOCK_3, 4, "SpsPort", TileEntitySPSPort::new, true, BlockStateUtils.NO_ROTATION, true, false, false, true);
 
         @Nonnull
         public BasicBlock blockType;
@@ -256,11 +258,31 @@ public class BlockStateBasic extends ExtendedBlockState {
                 nameOverride = type.getName() + "_" + tier.getName();
             }
 
+            if (type == BasicBlockType.BOILER_VALVE) {
+                if (builder.length() > 0) {
+                    builder.append(",");
+                }
+                builder.append(boilerValveModeProperty.getName());
+                builder.append("=");
+                builder.append(state.getValue(boilerValveModeProperty).getName());
+            }
+
             if (builder.length() == 0) {
                 builder.append("normal");
             }
             ResourceLocation baseLocation = new ResourceLocation(Mekanism.MODID, nameOverride != null ? nameOverride : type.getName());
             return new ModelResourceLocation(baseLocation, builder.toString());
+        }
+    }
+
+    public enum BoilerValveModeProperty implements IStringSerializable {
+        INPUT,
+        OUTPUT_STEAM,
+        OUTPUT_COOLANT;
+
+        @Override
+        public String getName() {
+            return name().toLowerCase(Locale.ROOT);
         }
     }
 }

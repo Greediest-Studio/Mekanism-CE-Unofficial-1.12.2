@@ -1,0 +1,31 @@
+{
+  "result": {
+    "item": "mekanism:module_fishing_collecting_unit"
+  },
+  "pattern": [
+    "ABA",
+    "CEC",
+    "DBD"
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "A": {
+      "item": "mekanism:teleportationcore"
+    },
+    "B": {
+      "ore": "itemBioFuel",
+      "type": "forge:ore_dict"
+    },
+    "C": {
+      "ore": "dustWood",
+      "type": "forge:ore_dict"
+    },
+    "D": {
+      "ore": "PoloniumPellet",
+      "type": "forge:ore_dict"
+    },
+    "E": {
+      "item": "mekanism:modulebase"
+    }
+  }
+}

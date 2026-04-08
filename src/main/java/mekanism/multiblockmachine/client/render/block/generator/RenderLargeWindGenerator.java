@@ -9,31 +9,48 @@ import mekanism.multiblockmachine.client.model.generator.ModelLargeWindGenerator
 import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import mekanism.multiblockmachine.common.tile.generator.TileEntityLargeWindGenerator;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class RenderLargeWindGenerator extends RenderTileEntityTime<TileEntityLargeWindGenerator> {
 
-    private ModelLargeWindGenerator model = new ModelLargeWindGenerator();
+    private final ModelLargeWindGenerator model = new ModelLargeWindGenerator();
+    private static final float MODEL_SCALE = 0.0625F;
+    private static final ResourceLocation MAIN_TEXTURE = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator.png");
 
     @Override
     public void render(TileEntityLargeWindGenerator tileEntity, double x, double y, double z, float partialTick, int destroyStage, float alpha) {
+        if (!MekanismConfig.current().client.largeWindGeneratorRending.val()) {
+            return;
+        }
+        boolean active = tileEntity.getActive();
+        double angle = angle(tileEntity, partialTick, active);
+        int fanRenderDistance = MekanismConfig.current().client.largeWindGeneratorFanRenderDistance.val();
+        boolean renderFans = fanRenderDistance <= 0 || tileEntity.getDistanceSq(rendererDispatcher.entityX, rendererDispatcher.entityY, rendererDispatcher.entityZ) <= (double) fanRenderDistance * fanRenderDistance;
         GlStateManager.pushMatrix();
+        GlStateManager.color(1F, 1F, 1F, 1F);
+        GlStateManager.enableCull();
+        GlStateManager.enableRescaleNormal();
         GlStateManager.translate((float) x + 0.5F, (float) y + 1.5F, (float) z + 0.5F);
-        bindTexture(MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator.png"));
+        bindTexture(MAIN_TEXTURE);
         MekanismRenderer.rotate(tileEntity.facing, 0, 180, 90, 270);
         GlStateManager.rotate(180, 0, 0, 1);
-        if (MekanismConfig.current().client.largeWindGeneratorRending.val()) {
-            model.renderBlock(getTime(), 0.0625F, angle(tileEntity, partialTick), tileEntity.getActive(), rendererDispatcher.renderEngine, true);
-        }
+        model.renderBlock(getTime(), MODEL_SCALE, angle, active, rendererDispatcher.renderEngine, true, renderFans);
+        GlStateManager.disableRescaleNormal();
+        GlStateManager.disableCull();
         GlStateManager.popMatrix();
     }
 
     public double angle(TileEntityLargeWindGenerator tileEntity, float partialTick) {
+        return angle(tileEntity, partialTick, tileEntity.getActive());
+    }
+
+    private double angle(TileEntityLargeWindGenerator tileEntity, float partialTick, boolean active) {
         double angle = tileEntity.getAngle();
-        if (tileEntity.getActive()) {
-            angle = (tileEntity.getAngle() + ((tileEntity.getPos().getY() + 46F) / TileEntityLargeWindGenerator.SPEED_SCALED) * partialTick) % 360;
+        if (active) {
+            angle = (angle + ((tileEntity.getPos().getY() + 46F) / TileEntityLargeWindGenerator.SPEED_SCALED) * partialTick) % 360;
         }
         return angle;
     }

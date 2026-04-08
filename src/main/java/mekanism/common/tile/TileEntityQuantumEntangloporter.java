@@ -32,18 +32,23 @@ import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
 import mekanism.common.util.*;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -52,10 +57,19 @@ import java.util.List;
 import java.util.Set;
 
 public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock implements ISideConfiguration, ITankManager, IFluidHandlerWrapper, IFrequencyHandler,
-        IGasHandler, IHeatTransfer, IComputerIntegration, ISecurityTile, IChunkLoader, IUpgradeTile {
+        IGasHandler, IHeatTransfer, IComputerIntegration, ISecurityTile, IChunkLoader, IUpgradeTile, ISpecialSelectionWireframeTile {
 
     private static final int INV_SIZE = 1;//this.inventory size, used for upgrades. Manually handled
     private static final String[] methods = {"setFrequency"};
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_SOUTH = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(180.0D, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_WEST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(90.0D, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_EAST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(270.0D, 0.5D, 0.5D, 0.5D)
+    };
     public InventoryFrequency frequency;
     public double heatToAbsorb = 0;
     public double lastTransferLoss;
@@ -105,7 +119,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
     @Override
     public void onUpdateServer() {
         super.onUpdateServer();
-        if (configComponent.isEjecting(TransmissionType.ENERGY)) {
+        if (configComponent.isEjecting(TransmissionType.ENERGY) && getEnergy() > 0) {
             CableUtils.emit(this);
         }
         double[] loss = simulateHeat();
@@ -355,13 +369,13 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
-        return frequency.storedFluid.fill(resource, doFill);
+        return !hasFrequency() ? 0 : frequency.storedFluid.fill(resource, doFill);
     }
 
     @Override
     @Nullable
     public FluidStack drain(EnumFacing from, int maxDrain, boolean doDrain) {
-        return frequency.storedFluid.drain(maxDrain, doDrain);
+        return !hasFrequency() ? null : frequency.storedFluid.drain(maxDrain, doDrain);
     }
 
     @Override
@@ -613,5 +627,32 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelQuantumEntangloporter.class;
+    }
+
+    @Override
+    public String[] getSelectionWireframeIgnoredRendererFieldNames() {
+        return new String[]{"portRightLarge", "portLeftLarge"};
+    }
+
+    @Override
+    public boolean shouldApplyDefaultSelectionWireframeFacingRotation(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return false;
+    }
+
+    @Override
+    public ISpecialSelectionWireframeTile.SelectionTransform[] getSelectionWireframeTransforms(IBlockState state, IBlockAccess world, BlockPos pos) {
+        EnumFacing currentFacing = facing == null ? EnumFacing.NORTH : facing;
+        return switch (currentFacing) {
+            case SOUTH -> SELECTION_ROTATE_SOUTH;
+            case WEST -> SELECTION_ROTATE_WEST;
+            case EAST -> SELECTION_ROTATE_EAST;
+            default -> SelectionTransform.EMPTY;
+        };
     }
 }

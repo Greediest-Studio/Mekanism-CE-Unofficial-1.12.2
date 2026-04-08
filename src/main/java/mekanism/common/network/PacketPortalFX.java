@@ -17,6 +17,9 @@ public class PacketPortalFX implements IMessageHandler<PortalFXMessage, IMessage
     @Override
     public IMessage onMessage(PortalFXMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null || message.coord4D == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             Random random = new Random();
             for (int i = 0; i < 50; i++) {

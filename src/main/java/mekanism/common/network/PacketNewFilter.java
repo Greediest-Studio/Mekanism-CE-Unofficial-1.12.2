@@ -24,18 +24,49 @@ public class PacketNewFilter implements IMessageHandler<NewFilterMessage, IMessa
 
     @Override
     public IMessage onMessage(NewFilterMessage message, MessageContext context) {
+        EntityPlayerMP player = context.getServerHandler().player;
+        if (player == null) {
+            return null;
+        }
         WorldServer worldServer = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(message.coord4D.dimensionId);
+        if (worldServer == null) {
+            return null;
+        }
 
         worldServer.addScheduledTask(() -> {
             if (message.type == 0 && message.coord4D.getTileEntity(worldServer) instanceof TileEntityLogisticalSorter sorter) {
+                if (!PacketHandler.canAccessTile(player, sorter) || message.tFilter == null) {
+                    return;
+                }
                 sorter.filters.add(message.tFilter);
-                sorter.playersUsing.forEach(iterPlayer -> Mekanism.packetHandler.sendTo(new TileEntityMessage(sorter, sorter.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer));
+                sorter.markDirty();
+                TileNetworkList filterPacket = sorter.getFilterPacket(new TileNetworkList());
+                sorter.playersUsing.forEach(iterPlayer -> Mekanism.packetHandler.sendTo(new TileEntityMessage(sorter, filterPacket), (EntityPlayerMP) iterPlayer));
+                if (!sorter.playersUsing.contains(player)) {
+                    Mekanism.packetHandler.sendTo(new TileEntityMessage(sorter, filterPacket), player);
+                }
             } else if (message.type == 1 && message.coord4D.getTileEntity(worldServer) instanceof TileEntityDigitalMiner miner) {
+                if (!PacketHandler.canAccessTile(player, miner) || message.mFilter == null) {
+                    return;
+                }
                 miner.filters.add(message.mFilter);
-                miner.playersUsing.forEach(iterPlayer -> Mekanism.packetHandler.sendTo(new TileEntityMessage(miner, miner.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer));
+                miner.markDirty();
+                TileNetworkList filterPacket = miner.getFilterPacket(new TileNetworkList());
+                miner.playersUsing.forEach(iterPlayer -> Mekanism.packetHandler.sendTo(new TileEntityMessage(miner, filterPacket), (EntityPlayerMP) iterPlayer));
+                if (!miner.playersUsing.contains(player)) {
+                    Mekanism.packetHandler.sendTo(new TileEntityMessage(miner, filterPacket), player);
+                }
             } else if (message.type == 2 && message.coord4D.getTileEntity(worldServer) instanceof TileEntityOredictionificator oredictionificator) {
+                if (!PacketHandler.canAccessTile(player, oredictionificator) || message.oFilter == null) {
+                    return;
+                }
                 oredictionificator.filters.add(message.oFilter);
-                oredictionificator.playersUsing.forEach(iterPlayer -> Mekanism.packetHandler.sendTo(new TileEntityMessage(oredictionificator, oredictionificator.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer));
+                oredictionificator.markDirty();
+                TileNetworkList filterPacket = oredictionificator.getFilterPacket(new TileNetworkList());
+                oredictionificator.playersUsing.forEach(iterPlayer -> Mekanism.packetHandler.sendTo(new TileEntityMessage(oredictionificator, filterPacket), (EntityPlayerMP) iterPlayer));
+                if (!oredictionificator.playersUsing.contains(player)) {
+                    Mekanism.packetHandler.sendTo(new TileEntityMessage(oredictionificator, filterPacket), player);
+                }
             }
         });
         return null;

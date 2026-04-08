@@ -20,6 +20,7 @@ public class MultiblockMachineJEI implements IModPlugin {
         registry(registry,MultiblockMachineBlocks.LargeChemicalWasher);
         registry(registry,MultiblockMachineBlocks.LargeWindGenerator);
         registry(registry,MultiblockMachineBlocks.LargeGasGenerator);
+        registry(registry,MultiblockMachineBlocks.LargeSolarNeutronActivator);
     }
 
     public void registry(ISubtypeRegistry registry, Block block) {
@@ -34,6 +35,7 @@ public class MultiblockMachineJEI implements IModPlugin {
         MultiblockRecipeRegistryHelper.registerLargeChemicalInfuser(registry);
         MultiblockRecipeRegistryHelper.registerLargeChemicalWasher(registry);
         MultiblockRecipeRegistryHelper.registerGasStackFlueToEnergyRecipe(registry);
+        MultiblockRecipeRegistryHelper.registerLargeSolarNeutronActivator(registry);
     }
 
 }

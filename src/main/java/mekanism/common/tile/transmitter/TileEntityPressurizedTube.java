@@ -13,6 +13,7 @@ import mekanism.common.tier.TubeTier;
 import mekanism.common.transmitters.grid.GasNetwork;
 import mekanism.common.util.CapabilityUtils;
 import mekanism.common.util.GasUtils;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -155,7 +156,7 @@ public class TileEntityPressurizedTube extends TileEntityTransmitter<IGasHandler
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
         if (nbtTags.hasKey("tier")) {
-            tier = TubeTier.values()[nbtTags.getInteger("tier")];
+            tier = MekanismUtils.getByIndex(TubeTier.values(), nbtTags.getInteger("tier"), tier);
         }
         buffer.setMaxGas(getCapacity());
         if (nbtTags.hasKey("cacheGas")) {
@@ -307,7 +308,7 @@ public class TileEntityPressurizedTube extends TileEntityTransmitter<IGasHandler
 
     @Override
     public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = TubeTier.values()[dataStream.readInt()];
+        tier = MekanismUtils.getByIndex(TubeTier.values(), dataStream.readInt(), tier);
         super.handlePacketData(dataStream);
     }
 
@@ -337,5 +338,10 @@ public class TileEntityPressurizedTube extends TileEntityTransmitter<IGasHandler
     @Override
     public int getRadiationParticleCount() {
         return MathUtils.clampToInt(3 * getRadiationScale());
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

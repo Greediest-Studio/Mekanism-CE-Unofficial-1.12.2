@@ -3,6 +3,7 @@ package mekanism.common.content.tank;
 import mekanism.api.gas.GasStack;
 import mekanism.common.multiblock.MultiblockCache;
 import mekanism.common.util.FluidContainerUtils.ContainerEditMode;
+import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.NonNullListSynchronized;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -20,8 +21,25 @@ public class TankCache extends MultiblockCache<SynchronizedTankData> {
 
     public ContainerEditMode editMode = ContainerEditMode.BOTH;
 
+    private void sanitizeStoredSubstances() {
+        if (fluid != null && fluid.amount <= 0) {
+            fluid = null;
+        }
+        if (gas != null && gas.amount <= 0) {
+            gas = null;
+        }
+        if (fluid != null && gas != null) {
+            if (fluid.amount >= gas.amount) {
+                gas = null;
+            } else {
+                fluid = null;
+            }
+        }
+    }
+
     @Override
     public void apply(SynchronizedTankData data) {
+        sanitizeStoredSubstances();
         data.inventory = inventory;
         data.fluidStored = fluid;
         data.gasstored = gas;
@@ -33,12 +51,13 @@ public class TankCache extends MultiblockCache<SynchronizedTankData> {
         inventory = data.inventory;
         fluid = data.fluidStored;
         gas = data.gasstored;
+        sanitizeStoredSubstances();
         editMode = data.editMode;
     }
 
     @Override
     public void load(NBTTagCompound nbtTags) {
-        editMode = ContainerEditMode.values()[nbtTags.getInteger("editMode")];
+        editMode = MekanismUtils.getByIndex(ContainerEditMode.values(), nbtTags.getInteger("editMode"), editMode);
         NBTTagList tagList = nbtTags.getTagList("Items", NBT.TAG_COMPOUND);
         inventory = NonNullListSynchronized.withSize(2, ItemStack.EMPTY);
 
@@ -55,10 +74,12 @@ public class TankCache extends MultiblockCache<SynchronizedTankData> {
         if (nbtTags.hasKey("cachedGas")){
             gas = GasStack.readFromNBT(nbtTags.getCompoundTag("cachedGas"));
         }
+        sanitizeStoredSubstances();
     }
 
     @Override
     public void save(NBTTagCompound nbtTags) {
+        sanitizeStoredSubstances();
         nbtTags.setInteger("editMode", editMode.ordinal());
         NBTTagList tagList = new NBTTagList();
         for (int slotCount = 0; slotCount < 2; slotCount++) {

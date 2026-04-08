@@ -6,6 +6,7 @@ import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
 import mekanism.common.SideData;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
@@ -27,11 +28,13 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-public class TileEntityChemicalCrystallizer extends TileEntityUpgradeableMachine<GasInput, ItemStackOutput, CrystallizerRecipe> implements IGasHandler, ISustainedData, ITankManager {
+public class TileEntityChemicalCrystallizer extends TileEntityUpgradeableMachine<GasInput, ItemStackOutput, CrystallizerRecipe> implements IGasHandler, ISustainedData, ITankManager, ISpecialSelectionWireframeTile {
 
     public static final int MAX_GAS = 10000;
     public GasTank inputTank = new GasTank(MAX_GAS);
@@ -177,6 +180,9 @@ public class TileEntityChemicalCrystallizer extends TileEntityUpgradeableMachine
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             int recipeAmount = Recipe.CHEMICAL_CRYSTALLIZER.get().get(new GasInput(stack)).recipeInput.ingredient.amount;
             int receivable = inputTank.receive(stack, false);
@@ -318,4 +324,9 @@ public class TileEntityChemicalCrystallizer extends TileEntityUpgradeableMachine
         return inventory.get(1).isEmpty();
     }
 
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelChemicalCrystallizer.class;
+    }
 }

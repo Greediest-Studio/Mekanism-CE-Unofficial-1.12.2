@@ -113,7 +113,7 @@ public class MekanismFluids {
          */
         GasRegistry.register(HydrofluoricAcid).registerFluid("liquidhydrofluricacid");
         GasRegistry.register(Antimatter);
-        GasRegistry.register(FissileFuel).registerFluid();
+        GasRegistry.register(FissileFuel);
         GasRegistry.register(SuperheatedSodium).registerFluid("liquidsuperheatedsodium");
         GasRegistry.register(UraniumHexafluoride);
         GasRegistry.register(Uraniumoxide);
@@ -121,7 +121,7 @@ public class MekanismFluids {
         /**
          *Radioactive material
          * */
-        GasRegistry.register(NuclearWaste).setRadiation(0.01).registerFluid();
+        GasRegistry.register(NuclearWaste).setRadiation(0.01);
         GasRegistry.register(Plutonium).setRadiation(0.02);
         GasRegistry.register(Polonium).setRadiation(0.05);
         GasRegistry.register(SpentNuclearWaste).setRadiation(0.01);

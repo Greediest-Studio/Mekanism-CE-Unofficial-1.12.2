@@ -2,6 +2,7 @@ package mekanism.common.security;
 
 import io.netty.buffer.ByteBuf;
 import mekanism.common.security.ISecurityTile.SecurityMode;
+import mekanism.common.util.MekanismUtils;
 
 public class SecurityData {
 
@@ -18,7 +19,7 @@ public class SecurityData {
 
     public static SecurityData read(ByteBuf dataStream) {
         SecurityData data = new SecurityData();
-        data.mode = SecurityMode.values()[dataStream.readInt()];
+        data.mode = MekanismUtils.getByIndex(SecurityMode.values(), dataStream.readInt(), data.mode);
         data.override = dataStream.readBoolean();
         return data;
     }

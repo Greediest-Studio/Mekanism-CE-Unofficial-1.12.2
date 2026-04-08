@@ -227,7 +227,7 @@ public class TileEntityElectricPump extends TileEntityElectricBlock implements I
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             TileUtils.readTankData(dataStream, fluidTank);
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
         }
     }
 
@@ -278,7 +278,7 @@ public class TileEntityElectricPump extends TileEntityElectricBlock implements I
             fluidTank.readFromNBT(nbtTags.getCompoundTag("fluidTank"));
         }
         if (nbtTags.hasKey("controlType")) {
-            controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         }
         if (nbtTags.hasKey("recurringNodes")) {
             NBTTagList tagList = nbtTags.getTagList("recurringNodes", NBT.TAG_COMPOUND);

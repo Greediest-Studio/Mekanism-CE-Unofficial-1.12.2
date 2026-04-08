@@ -1,34 +1,26 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryLeft",
-                  "south": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryBack",
-                  "west": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryRight",
-                  "sides": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryRight",
-                  "front": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryFront",
-                  "up": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/elite"
+    },
+    "model": "mekanism:factory_stamping"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/elite"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryBackOn",
-                        "west": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryRightOn",
-                        "front": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/elite/crushing/EliteCrushingFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }

@@ -6,17 +6,17 @@ import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
-import mekanism.common.base.IAdvancedBoundingBlock;
-import mekanism.common.base.IGuiProvider;
-import mekanism.common.base.IMachineSlotTip;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.*;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.tile.TileEntityBoundingBlock;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.util.*;
 import mekanism.generators.common.tile.TileEntityGenerator;
 import mekanism.multiblockmachine.client.render.block.generator.bloom.BloomRenderLargeWindGenerator;
 import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -25,23 +25,24 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumParticleTypes;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.*;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class TileEntityLargeWindGenerator extends TileEntityGenerator implements IAdvancedBoundingBlock, IMachineSlotTip, IUpgradeTile {
+public class TileEntityLargeWindGenerator extends TileEntityGenerator implements IAdvancedBoundingBlock, IMachineSlotTip, IUpgradeTile, ISpecialSelectionWireframeTile {
 
     public static final float SPEED = 32F;
     public static final float SPEED_SCALED = 256F / SPEED;
@@ -165,7 +166,9 @@ public class TileEntityLargeWindGenerator extends TileEntityGenerator implements
 
     @Override
     public void addTileSyncTask() {
-        CableUtils.emit(this, 4);
+        if (getEnergy() > 0) {
+            CableUtils.emit(this, 4);
+        }
     }
 
 
@@ -288,18 +291,30 @@ public class TileEntityLargeWindGenerator extends TileEntityGenerator implements
             head2 = head2.east(4);
         }
 
-        if (world.canSeeSky(head) && world.canSeeSky(head2)) {
-            int minY = MekanismConfig.current().multiblock.LargeWindGenerationMinY.val();
-            int maxY = MekanismConfig.current().multiblock.LargeWindGenerationMaxY.val();
-            float clampedY = (float) Math.min(maxY, Math.max(minY, head.getY()));
-            float minG = (float) MekanismConfig.current().multiblock.LargeWindGenerationMin.val();
-            float maxG = (float) MekanismConfig.current().multiblock.LargeWindGenerationMax.val();
-            //Prevents the possibility of writing opposite values; https://github.com/Thorfusion/Mekanism-Community-Edition/issues/150
-            int rangeY = maxY < minY ? minY - maxY : maxY - minY;
-            float rangG = maxG < minG ? minG - maxG : maxG - minG;
-            float slope = rangG / rangeY;
-            float toGen = minG + (slope * (clampedY - minY));
-            return toGen / minG;
+        //这是为了防止主线程等待机器的异步，然后机器等待区块的加载,然后区块又在等待主线程,造成循环等待加载
+        Chunk chunkCheckA = world.getChunkProvider().getLoadedChunk(head.getX() >> 4, head.getZ() >> 4);
+        Chunk chunkCheckB = world.getChunkProvider().getLoadedChunk(head2.getX() >> 4, head2.getZ() >> 4);
+        if (chunkCheckA != null && chunkCheckB != null && !chunkCheckA.isEmpty() && !chunkCheckB.isEmpty()) {
+            if (world.canSeeSky(head) && world.canSeeSky(head2)) {
+                int minY = MekanismConfig.current().multiblock.LargeWindGenerationMinY.val();
+                int maxY = MekanismConfig.current().multiblock.LargeWindGenerationMaxY.val();
+                float clampedY = (float) Math.min(maxY, Math.max(minY, head.getY()));
+                float minG = (float) MekanismConfig.current().multiblock.LargeWindGenerationMin.val();
+                float maxG = (float) MekanismConfig.current().multiblock.LargeWindGenerationMax.val();
+                //Prevents the possibility of writing opposite values; https://github.com/Thorfusion/Mekanism-Community-Edition/issues/150
+                int rangeY = maxY < minY ? minY - maxY : maxY - minY;
+                if (rangeY <= 0 || minG <= 0 || Float.isNaN(minG) || Float.isInfinite(minG) || Float.isNaN(maxG) || Float.isInfinite(maxG)) {
+                    return 0;
+                }
+                float rangG = maxG < minG ? minG - maxG : maxG - minG;
+                float slope = rangG / rangeY;
+                float toGen = minG + (slope * (clampedY - minY));
+                float multiplier = toGen / minG;
+                if (Float.isNaN(multiplier) || Float.isInfinite(multiplier)) {
+                    return 0;
+                }
+                return multiplier;
+            }
         }
         return 0;
     }
@@ -747,6 +762,102 @@ public class TileEntityLargeWindGenerator extends TileEntityGenerator implements
                 new BloomRenderLargeWindGenerator(this);
             }
         }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.multiblockmachine.client.model.generator.ModelLargeWindGenerator.class;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public int getSelectionWireframeAnimationCacheKey(IBlockState state, IBlockAccess world, BlockPos pos) {
+        if (!MekanismConfig.current().client.windGeneratorRotating.val()) {
+            return 0;
+        }
+        // Quantize to 0.5 degree to cap cache growth while keeping animation smooth.
+        return Math.floorMod((int) Math.round(getSelectionWireframeAngle() * 2D), 720);
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void applySelectionWireframeModelState(Object model, IBlockState state, IBlockAccess world, BlockPos pos) {
+        if (model instanceof mekanism.multiblockmachine.client.model.generator.ModelLargeWindGenerator windModel) {
+            windModel.applySelectionFanAngle(getSelectionWireframeAngle());
+        }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public List<Vec3d> computeOcclusionSamplePoints() {
+        List<Vec3d> samplePoints = new ArrayList<>(super.computeOcclusionSamplePoints());
+        World world = getWorld();
+        if (world == null) {
+            return samplePoints;
+        }
+        EnumFacing direction = facing == null ? EnumFacing.NORTH : facing;
+        EnumFacing left = MekanismUtils.getLeft(direction);
+        EnumFacing right = MekanismUtils.getRight(direction);
+        EnumFacing back = direction.getOpposite();
+
+        // Keep the renderer alive when only the upper structure/head-tail bounding blocks are visible.
+        addUpperBoundingProbePoints(world, samplePoints, getPos().up(47));
+        addUpperBoundingProbePoints(world, samplePoints, getPos().up(47).offset(left, 2));
+        addUpperBoundingProbePoints(world, samplePoints, getPos().up(47).offset(right, 2));
+        addUpperBoundingProbePoints(world, samplePoints, getPos().up(47).offset(direction, 2));
+        addUpperBoundingProbePoints(world, samplePoints, getPos().up(47).offset(back, 2));
+
+        BlockPos headCenter = getPos().up(46).offset(direction, 4);
+        BlockPos tailCenter = getPos().up(46).offset(back, 3);
+        addUpperBoundingProbePoints(world, samplePoints, headCenter);
+        addUpperBoundingProbePoints(world, samplePoints, headCenter.offset(left, 2));
+        addUpperBoundingProbePoints(world, samplePoints, headCenter.offset(right, 2));
+        addUpperBoundingProbePoints(world, samplePoints, headCenter.offset(direction, 1));
+        addUpperBoundingProbePoints(world, samplePoints, tailCenter);
+        addUpperBoundingProbePoints(world, samplePoints, tailCenter.offset(left, 2));
+        addUpperBoundingProbePoints(world, samplePoints, tailCenter.offset(right, 2));
+        addUpperBoundingProbePoints(world, samplePoints, tailCenter.offset(back, 1));
+
+        return samplePoints;
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void addUpperBoundingProbePoints(World world, List<Vec3d> samplePoints, BlockPos blockPos) {
+        TileEntity tileEntity = world.getTileEntity(blockPos);
+        if (!(tileEntity instanceof TileEntityBoundingBlock boundingBlock) || !getPos().equals(boundingBlock.getMainPos())) {
+            return;
+        }
+        double x = blockPos.getX();
+        double y = blockPos.getY();
+        double z = blockPos.getZ();
+        samplePoints.add(new Vec3d(x + 0.5D, y + 0.5D, z + 0.5D));
+
+        double min = 0.08D;
+        double max = 0.92D;
+        samplePoints.add(new Vec3d(x + min, y + min, z + min));
+        samplePoints.add(new Vec3d(x + min, y + min, z + max));
+        samplePoints.add(new Vec3d(x + min, y + max, z + min));
+        samplePoints.add(new Vec3d(x + min, y + max, z + max));
+        samplePoints.add(new Vec3d(x + max, y + min, z + min));
+        samplePoints.add(new Vec3d(x + max, y + min, z + max));
+        samplePoints.add(new Vec3d(x + max, y + max, z + min));
+        samplePoints.add(new Vec3d(x + max, y + max, z + max));
+    }
+
+    @SideOnly(Side.CLIENT)
+    private double getSelectionWireframeAngle() {
+        double angle = getAngle();
+        if (getActive()) {
+            float partial = Minecraft.getMinecraft().getRenderPartialTicks();
+            angle = (angle + ((getPos().getY() + 46F) / SPEED_SCALED) * partial) % 360D;
+        }
+        return angle < 0D ? angle + 360D : angle;
+    }
+
+    @Override
+    public boolean hasFastRenderer() {
+        return false;
     }
 
 }

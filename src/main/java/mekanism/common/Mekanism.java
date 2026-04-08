@@ -17,7 +17,6 @@ import mekanism.client.render.hud.MekaSuitEnergyLevel;
 import mekanism.client.render.hud.MekanismHUD;
 import mekanism.client.render.hud.MekanismStatusOverlay;
 import mekanism.common.base.IModule;
-import mekanism.common.block.PortalHelper;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.chunkloading.ChunkManager;
 import mekanism.common.command.CommandMek;
@@ -29,6 +28,7 @@ import mekanism.common.content.gear.MekaSuitDispenseBehavior;
 import mekanism.common.content.gear.ModuleDispenseBehavior;
 import mekanism.common.content.gear.ModuleHelper;
 import mekanism.common.content.matrix.SynchronizedMatrixData;
+import mekanism.common.content.sps.SynchronizedSPSData;
 import mekanism.common.content.tank.SynchronizedTankData;
 import mekanism.common.content.transporter.PathfinderCache;
 import mekanism.common.content.transporter.TransporterManager;
@@ -76,8 +76,10 @@ import net.minecraft.dispenser.IBehaviorDispenseItem;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -104,19 +106,31 @@ import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.*;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.registry.EntityEntry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.registries.IForgeRegistryModifiable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
 
-@Mod(modid = Tags.MOD_ID, useMetadata = true, guiFactory = "mekanism.client.gui.ConfigGuiFactory", acceptedMinecraftVersions = "[1.12,1.13)", version = Tags.VERSION)
+@Mod(modid = Tags.MOD_ID,
+        useMetadata = true,
+        guiFactory = "mekanism.client.gui.ConfigGuiFactory",
+        acceptedMinecraftVersions = "[1.12,1.13)",
+        version = Tags.VERSION,
+        customProperties = {
+                @Mod.CustomProperty(k = "license", v = "EUPL-1.2"),
+                @Mod.CustomProperty(k = "issueTrackerUrl", v = "https://github.com/sddsd2332/Mekanism-CE-Unofficial-1.12.2/issues"),
+                @Mod.CustomProperty(k = "iconFile", v = "assets/mekanism/icon.png"),
+                @Mod.CustomProperty(k = "backgroundFile", v = "assets/mekanism/background.png")
+        })
 @Mod.EventBusSubscriber()
 public class Mekanism {
 
@@ -167,6 +181,7 @@ public class Mekanism {
     public static MultiblockManager<SynchronizedMatrixData> matrixManager = new MultiblockManager<>("inductionMatrix");
     public static MultiblockManager<SynchronizedBoilerData> boilerManager = new MultiblockManager<>(
             "thermoelectricBoiler");
+    public static MultiblockManager<SynchronizedSPSData> spsManager = new MultiblockManager<>("supercriticalPhaseShifter");
     /**
      * FrequencyManagers for various networks
      */
@@ -263,6 +278,83 @@ public class Mekanism {
         }
         MekanismRecipe.addRecipes();
         GasConversionHandler.addDefaultGasMappings();
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void removeNuclearCraftShieldingRecipes(RegistryEvent.Register<IRecipe> event) {
+        if (!hooks.NuclearCraft) {
+            return;
+        }
+        if (!(event.getRegistry() instanceof IForgeRegistryModifiable)) {
+            return;
+        }
+        @SuppressWarnings("unchecked")
+        IForgeRegistryModifiable<IRecipe> recipeRegistry = (IForgeRegistryModifiable<IRecipe>) event.getRegistry();
+        int removed = removeNuclearCraftShieldingRecipes(recipeRegistry);
+        if (removed > 0) {
+            logger.info("Removed {} NC shielding recipes for Mek armor during recipe registration.", removed);
+        }
+    }
+
+    private static final String NC_SHIELDING_RECIPE_CLASS = "nc.recipe.vanilla.recipe.ShapelessArmorRadShieldingRecipe";
+    private static final String NC_MOD_ID = "nuclearcraft";
+    private static final String NC_RAD_SHIELDING_ITEM = "rad_shielding";
+
+    private static int removeNuclearCraftShieldingRecipes(IForgeRegistryModifiable<IRecipe> recipeRegistry) {
+        List<ResourceLocation> toRemove = new ArrayList<>();
+        for (IRecipe recipe : recipeRegistry.getValuesCollection()) {
+            if (isNuclearCraftShieldingRecipeForBlockedMekArmor(recipe)) {
+                ResourceLocation recipeName = recipe.getRegistryName();
+                if (recipeName != null) {
+                    toRemove.add(recipeName);
+                }
+            }
+        }
+        for (ResourceLocation recipeName : toRemove) {
+            recipeRegistry.remove(recipeName);
+        }
+        return toRemove.size();
+    }
+
+    private static boolean isNuclearCraftShieldingRecipeForBlockedMekArmor(IRecipe recipe) {
+        if (recipe == null) {
+            return false;
+        }
+        ItemStack output = recipe.getRecipeOutput();
+        if (output.isEmpty() || !isMekArmorBlockedForNCShielding(output.getItem())) {
+            return false;
+        }
+        if (NC_SHIELDING_RECIPE_CLASS.equals(recipe.getClass().getName())) {
+            return true;
+        }
+        ResourceLocation recipeName = recipe.getRegistryName();
+        if (recipeName == null || !NC_MOD_ID.equals(recipeName.getNamespace())) {
+            return false;
+        }
+        return containsNuclearCraftRadShieldingIngredient(recipe) || recipe.getClass().getName().contains("RadShielding");
+    }
+
+    private static boolean containsNuclearCraftRadShieldingIngredient(IRecipe recipe) {
+        for (Ingredient ingredient : recipe.getIngredients()) {
+            if (ingredient == null || ingredient == Ingredient.EMPTY) {
+                continue;
+            }
+            for (ItemStack stack : ingredient.getMatchingStacks()) {
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                ResourceLocation itemName = stack.getItem().getRegistryName();
+                if (itemName != null && NC_MOD_ID.equals(itemName.getNamespace()) && NC_RAD_SHIELDING_ITEM.equals(itemName.getPath())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isMekArmorBlockedForNCShielding(Item item) {
+        return item == MekanismItems.HAZMAT_MASK || item == MekanismItems.HAZMAT_GOWN || item == MekanismItems.HAZMAT_PANTS || item == MekanismItems.HAZMAT_BOOTS ||
+                item == MekanismItems.MEKASUIT_HELMET || item == MekanismItems.MEKASUIT_BODYARMOR || item == MekanismItems.MEKASUIT_PANTS || item == MekanismItems.MEKASUIT_BOOTS;
     }
 
 
@@ -367,6 +459,8 @@ public class Mekanism {
         registerTileEntity(TileEntityIsotopicCentrifuge.class, "isotopic_centrifuge");
         registerTileEntity(TileEntityNutritionalLiquifier.class, "nutritional_liquifier");
         registerTileEntity(TileEntitySuperchargedCoil.class, "supercharged_coil");
+        registerTileEntity(TileEntitySPSCasing.class, "sps_casing");
+        registerTileEntity(TileEntitySPSPort.class, "sps_port");
         registerTileEntity(TileEntityOrganicFarm.class, "organic_farm");
         registerTileEntity(TileEntityAntiprotonicNucleosynthesizer.class, "antiprotonic_nucleosynthesizer");
         registerTileEntity(TileEntityStamping.class, "stamping");
@@ -383,6 +477,7 @@ public class Mekanism {
         registerTileEntity(TileEntityModificationStation.class, "Modification_Station");
         registerTileEntity(TileEntityRadioactiveWasteBarrel.class, "radioactive_waste_barrel");
         registerTileEntity(TileEntitySPS.class, "sps");
+        registerTileEntity(TileEntityDimensionalStabilizer.class, "dimensional_stabilizer");
         /**
          * End of adding machine
          */
@@ -428,6 +523,22 @@ public class Mekanism {
     @EventHandler
     public void loadComplete(FMLInterModComms.IMCEvent event) {
         new IMCHandler().onIMCEvent(event.getMessages());
+    }
+
+    @EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        if (!hooks.NuclearCraft) {
+            return;
+        }
+        if (!(ForgeRegistries.RECIPES instanceof IForgeRegistryModifiable)) {
+            return;
+        }
+        @SuppressWarnings("unchecked")
+        IForgeRegistryModifiable<IRecipe> recipeRegistry = (IForgeRegistryModifiable<IRecipe>) ForgeRegistries.RECIPES;
+        int removed = removeNuclearCraftShieldingRecipes(recipeRegistry);
+        if (removed > 0) {
+            logger.info("Removed {} NC shielding recipes for Mek armor during load complete.", removed);
+        }
     }
 
     @EventHandler
@@ -577,7 +688,7 @@ public class Mekanism {
     }
 
     private void imcQueue() {
-        Item[] addModulesToAll = {MekanismItems.MEKASUIT_HELMET, MekanismItems.MEKASUIT_BODYARMOR, MekanismItems.MEKASUIT_PANTS, MekanismItems.MEKASUIT_BOOTS, MekanismItems.MEKA_TOOL};
+        Item[] addModulesToAll = {MekanismItems.MEKASUIT_HELMET, MekanismItems.MEKASUIT_BODYARMOR, MekanismItems.MEKASUIT_PANTS, MekanismItems.MEKASUIT_BOOTS, MekanismItems.MEKA_TOOL, MekanismItems.MEKA_FISHING_ROD};
         Item[] addMekaSuitModules = new Item[]{MekanismItems.MEKASUIT_HELMET, MekanismItems.MEKASUIT_BODYARMOR, MekanismItems.MEKASUIT_PANTS, MekanismItems.MEKASUIT_BOOTS};
 
         for (Item stack : addModulesToAll) {
@@ -603,6 +714,8 @@ public class Mekanism {
         ModuleHelper.get().setSupported(MekanismItems.MEKASUIT_PANTS, MekanismModules.LOCOMOTIVE_BOOSTING_UNIT, MekanismModules.GYROSCOPIC_STABILIZATION_UNIT, MekanismModules.HYDROSTATIC_REPULSOR_UNIT, MekanismModules.MOTORIZED_SERVO_UNIT);
 
         ModuleHelper.get().setSupported(MekanismItems.MEKASUIT_BOOTS, MekanismModules.HYDRAULIC_PROPULSION_UNIT, MekanismModules.MAGNETIC_ATTRACTION_UNIT, MekanismModules.FROST_WALKER_UNIT);
+
+        ModuleHelper.get().setSupported(MekanismItems.MEKA_FISHING_ROD, MekanismModules.FISHING_COLLECTING_UNIT, MekanismModules.FISHING_SPEED_UNIT, MekanismModules.FISHING_INTELLIGENT_UNIT, MekanismModules.FISHING_MULTIPLE_UNIT);
     }
 
 
@@ -618,7 +731,7 @@ public class Mekanism {
         });
         ModuleHelper.get().processSupportedContainers();
         hooks.hookPostInit();
-
+        MekanismRecipe.SuperFumoReciperRegister();
         MinecraftForge.EVENT_BUS.post(new BoxBlacklistEvent());
         Mekanism.proxy.postInit();
         logger.info("Hooking complete.");

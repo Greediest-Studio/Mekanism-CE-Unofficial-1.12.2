@@ -2,6 +2,7 @@ package mekanism.coremod;
 
 
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraft.launchwrapper.Launch;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -14,6 +15,37 @@ import static mekanism.coremod.MekanismCoremod.runtimeDeobfEnabled;
 import static org.objectweb.asm.Opcodes.*;
 
 public class MekanismCoreTransformer implements IClassTransformer {
+
+    private static final class SafeClassWriter extends ClassWriter {
+
+        private SafeClassWriter(int flags) {
+            super(flags);
+        }
+
+        @Override
+        protected String getCommonSuperClass(String type1, String type2) {
+            try {
+                ClassLoader classLoader = Launch.classLoader != null ? Launch.classLoader : getClass().getClassLoader();
+                Class<?> class1 = Class.forName(type1.replace('/', '.'), false, classLoader);
+                Class<?> class2 = Class.forName(type2.replace('/', '.'), false, classLoader);
+                if (class1.isAssignableFrom(class2)) {
+                    return type1;
+                }
+                if (class2.isAssignableFrom(class1)) {
+                    return type2;
+                }
+                if (class1.isInterface() || class2.isInterface()) {
+                    return "java/lang/Object";
+                }
+                do {
+                    class1 = class1.getSuperclass();
+                } while (class1 != null && !class1.isAssignableFrom(class2));
+                return class1 == null ? "java/lang/Object" : class1.getName().replace('.', '/');
+            } catch (Throwable ignored) {
+                return "java/lang/Object";
+            }
+        }
+    }
 
     protected static class ObfSafeName {
         final String deobf, srg;
@@ -60,6 +92,12 @@ public class MekanismCoreTransformer implements IClassTransformer {
     static final ObfSafeName renderItemOverlayIntoGUIMethod = new ObfSafeName("renderItemOverlayIntoGUI", "func_180453_a");
     static final ObfSafeName renderItemAndEffectIntoGUI = new ObfSafeName("renderItemAndEffectIntoGUI", "func_184391_a");
     static final ObfSafeName renderItemDisplayName = new ObfSafeName("renderItemAndEffectIntoGUI, renderItemOverlayIntoGUI", "func_180453_a, func_184391_a");
+    static final String tileEntityRendererDispatcherClass = "net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher";
+    static final String tileEntityRenderMethodDesc = "(Lnet/minecraft/tileentity/TileEntity;FI)V";
+    static final ObfSafeName tileEntityRenderMethodName = new ObfSafeName("render", "func_192855_a");
+    static final String coreMethodsClass = "mekanism/coremod/MekanismCoreMethods";
+    static final String occlusionHookMethod = "shouldCullTileEntityForOcclusion";
+    static final String occlusionHookDesc = "(Lnet/minecraft/tileentity/TileEntity;)Z";
 
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
@@ -137,8 +175,66 @@ public class MekanismCoreTransformer implements IClassTransformer {
                 }
             });
         }
+        if (transformedName.equals(tileEntityRendererDispatcherClass)) {
+            return transform(basicClass, tileEntityRendererDispatcherClass, tileEntityRenderMethodName, new Transform() {
+                @Override
+                void transform(Iterator<MethodNode> methods) {
+                    boolean transformed = false;
+                    while (methods.hasNext()) {
+                        MethodNode m = methods.next();
+                        if (!tileEntityRenderMethodDesc.equals(m.desc)) {
+                            continue;
+                        }
+                        if (containsOcclusionHook(m)) {
+                            mainLogger.info("Occlusion culling hook already present in method: " + m.name + m.desc);
+                            transformed = true;
+                            break;
+                        }
+
+                        AbstractInsnNode first = m.instructions.getFirst();
+                        if (first == null) {
+                            break;
+                        }
+
+                        // Use a dedicated jump target label with an explicit frame.
+                        // Jumping to the original first instruction can fail bytecode verification because
+                        // that offset often has no explicit stack map frame.
+                        LabelNode continueLabel = new LabelNode(new Label());
+                        InsnList toAdd = new InsnList();
+                        toAdd.add(new VarInsnNode(ALOAD, 1));
+                        toAdd.add(new MethodInsnNode(INVOKESTATIC, coreMethodsClass, occlusionHookMethod, occlusionHookDesc, false));
+                        toAdd.add(new JumpInsnNode(IFEQ, continueLabel));
+                        toAdd.add(new InsnNode(RETURN));
+                        toAdd.add(continueLabel);
+                        toAdd.add(new FrameNode(F_SAME, 0, null, 0, null));
+                        m.instructions.insertBefore(first, toAdd);
+                        transformed = true;
+                        mainLogger.info("Injected occlusion culling hook into " + m.name + m.desc);
+                        break;
+                    }
+                    if (!transformed) {
+                        mainLogger.warn("Failed to transform {} method {}.", tileEntityRendererDispatcherClass, tileEntityRenderMethodDesc);
+                    }
+                }
+            });
+        }
         return basicClass;
 
+    }
+
+    private static boolean containsOcclusionHook(MethodNode methodNode) {
+        for (int i = 0; i < methodNode.instructions.size(); i++) {
+            AbstractInsnNode next = methodNode.instructions.get(i);
+            if (!(next instanceof MethodInsnNode)) {
+                continue;
+            }
+            MethodInsnNode methodInsnNode = (MethodInsnNode) next;
+            if (INVOKESTATIC == methodInsnNode.getOpcode() && coreMethodsClass.equals(methodInsnNode.owner)
+                    && occlusionHookMethod.equals(methodInsnNode.name) && occlusionHookDesc.equals(methodInsnNode.desc)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -147,13 +243,13 @@ public class MekanismCoreTransformer implements IClassTransformer {
 
         ClassNode classNode = new ClassNode();
         ClassReader classReader = new ClassReader(classBytes);
-        classReader.accept(classNode, 0);
+        classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 
         Iterator<MethodNode> methods = classNode.methods.iterator();
 
         transformer.transform(methods);
 
-        ClassWriter cw = new ClassWriter(0);
+        ClassWriter cw = new SafeClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         classNode.accept(cw);
         mainLogger.info("Transforming " + className + " Finished.");
         return cw.toByteArray();

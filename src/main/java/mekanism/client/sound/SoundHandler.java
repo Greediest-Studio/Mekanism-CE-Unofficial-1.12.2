@@ -273,8 +273,8 @@ public class SoundHandler {
             // Pull the TE from the sound position and see if supports muffling upgrades. If it does, calculate what
             // percentage of the original volume should be muted
             TileEntity te = mc.world.getTileEntity(new BlockPos(original.getXPosF(), original.getYPosF(), original.getZPosF()));
-            if (te instanceof IUpgradeTile && ((IUpgradeTile) te).getComponent().supports(Upgrade.MUFFLING)) {
-                int mufflerCount = ((IUpgradeTile) te).getComponent().getUpgrades(Upgrade.MUFFLING);
+            if (te instanceof IUpgradeTile tile && tile.supportsUpgrade(Upgrade.MUFFLING)) {
+                int mufflerCount = tile.getComponent().getUpgrades(Upgrade.MUFFLING);
                 return 1.0f - (mufflerCount / (float) Upgrade.MUFFLING.getMaxInstalled());
             }
             return 1.0f;

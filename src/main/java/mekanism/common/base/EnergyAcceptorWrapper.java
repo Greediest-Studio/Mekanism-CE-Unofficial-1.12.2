@@ -6,6 +6,7 @@ import ic2.api.energy.tile.IEnergySink;
 import ic2.api.energy.tile.IEnergyTile;
 import mekanism.api.Coord4D;
 import mekanism.api.energy.IStrictEnergyAcceptor;
+import mekanism.common.Mekanism;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.fluxnetworks.FluxPlugAcceptor;
 import mekanism.common.integration.forgeenergy.ForgeEnergyIntegration;
@@ -156,6 +157,9 @@ public abstract class EnergyAcceptorWrapper implements IStrictEnergyAcceptor {
             if (simulate) {
                 //IC2 has no built in way to simulate, so we have to calculate it ourselves
                 return IC2Integration.fromEU(toTransfer);
+            }
+            if(Mekanism.hooks.IC2CLoaded) {
+                toTransfer = Math.min(toTransfer, EnergyNet.instance.getPowerFromTier(acceptor.getSinkTier()));
             }
             double rejects = acceptor.injectEnergy(side, toTransfer, 0);
             return IC2Integration.fromEU(toTransfer - rejects);

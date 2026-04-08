@@ -2,6 +2,7 @@ package mekanism.common.item;
 
 import mekanism.common.base.IMetaItem;
 import mekanism.common.tier.BaseTier;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
@@ -17,7 +18,7 @@ public class ItemControlCircuit extends ItemMekanism implements IMetaItem {
 
     @Override
     public String getTexture(int meta) {
-        return BaseTier.values()[meta].getSimpleName() + "ControlCircuit";
+        return MekanismUtils.getByIndex(BaseTier.values(), meta, BaseTier.BASIC).getSimpleName() + "ControlCircuit";
     }
 
     @Override
@@ -37,12 +38,12 @@ public class ItemControlCircuit extends ItemMekanism implements IMetaItem {
     @Nonnull
     @Override
     public String getTranslationKey(ItemStack item) {
-        return "item." + BaseTier.values()[item.getItemDamage()].getSimpleName() + "ControlCircuit";
+        return "item." + MekanismUtils.getByIndex(BaseTier.values(), item.getItemDamage(), BaseTier.BASIC).getSimpleName() + "ControlCircuit";
     }
 
     @Nonnull
     @Override
     public String getItemStackDisplayName(@Nonnull ItemStack itemstack) {
-        return BaseTier.values()[itemstack.getItemDamage()].getColor() + super.getItemStackDisplayName(itemstack);
+        return MekanismUtils.getByIndex(BaseTier.values(), itemstack.getItemDamage(), BaseTier.BASIC).getColor() + super.getItemStackDisplayName(itemstack);
     }
 }

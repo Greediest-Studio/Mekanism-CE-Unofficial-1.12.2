@@ -16,13 +16,15 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @SuppressWarnings("unused")//IMC bound
 public class TOPProvider implements Function<ITheOneProbe, Void>, IProbeInfoProvider {
 
-    private boolean displayFluidTanks;
-    private ConfigMode tankMode = ConfigMode.EXTENDED;
+    private BooleanSupplier displayFluidTanks;
+    private Supplier<ConfigMode> tankMode = () -> ConfigMode.EXTENDED;
     static int ENERGY_ELEMENT_ID;
     static int FLUID_ELEMENT_ID;
     static int GAS_ELEMENT_ID;
@@ -36,8 +38,8 @@ public class TOPProvider implements Function<ITheOneProbe, Void>, IProbeInfoProv
         GAS_ELEMENT_ID = probe.registerElementFactory(GasElement::new);
         //Grab the default view settings
         IProbeConfig probeConfig = probe.createProbeConfig();
-        displayFluidTanks = probeConfig.getTankMode() > 0;
-        tankMode = probeConfig.getShowTankSetting();
+        displayFluidTanks = () -> probeConfig.getTankMode() > 0;
+        tankMode = probeConfig::getShowTankSetting;
         return null;
     }
 
@@ -62,19 +64,16 @@ public class TOPProvider implements Function<ITheOneProbe, Void>, IProbeInfoProv
         }
         TileEntity energyTile = WorldUtils.getTileEntity(world, pos);
         if (energyTile != null) {
-            LookingAtUtils.addInfo(new TOPLookingAtHelper(info), energyTile, displayTanks(mode), displayFluidTanks);
+            LookingAtUtils.addInfo(new TOPLookingAtHelper(info), energyTile, displayTanks(mode), displayFluidTanks.getAsBoolean());
         }
     }
 
     private boolean displayTanks(ProbeMode mode) {
-        if (tankMode == ConfigMode.NOT) {
-            //Don't display tanks
-            return false;
-        }
-        if (tankMode == ConfigMode.NORMAL) {
-            return mode == ProbeMode.NORMAL;
-        }
-        return mode == ProbeMode.EXTENDED;
+        return switch (tankMode.get()) {
+            case NOT -> false;//Don't display tanks
+            case NORMAL -> mode == ProbeMode.NORMAL;
+            case EXTENDED -> true;
+        };
     }
 
 

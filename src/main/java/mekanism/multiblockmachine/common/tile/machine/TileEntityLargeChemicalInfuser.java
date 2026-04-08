@@ -7,10 +7,7 @@ import mekanism.api.gas.*;
 import mekanism.common.Mekanism;
 import mekanism.common.Upgrade;
 import mekanism.common.Upgrade.IUpgradeInfoHandler;
-import mekanism.common.base.IAdvancedBoundingBlock;
-import mekanism.common.base.IGuiProvider;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
@@ -32,6 +29,8 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +38,7 @@ import javax.annotation.Nonnull;
 import java.util.*;
 
 public class TileEntityLargeChemicalInfuser extends TileEntityBasicMachine<ChemicalPairInput, GasOutput, ChemicalInfuserRecipe> implements IGasHandler, ISustainedData, IUpgradeInfoHandler,
-        ITankManager, IAdvancedBoundingBlock {
+        ITankManager, IAdvancedBoundingBlock, ISpecialSelectionWireframeTile {
 
     public static final int MAX_GAS = 8192000;
     public GasTank leftTank = new GasTank(MAX_GAS);
@@ -135,8 +134,9 @@ public class TileEntityLargeChemicalInfuser extends TileEntityBasicMachine<Chemi
 
     @Override
     public void addTileSyncTask() {
-        this.gasSpeedController.ensureSize(1, () -> Collections.singletonList(new TankProvider.Gas(centerTank)));
-        handleTank(centerTank, getTankside());
+        this.gasSpeedController.ensureSize(2, () -> Arrays.asList(new TankProvider.Gas(centerTank), new TankProvider.Gas(centerTank)));
+        handleTank(centerTank, getLeftTankside(), 0);
+        handleTank(centerTank, getRightTankside(), 1);
         int newRedstoneLevel = getRedstoneLevel();
         if (newRedstoneLevel != currentRedstoneLevel) {
             world.updateComparatorOutputLevel(pos, getBlockType());
@@ -144,34 +144,39 @@ public class TileEntityLargeChemicalInfuser extends TileEntityBasicMachine<Chemi
         }
     }
 
-    private TileEntity getTankside() {
+    private TileEntity getLeftTankside() {
         BlockPos left = getPos().offset(facing).offset(MekanismUtils.getLeft(facing));
-        BlockPos right = getPos().offset(facing).offset(MekanismUtils.getRight(facing));
         if (world.getTileEntity(left) != null) {
             return world.getTileEntity(left);
-        } else if (world.getTileEntity(right) != null) {
+        }
+        return null;
+    }
+
+    private TileEntity getRightTankside() {
+        BlockPos right = getPos().offset(facing).offset(MekanismUtils.getRight(facing));
+        if (world.getTileEntity(right) != null) {
             return world.getTileEntity(right);
         }
         return null;
     }
 
-    private void handleTank(GasTank tank, TileEntity tile) {
+    private void handleTank(GasTank tank, TileEntity tile, int tankIdx) {
         if (tile != null) {
-            ejectGas(EnumSet.of(facing), tank, this.gasSpeedController, tile);
+            ejectGas(EnumSet.of(facing), tank, this.gasSpeedController, tankIdx, tile);
         }
     }
 
-    private void ejectGas(Set<EnumFacing> outputSides, GasTank tank, EjectSpeedController speedController, TileEntity tile) {
-        speedController.record(0);
+    private void ejectGas(Set<EnumFacing> outputSides, GasTank tank, EjectSpeedController speedController, int tankIdx, TileEntity tile) {
+        speedController.record(tankIdx);
         if (tank.getGas() == null || tank.getStored() <= 0 || tank.getGas().getGas() == null) {
             return;
         }
-        if (!speedController.canEject(0)) {
+        if (!speedController.canEject(tankIdx)) {
             return;
         }
         GasStack toEmit = tank.getGas().copy().withAmount(Math.min(tank.getMaxGas(), tank.getStored()));
         int emitted = GasUtils.emit(toEmit, tile, outputSides);
-        speedController.eject(0, emitted);
+        speedController.eject(tankIdx, emitted);
         if (emitted <= 0) {
             return;
         }
@@ -645,5 +650,16 @@ public class TileEntityLargeChemicalInfuser extends TileEntityBasicMachine<Chemi
             Mekanism.packetHandler.sendUpdatePacket(this);
             updateDelay = 10;
         }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.multiblockmachine.client.model.machine.ModelLargeChemicalInfuser.class;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

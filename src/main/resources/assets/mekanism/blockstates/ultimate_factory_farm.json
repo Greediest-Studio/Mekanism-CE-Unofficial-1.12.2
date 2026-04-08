@@ -1,34 +1,35 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmLeft",
-                  "south": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmBack",
-                  "west": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmRight",
-                  "sides": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmRight",
-                  "front": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmFront",
-                  "up": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/ultimate"
+    },
+    "model": "mekanism:factory_organic_farm"
+  },
+  "variants": {
+    "facing": {
+      "east": {
+        "y": 90
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmLeftOn",
-                        "south": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmBackOn",
-                        "west": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmRightOn",
-                        "front": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmFrontOn",
-                        "up": "mekanism:blocks/factory/ultimate/organicfarm/OrganicFarmTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
+      "south": {
+        "y": 180
+      },
+      "north": {},
+      "west": {
+        "y": -90
       }
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/ultimate"
+        },
+        "model": "mekanism:factory_organic_farm_active"
+      },
+      "false": {}
+    },
+    "inventory": [
+      {}
+    ]
+  }
 }

@@ -53,6 +53,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.ChunkCache;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
@@ -61,6 +62,8 @@ import net.minecraftforge.common.util.Constants.WorldEvents;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
@@ -69,7 +72,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class TileEntityDigitalMiner extends TileEntityElectricBlock implements IUpgradeTile, IRedstoneControl, IActiveState, ISustainedData, IChunkLoader, IAdvancedBoundingBlock, IHasVisualization,IMachineSlotTip {
+public class TileEntityDigitalMiner extends TileEntityElectricBlock implements IUpgradeTile, IRedstoneControl, IActiveState, ISustainedData, IChunkLoader, IAdvancedBoundingBlock, IHasVisualization,IMachineSlotTip, ISpecialSelectionWireframeTile {
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_NORTH = {
+            ISpecialSelectionWireframeTile.SelectionTransform.translate(0.0D, 0.0D, -1.0D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_SOUTH = {
+            ISpecialSelectionWireframeTile.SelectionTransform.translate(0.0D, 0.0D, -1.0D),
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(180.0D, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_WEST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.translate(0.0D, 0.0D, -1.0D),
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(90.0D, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_EAST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.translate(0.0D, 0.0D, -1.0D),
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(270.0D, 0.5D, 0.5D, 0.5D)
+    };
 
     private static final int[] INV_SLOTS = IntStream.range(0, 28).toArray(); // 0..26 storage, 27 energy; pickaxe at 28 is not exposed for automation
 
@@ -320,7 +338,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         radius = newRadius;
         // If the radius changed and we're on the server, go ahead and refresh
         // the chunk set
-        if (changed && hasWorld() && isRemote()) {
+        if (changed && hasWorld() && !isRemote()) {
             chunkSet = null;
             getChunkSet();
         }
@@ -330,8 +348,11 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
      * returns false if unsuccessful
      */
     public boolean setReplace(Coord4D obj, int index) {
-        ItemStack stack = getReplace(index);
         BlockPos pos = obj.getPos();
+        if (!world.isBlockLoaded(pos)) {
+            return false;
+        }
+        ItemStack stack = getReplace(index);
         EntityPlayer fakePlayer = Objects.requireNonNull(Mekanism.proxy.getDummyPlayer((WorldServer) world, this.pos).get());
 
         //if its a shulker box, remove it TE so it can't drop itself in breakBlock - we've already captured its itemblock
@@ -343,17 +364,35 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         }
 
         if (!stack.isEmpty()) {
-            world.setBlockState(pos, StackUtils.getStateForPlacement(stack, world, pos, fakePlayer), 3);
+            if (!world.setBlockState(pos, StackUtils.getStateForPlacement(stack, world, pos, fakePlayer), 3)) {
+                if (tileEntityShulkerBox != null) {
+                    tileEntityShulkerBox.validate();
+                    world.setTileEntity(pos, tileEntityShulkerBox);
+                }
+                return false;
+            }
             IBlockState s = obj.getBlockState(world);
             if (s.getBlock() instanceof BlockBush blockBush && !blockBush.canBlockStay(world, pos, s)) {
                 s.getBlock().dropBlockAsItem(world, pos, s, 1);
-                world.setBlockToAir(pos);
+                if (!world.setBlockToAir(pos)) {
+                    if (tileEntityShulkerBox != null) {
+                        tileEntityShulkerBox.validate();
+                        world.setTileEntity(pos, tileEntityShulkerBox);
+                    }
+                    return false;
+                }
             }
             return true;
         } else {
             MinerFilter filter = replaceMap.get(index);
             if (filter == null || filter.replaceStack.isEmpty() || !filter.requireStack) {
-                world.setBlockToAir(pos);
+                if (!world.setBlockToAir(pos)) {
+                    if (tileEntityShulkerBox != null) {
+                        tileEntityShulkerBox.validate();
+                        world.setTileEntity(pos, tileEntityShulkerBox);
+                    }
+                    return false;
+                }
                 return true;
             }
             missingStack = filter.replaceStack;
@@ -577,8 +616,8 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         running = nbtTags.getBoolean("running");
         delay = nbtTags.getInteger("delay");
         numPowering = nbtTags.getInteger("numPowering");
-        searcher.state = State.values()[nbtTags.getInteger("state")];
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        searcher.state = MekanismUtils.getByIndex(State.values(), nbtTags.getInteger("state"), searcher.state);
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         setConfigurationData(nbtTags);
         // Load level (default 0 if not present)
         if (nbtTags.hasKey("level")) {
@@ -615,9 +654,9 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         running = dataStream.readBoolean();
         silkTouch = dataStream.readBoolean();
         numPowering = dataStream.readInt();
-        searcher.state = State.values()[dataStream.readInt()];
+        searcher.state = MekanismUtils.getByIndex(State.values(), dataStream.readInt(), searcher.state);
         clientToMine = dataStream.readInt();
-        controlType = RedstoneControl.values()[dataStream.readInt()];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
         inverse = dataStream.readBoolean();
         if (dataStream.readBoolean()) {
             missingStack = new ItemStack(Item.getItemById(dataStream.readInt()), 1, dataStream.readInt());
@@ -647,14 +686,18 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 case 11 -> {
                     // Move filter up
                     int filterIndex = dataStream.readInt();
-                    filters.swap(filterIndex, filterIndex - 1);
-                    playersUsing.forEach(this::openInventory);
+                    if (filterIndex > 0 && filterIndex < filters.size()) {
+                        filters.swap(filterIndex, filterIndex - 1);
+                        playersUsing.forEach(this::openInventory);
+                    }
                 }
                 case 12 -> {
                     // Move filter down
                     int filterIndex = dataStream.readInt();
-                    filters.swap(filterIndex, filterIndex + 1);
-                    playersUsing.forEach(this::openInventory);
+                    if (filterIndex >= 0 && filterIndex < filters.size() - 1) {
+                        filters.swap(filterIndex, filterIndex + 1);
+                        playersUsing.forEach(this::openInventory);
+                    }
                 }
             }
 
@@ -672,7 +715,10 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 filters.clear();
                 int amount = dataStream.readInt();
                 for (int i = 0; i < amount; i++) {
-                    filters.add(MinerFilter.readFromPacket(dataStream));
+                    MinerFilter filter = MinerFilter.readFromPacket(dataStream);
+                    if (filter != null) {
+                        filters.add(filter);
+                    }
                 }
             } else if (type == 1) {
                 readBasicData(dataStream);
@@ -680,7 +726,10 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 filters.clear();
                 int amount = dataStream.readInt();
                 for (int i = 0; i < amount; i++) {
-                    filters.add(MinerFilter.readFromPacket(dataStream));
+                    MinerFilter filter = MinerFilter.readFromPacket(dataStream);
+                    if (filter != null) {
+                        filters.add(filter);
+                    }
                 }
             } else if (type == 3) {
                 clientActive = dataStream.readBoolean();
@@ -1067,10 +1116,14 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         doPull = nbtTags.getBoolean("doPull");
         silkTouch = nbtTags.getBoolean("silkTouch");
         inverse = nbtTags.getBoolean("inverse");
+        filters.clear();
         if (nbtTags.hasKey("filters")) {
             NBTTagList tagList = nbtTags.getTagList("filters", NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.tagCount(); i++) {
-                filters.add(MinerFilter.readFromNBT(tagList.getCompoundTagAt(i)));
+                MinerFilter filter = MinerFilter.readFromNBT(tagList.getCompoundTagAt(i));
+                if (filter != null) {
+                    filters.add(filter);
+                }
             }
         }
     }
@@ -1111,11 +1164,15 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
             doPull = ItemDataUtils.getBoolean(itemStack, "doPull");
             silkTouch = ItemDataUtils.getBoolean(itemStack, "silkTouch");
             inverse = ItemDataUtils.getBoolean(itemStack, "inverse");
+            filters.clear();
 
             if (ItemDataUtils.hasData(itemStack, "filters")) {
                 NBTTagList tagList = ItemDataUtils.getList(itemStack, "filters");
                 for (int i = 0; i < tagList.tagCount(); i++) {
-                    filters.add(MinerFilter.readFromNBT(tagList.getCompoundTagAt(i)));
+                    MinerFilter filter = MinerFilter.readFromNBT(tagList.getCompoundTagAt(i));
+                    if (filter != null) {
+                        filters.add(filter);
+                    }
                 }
             }
         }
@@ -1322,5 +1379,27 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelDigitalMiner.class;
+    }
+
+    @Override
+    public boolean shouldApplyDefaultSelectionWireframeFacingRotation(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return false;
+    }
+
+    @Override
+    public ISpecialSelectionWireframeTile.SelectionTransform[] getSelectionWireframeTransforms(IBlockState state, IBlockAccess world, BlockPos pos) {
+        EnumFacing currentFacing = facing == null ? EnumFacing.NORTH : facing;
+        return switch (currentFacing) {
+            case SOUTH -> SELECTION_ROTATE_SOUTH;
+            case WEST -> SELECTION_ROTATE_WEST;
+            case EAST -> SELECTION_ROTATE_EAST;
+            default -> SELECTION_ROTATE_NORTH;
+        };
     }
 }

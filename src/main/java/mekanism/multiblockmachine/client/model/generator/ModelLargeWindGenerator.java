@@ -18,8 +18,9 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class ModelLargeWindGenerator extends ModelBase {
 
-    public static ResourceLocation OVERLAY_OFF = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_OFF.png");
-
+    public static final ResourceLocation OVERLAY_OFF = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_OFF.png");
+    public static final ResourceLocation OVERLAY_ON_0 = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_0.png");
+    public static final ResourceLocation OVERLAY_ON_1 = MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_1.png");
     ModelRenderer doll_up;
     ModelRenderer cube_r1;
     ModelRenderer cube_r2;
@@ -1925,10 +1926,16 @@ public class ModelLargeWindGenerator extends ModelBase {
     }
 
     public void renderBlock(double tick, float size, double angle, boolean on, TextureManager manager, boolean isEnableGlow) {
+        renderBlock(tick, size, angle, on, manager, isEnableGlow, true);
+    }
+
+    public void renderBlock(double tick, float size, double angle, boolean on, TextureManager manager, boolean isEnableGlow, boolean renderFans) {
         GlStateManager.pushMatrix();
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
         doRender(size);
-        doRenderFansBlock(size, angle);
+        if (renderFans) {
+            doRenderFansBlock(size, angle);
+        }
         GlStateManager.popMatrix();
         if (isEnableGlow) {
             GlStateManager.pushMatrix();
@@ -1936,11 +1943,11 @@ public class ModelLargeWindGenerator extends ModelBase {
             GlStateManager.disableAlpha();
             GlStateManager.enableBlend();
             GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            manager.bindTexture(on ? MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
+            manager.bindTexture(on ? (getTick(tick) == 0 ? OVERLAY_ON_0 : OVERLAY_ON_1) : OVERLAY_OFF);
             GlStateManager.scale(1.001F, 1.001F, 1.001F);
             GlStateManager.translate(-0.0011F, -0.0011F, -0.0011F);
             MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
-            doRenderGlow(size, angle);
+            doRenderGlow(size, angle, renderFans);
             MekanismRenderer.disableGlow(glowInfo);
             GlStateManager.disableBlend();
             GlStateManager.enableAlpha();
@@ -1954,11 +1961,11 @@ public class ModelLargeWindGenerator extends ModelBase {
         GlStateManager.disableAlpha();
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        manager.bindTexture(on ? MekanismUtils.getResource(MekanismMultiblockMachine.MODID, ResourceType.RENDER, "WindGenerator/LargeWindGenerator_ON_" + getTick(tick) + ".png") : OVERLAY_OFF);
+        manager.bindTexture(on ? (getTick(tick) == 0 ? OVERLAY_ON_0 : OVERLAY_ON_1) : OVERLAY_OFF);
         GlStateManager.scale(1.0011F, 1.0011F, 1.0011F);
         GlStateManager.translate(-0.0012F, -0.0012F, -0.0012F);
         MekanismRenderer.GlowInfo glowInfo = MekanismRenderer.enableGlow();
-        doRenderGlow(size, angle);
+        doRenderGlow(size, angle, true);
         MekanismRenderer.disableGlow(glowInfo);
         GlStateManager.disableBlend();
         GlStateManager.enableAlpha();
@@ -1994,13 +2001,21 @@ public class ModelLargeWindGenerator extends ModelBase {
         fans.render(size);
     }
 
-    private void doRenderGlow(float size, double angle) {
+    private void doRenderGlow(float size, double angle, boolean renderFans) {
         wind_power_middle.render(size);
-        doRenderFansBlock(size, angle);
+        if (renderFans) {
+            doRenderFansBlock(size, angle);
+        }
         south_controller.render(size);
         west_io.render(size);
         east_io.render(size);
         north_io.render(size);
+    }
+
+    public void applySelectionFanAngle(double angle) {
+        if (MekanismConfig.current().client.windGeneratorRotating.val()) {
+            setRotation(fans, 0F, 0F, getRotation(getAbsoluteAngle(angle)));
+        }
     }
 
 
@@ -2024,4 +2039,5 @@ public class ModelLargeWindGenerator extends ModelBase {
         }
         return 0;
     }
+
 }

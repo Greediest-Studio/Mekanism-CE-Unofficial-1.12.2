@@ -379,11 +379,14 @@ public class ModelSeismicVibrator extends ModelBase {
     }
 
     public void renderWithPiston(float piston, float size) {
+        setPiston(piston);
+        render(size);
+    }
+
+    public void setPiston(float piston) {
         shaft1.rotationPointY = 6 - (piston * 12);
         plate2.rotationPointY = 21 - (piston * 12);
         plate3.rotationPointY = 22 - (piston * 12);
-
-        render(size);
     }
 
     private void setRotation(ModelRenderer model, float x, float y, float z) {

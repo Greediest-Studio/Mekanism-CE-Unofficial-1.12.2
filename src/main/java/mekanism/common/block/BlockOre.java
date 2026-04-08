@@ -4,6 +4,7 @@ import mekanism.common.Mekanism;
 import mekanism.common.MekanismItems;
 import mekanism.common.block.states.BlockStateOre;
 import mekanism.common.block.states.BlockStateOre.EnumOreType;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.BlockStateContainer;
@@ -33,6 +34,7 @@ public class BlockOre extends Block {
         setHardness(3F);
         setResistance(5F);
         setCreativeTab(Mekanism.tabMekanism);
+        setHarvestLevel("pickaxe", 1);
     }
 
     @Nonnull
@@ -45,7 +47,7 @@ public class BlockOre extends Block {
     @Override
     @Deprecated
     public IBlockState getStateFromMeta(int meta) {
-        return getDefaultState().withProperty(BlockStateOre.typeProperty, EnumOreType.values()[meta]);
+        return getDefaultState().withProperty(BlockStateOre.typeProperty, MekanismUtils.getByIndex(EnumOreType.values(), meta, EnumOreType.OSMIUM));
     }
 
     @Override

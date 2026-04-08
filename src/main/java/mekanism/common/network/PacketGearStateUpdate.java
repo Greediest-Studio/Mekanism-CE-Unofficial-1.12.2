@@ -5,8 +5,8 @@ import mekanism.common.Mekanism;
 import mekanism.common.PacketHandler;
 import mekanism.common.network.PacketGearStateUpdate.GearStateUpdateMessage;
 import mekanism.common.network.PacketPlayerData.PlayerDataMessage;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -22,25 +22,21 @@ public class PacketGearStateUpdate implements IMessageHandler<GearStateUpdateMes
             return null;
         }
         PacketHandler.handlePacket(() -> {
-            if (message.uuid ==null){
-                return;
-            }
+            UUID playerUUID = player.getUniqueID();
             try {
                 if (message.gearType == GearType.FLAMETHROWER) {
-                    Mekanism.playerState.setFlamethrowerState(message.uuid, message.state, false);
+                    Mekanism.playerState.setFlamethrowerState(playerUUID, message.state, false);
                 } else if (message.gearType == GearType.JETPACK) {
-                    Mekanism.playerState.setJetpackState(message.uuid, message.state, false);
+                    Mekanism.playerState.setJetpackState(playerUUID, message.state, false);
                 } else if (message.gearType == GearType.SCUBA_MASK) {
-                    Mekanism.playerState.setScubaMaskState(message.uuid, message.state, false);
+                    Mekanism.playerState.setScubaMaskState(playerUUID, message.state, false);
                 } else if (message.gearType == GearType.GRAVITATIONAL_MODULATOR) {
-                    Mekanism.playerState.setGravitationalModulationState(message.uuid, message.state, false);
+                    Mekanism.playerState.setGravitationalModulationState(playerUUID, message.state, false);
                 }
                 //If we got this packet on the server, inform all clients tracking the changed player
-                if (player != null) {
-                    //Note: We just resend all the data for the updated player as the packet size is about the same
-                    // and this allows us to separate the packet into a server to client and client to server packet
-                    Mekanism.packetHandler.sendTo(new PlayerDataMessage(message.uuid), (EntityPlayerMP) player);
-                }
+                //Note: We just resend all the data for the updated player as the packet size is about the same
+                // and this allows us to separate the packet into a server to client and client to server packet
+                Mekanism.packetHandler.sendToAllTracking(new PlayerDataMessage(playerUUID), player);
             } catch (Exception e) {
                 Mekanism.logger.error("FIXME: Packet handling error", e);
             }
@@ -79,9 +75,9 @@ public class PacketGearStateUpdate implements IMessageHandler<GearStateUpdateMes
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            gearType = GearType.values()[dataStream.readInt()];
+            gearType = MekanismUtils.getByIndex(GearType.values(), dataStream.readInt(), GearType.FLAMETHROWER);
             state = dataStream.readBoolean();
-            PacketHandler.readUUID(dataStream);
+            uuid = PacketHandler.readUUID(dataStream);
         }
 
 

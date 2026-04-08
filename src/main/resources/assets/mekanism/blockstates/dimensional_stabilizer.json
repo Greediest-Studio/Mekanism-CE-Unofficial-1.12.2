@@ -1,0 +1,31 @@
+{
+      "forge_marker": 1,
+      "defaults": {
+            "textures": {
+                  "east": "mekanism:blocks/dimensional_stabilizer/side",
+                  "south": "mekanism:blocks/dimensional_stabilizer/side",
+                  "west": "mekanism:blocks/dimensional_stabilizer/side",
+                  "sides": "mekanism:blocks/dimensional_stabilizer/side",
+                  "front": "mekanism:blocks/dimensional_stabilizer/side",
+                  "up": "mekanism:blocks/dimensional_stabilizer/top",
+                  "down": "mekanism:blocks/dimensional_stabilizer/bottom"
+            },
+            "model": "mekanism:machine"
+      },
+      "variants": {
+            "active": {
+                  "true": {
+                        "textures": {
+                              "east": "mekanism:blocks/dimensional_stabilizer/side_active",
+                              "south": "mekanism:blocks/dimensional_stabilizer/side_active",
+                              "west": "mekanism:blocks/dimensional_stabilizer/side_active",
+                              "sides": "mekanism:blocks/dimensional_stabilizer/side_active",
+                              "front": "mekanism:blocks/dimensional_stabilizer/side_active",
+                              "up": "mekanism:blocks/dimensional_stabilizer/top_active"
+                        }
+                  },
+                  "false": {}
+            },
+            "inventory": [{}]
+      }
+}

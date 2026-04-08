@@ -10,9 +10,16 @@ import mekanism.common.item.armor.ItemMekaSuitArmor;
 @ParametersAreNotNullByDefault
 public class ModuleEnergyUnit implements ICustomModule<ModuleEnergyUnit> {
 
+    public double getEnergyCapacity(IModule<ModuleEnergyUnit> module, double base) {
+        return base * (Math.pow(2, module.getInstalledCount()));
+    }
+
     public double getEnergyCapacity(IModule<ModuleEnergyUnit> module) {
-        double base = module.getContainer().getItem() instanceof ItemMekaSuitArmor ? MekanismConfig.current().meka.mekaSuitBaseEnergyCapacity.val()
-                : MekanismConfig.current().meka.mekaToolBaseEnergyCapacity.val();
+        double base = module.getContainer().getItem() instanceof ItemMekaSuitArmor ? MekanismConfig.current().meka.mekaSuitBaseEnergyCapacity.val() : MekanismConfig.current().meka.mekaToolBaseEnergyCapacity.val();
+        return base * (Math.pow(2, module.getInstalledCount()));
+    }
+
+    public double getChargeRate(IModule<ModuleEnergyUnit> module, double base) {
         return base * (Math.pow(2, module.getInstalledCount()));
     }
 

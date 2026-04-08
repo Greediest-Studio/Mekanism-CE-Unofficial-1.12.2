@@ -22,6 +22,10 @@ public interface IBlastingItem {
 
     Map<BlockPos, IBlockState> getBlastedBlocks(World world, EntityPlayer player, ItemStack stack, BlockPos pos, IBlockState state);
 
+    default Map<BlockPos, IBlockState> getBlastedBlocksForRendering(World world, EntityPlayer player, ItemStack stack, BlockPos pos, IBlockState state) {
+        return getBlastedBlocks(world, player, stack, pos, state);
+    }
+
     static Map<BlockPos, IBlockState> findPositions(World world, BlockPos targetPos, EntityPlayer player, int radius) {
         if (radius > 0) {
             EnumFacing targetSide = getTargetSide(world, targetPos, player);

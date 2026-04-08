@@ -1,0 +1,33 @@
+{
+  "result": {
+    "item": "mekanism:module_fishing_speed_unit"
+  },
+  "pattern": [
+    "AEA",
+    "BCB",
+    "DOD"
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "A": {
+      "item": "#CIRCUITULTIMATE"
+    },
+    "E": {
+      "item": "mekanism:robit"
+    },
+    "B": {
+      "ore": "alloyUltimate",
+      "type": "forge:ore_dict"
+    },
+    "C": {
+      "item": "minecraft:carrot_on_a_stick"
+    },
+    "D": {
+      "ore": "PoloniumPellet",
+      "type": "forge:ore_dict"
+    },
+    "O": {
+      "item": "mekanism:modulebase"
+    }
+  }
+}

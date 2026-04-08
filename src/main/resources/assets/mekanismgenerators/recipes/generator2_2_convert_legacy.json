@@ -1,0 +1,16 @@
+{
+  "result": {
+    "item": "mekanismgenerators:generator2",
+    "data": 2
+  },
+  "pattern": [
+    "A"
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "A": {
+      "item": "mekanism:basicblock3",
+      "data": 3
+    }
+  }
+}

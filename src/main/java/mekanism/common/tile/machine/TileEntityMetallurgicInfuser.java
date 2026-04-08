@@ -279,4 +279,9 @@ public class TileEntityMetallurgicInfuser extends TileEntityUpgradeableMachine<I
     public void readSustainedData(ItemStack itemStack) {
         infuseStored.readSustainedData(itemStack);
     }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return false;
+    }
 }

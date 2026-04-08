@@ -21,6 +21,14 @@ public class DynamicGasTank extends MultiblockGasTank<TileEntityDynamicTank> {
     }
 
     @Override
+    public int input(@Nullable GasStack resource, boolean doFill) {
+        if (multiblock.structure != null && multiblock.structure.hasFluid()) {
+            return 0;
+        }
+        return super.input(resource, doFill);
+    }
+
+    @Override
     public void setGas(GasStack stack) {
         if (multiblock.structure != null) {
             multiblock.structure.gasstored = stack;

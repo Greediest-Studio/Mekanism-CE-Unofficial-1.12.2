@@ -55,7 +55,9 @@ public abstract class TileEntityGenerator extends TileEntityEffectsBlock impleme
                 world.setBlockToAir(getPos());
             }
         }
-        CableUtils.emit(this);
+        if (getEnergy() > 0) {
+            CableUtils.emit(this);
+        }
     }
 
 
@@ -92,7 +94,7 @@ public abstract class TileEntityGenerator extends TileEntityEffectsBlock impleme
         super.handlePacketData(dataStream);
 
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), RedstoneControl.DISABLED);
         }
     }
 
@@ -106,7 +108,7 @@ public abstract class TileEntityGenerator extends TileEntityEffectsBlock impleme
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), RedstoneControl.DISABLED);
     }
 
 

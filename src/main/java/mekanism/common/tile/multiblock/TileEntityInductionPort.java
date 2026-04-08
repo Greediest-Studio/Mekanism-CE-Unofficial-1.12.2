@@ -1,12 +1,10 @@
 package mekanism.common.tile.multiblock;
 
-import ic2.api.energy.EnergyNet;
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergyAcceptor;
 import ic2.api.energy.tile.IEnergyConductor;
 import ic2.api.energy.tile.IEnergyEmitter;
-import ic2.api.energy.tile.IEnergyTile;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
@@ -75,7 +73,7 @@ public class TileEntityInductionPort extends TileEntityInductionCasing implement
     @Override
     public void onUpdateServer() {
         super.onUpdateServer();
-        if (structure != null && mode) {
+        if (structure != null && mode && getEnergy() > 0) {
             CableUtils.emit(this);
         }
         int newRedstoneLevel = getRedstoneLevel();
@@ -100,28 +98,17 @@ public class TileEntityInductionPort extends TileEntityInductionCasing implement
 
     @Method(modid = MekanismHooks.IC2_MOD_ID)
     public void register() {
-        if (!isRemote()) {
-            IEnergyTile registered = EnergyNet.instance.getTile(world, getPos());
-            if (registered != this) {
-                if (registered != null && ic2Registered) {
-                    MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(registered));
-                    ic2Registered = false;
-                } else {
-                    MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
-                    ic2Registered = true;
-                }
-            }
+        if (!isRemote() && world != null && !ic2Registered) {
+            MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
+            ic2Registered = true;
         }
     }
 
     @Method(modid = MekanismHooks.IC2_MOD_ID)
     public void deregister() {
-        if (!isRemote()) {
-            IEnergyTile registered = EnergyNet.instance.getTile(world, getPos());
-            if (registered != null && ic2Registered) {
-                MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(registered));
-                ic2Registered = false;
-            }
+        if (!isRemote() && world != null && ic2Registered) {
+            MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(this));
+            ic2Registered = false;
         }
     }
 

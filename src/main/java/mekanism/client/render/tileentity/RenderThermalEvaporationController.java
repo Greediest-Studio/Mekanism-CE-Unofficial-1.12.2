@@ -20,7 +20,8 @@ public class RenderThermalEvaporationController extends TileEntitySpecialRendere
     @Override
     public void render(TileEntityThermalEvaporationController tileEntity, double x, double y, double z, float partialTick, int destroyStage, float alpha) {
         boolean glChanged = false;
-        if (tileEntity.structured && tileEntity.inputTank.getFluid() != null && tileEntity.height - 2 >= 1 && tileEntity.inputTank.getFluidAmount() > 0) {
+        if (tileEntity.structured && tileEntity.inputTank.getFluid() != null && tileEntity.height - 2 >= 1
+                && tileEntity.inputTank.getFluidAmount() > 0 && tileEntity.shouldRenderInternalFluid()) {
             RenderData data = new RenderData();
             data.location = tileEntity.getRenderLocation();
             data.height = tileEntity.height - 2;

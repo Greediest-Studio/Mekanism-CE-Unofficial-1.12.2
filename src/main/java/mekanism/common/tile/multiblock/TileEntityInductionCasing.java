@@ -106,7 +106,8 @@ public class TileEntityInductionCasing extends TileEntityMultiblock<Synchronized
     }
 
     public int getScaledEnergyLevel(int i) {
-        return (int) (getEnergy() * i / getMaxEnergy());
+        double maxEnergy = getMaxEnergy();
+        return maxEnergy <= 0 ? 0 : (int) (getEnergy() * i / maxEnergy);
     }
 
     @Override

@@ -12,7 +12,7 @@ import net.minecraft.world.IWorldNameable;
 public interface ITileRadioactive {
 
     static float calculateRadiationScale(GasTankInfo[] tanks, TileEntity tile, BlockPos pos) {
-        if (MekanismAPI.getRadiationManager().isRadiationEnabled() && tanks != IGasHandler.NONE) {
+        if (MekanismAPI.getRadiationManager().isRadiationEnabled() && tile instanceof IGasHandler && tanks != IGasHandler.NONE) {
             float summedScale = 0;
             //不知道为什么还是能抛出null，推测应该是工厂
             try {

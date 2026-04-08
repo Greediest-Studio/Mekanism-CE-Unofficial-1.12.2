@@ -17,6 +17,7 @@ public class MultiblockMachineBlocks {
     public static Block LargeChemicalWasher = new BlockLargeChemicalWasher();
     public static Block LargeWindGenerator = new BlockLargeWindGenerator();
     public static Block LargeGasGenerator = new BlockLargeGasGenerator();
+    public static Block LargeSolarNeutronActivator = new BlockLargeSolarNeutronActivator();
 
     public static void registerBlocks(IForgeRegistry<Block> registry) {
         registryBlock(registry, LargeElectrolyticSeparator, "LargeElectrolyticSeparator");
@@ -24,6 +25,7 @@ public class MultiblockMachineBlocks {
         registryBlock(registry, LargeChemicalWasher, "LargeChemicalWasher");
         registryBlock(registry, LargeWindGenerator, "LargeWindGenerator");
         registryBlock(registry, LargeGasGenerator, "LargeGasGenerator");
+        registryBlock(registry, LargeSolarNeutronActivator, "LargeSolarNeutronActivator");
     }
 
     public static void registerItemBlocks(IForgeRegistry<Item> registry) {
@@ -32,6 +34,7 @@ public class MultiblockMachineBlocks {
         registryItem(registry, new ItemBlockLargeChemicalWasher(LargeChemicalWasher), "LargeChemicalWasher");
         registryItem(registry, new ItemBlockLargeWindGenerator(LargeWindGenerator), "LargeWindGenerator");
         registryItem(registry, new ItemBlockLargeGasGenerator(LargeGasGenerator), "LargeGasGenerator");
+        registryItem(registry, new ItemBlockLargeSolarNeutron(LargeSolarNeutronActivator), "LargeSolarNeutronActivator");
     }
 
 

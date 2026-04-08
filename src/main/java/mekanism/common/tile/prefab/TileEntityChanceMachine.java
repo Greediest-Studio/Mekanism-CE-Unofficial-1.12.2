@@ -162,4 +162,9 @@ public abstract class TileEntityChanceMachine<RECIPE extends ChanceMachineRecipe
     public boolean getOuputSlot() {
         return inventory.get(2).isEmpty();
     }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return false;
+    }
 }

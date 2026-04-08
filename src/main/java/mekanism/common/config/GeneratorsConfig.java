@@ -1,6 +1,7 @@
 package mekanism.common.config;
 
 import io.netty.buffer.ByteBuf;
+import mekanism.common.config.options.BooleanOption;
 import mekanism.common.config.options.DoubleOption;
 import mekanism.common.config.options.IntOption;
 import mekanism.common.config.options.IntSetOption;
@@ -86,6 +87,31 @@ public class GeneratorsConfig extends BaseConfig {
     public final IntOption FusionReactorsFuelTank = new IntOption(this, "FusionReactorsFuelTank",1000);
     public final IntOption FusionReactorsWaterTank  = new IntOption(this, "FusionReactorsWaterTank",100000);
     public final IntOption FusionReactorsSteamTank  = new IntOption(this, "FusionReactorsSteamTank",10000000);
+
+    public final DoubleOption fissionHeatPerBurn = new DoubleOption(this, "FissionHeatPerBurn", 50D,
+            "Temperature increase per 1 mB of fissile fuel burned.");
+    public final DoubleOption fissionSurfaceAreaTarget = new DoubleOption(this, "FissionSurfaceAreaTarget", 4D,
+            "Average fuel assembly surface area required for 100% boiling efficiency.", 1D, Double.MAX_VALUE);
+    public final BooleanOption fissionMeltdownsEnabled = new BooleanOption(this, "FissionMeltdownsEnabled", true,
+            "If disabled, reactor will force shutdown at critical damage instead of melting down.");
+    public final DoubleOption fissionMeltdownChance = new DoubleOption(this, "FissionMeltdownChance", 0.001D,
+            "Base per-tick meltdown chance once critical damage is reached.", 0D, 1D);
+    public final DoubleOption fissionMeltdownRadiationMultiplier = new DoubleOption(this, "FissionMeltdownRadiationMultiplier", 50D,
+            "Multiplier applied to dumped radioactive contents when meltdown happens.", 0D, Double.MAX_VALUE);
+    public final DoubleOption fissionPostMeltdownDamage = new DoubleOption(this, "FissionPostMeltdownDamage", 75D,
+            "Reactor damage level after a meltdown.", 0D, 100D);
+    public final DoubleOption fissionDefaultBurnRate = new DoubleOption(this, "FissionDefaultBurnRate", 0.1D,
+            "Default burn rate used when a fission multiblock is formed.", 0.001D, Double.MAX_VALUE);
+    public final DoubleOption fissionBurnPerAssembly = new DoubleOption(this, "FissionBurnPerAssembly", 1D,
+            "Max burn rate contribution provided by each fuel assembly.", 0.001D, Double.MAX_VALUE);
+    public final DoubleOption fissionWaterConductivity = new DoubleOption(this, "FissionWaterConductivity", 0.5D,
+            "Water coolant conductivity multiplier used by fission reactor cooling.", 0D, Double.MAX_VALUE);
+    public final DoubleOption fissionSodiumConductivity = new DoubleOption(this, "FissionSodiumConductivity", 1D,
+            "Sodium coolant conductivity multiplier used by fission reactor cooling.", 0D, Double.MAX_VALUE);
+    public final DoubleOption fissionSteamEfficiency = new DoubleOption(this, "FissionSteamEfficiency", 0.2D,
+            "Steam conversion efficiency used by fission water cooling.", 0.000_001D, 1D);
+    public final DoubleOption fissionSodiumThermalEnthalpy = new DoubleOption(this, "FissionSodiumThermalEnthalpy", 0.5D,
+            "Thermal enthalpy used for sodium heating conversion in fission reactors.", 0.000_001D, Double.MAX_VALUE);
 
     public TypeConfigManager<GeneratorType> generatorsManager = new TypeConfigManager<>(this, "generators", GeneratorType.class,
             GeneratorType::getGeneratorsForConfig, GeneratorType::getBlockName);

@@ -15,6 +15,7 @@ import mekanism.common.tile.prefab.TileEntityFarmMachine;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.StackUtils;
 import net.minecraft.block.Block;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.IStringSerializable;
@@ -24,8 +25,7 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nullable;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -108,6 +108,10 @@ public interface IFactory {
         private TileEntityAdvancedElectricMachine AdvancedElectricMachineCacheTile;
 
         private TileEntityFarmMachine FarmMachineCacheTile;
+        private transient Map<Item, List<Object>> cachedInputMatchers;
+        private transient Map<Item, List<AdvancedMachineInput>> cachedAdvancedInputMatchers;
+        private transient Map<Item, List<DoubleMachineInput>> cachedDoubleExtraMatchers;
+        private transient int cachedInputMatchersRecipeSize = -1;
         public boolean isFullBlock;
         public boolean isOpaqueCube;
         public boolean canInputItem;
@@ -351,12 +355,14 @@ public interface IFactory {
             if (itemStack.isEmpty()) {
                 return false;
             }
-            for (Object obj : recipe.get().entrySet()) {
-                if (((Entry<?, ?>) obj).getKey() instanceof AdvancedMachineInput input) {
-                    ItemStack stack = input.itemStack;
-                    if (StackUtils.equalsWildcard(stack, itemStack)) {
-                        return true;
-                    }
+            rebuildInputMatchersIfNeeded();
+            List<AdvancedMachineInput> matchers = cachedAdvancedInputMatchers.get(itemStack.getItem());
+            if (matchers == null || matchers.isEmpty()) {
+                return false;
+            }
+            for (AdvancedMachineInput input : matchers) {
+                if (StackUtils.equalsWildcard(input.itemStack, itemStack)) {
+                    return true;
                 }
             }
             return false;
@@ -366,11 +372,14 @@ public interface IFactory {
             if (extraStack.isEmpty()) {
                 return false;
             }
-            for (Object obj : recipe.get().entrySet()) {
-                if (((Entry<?, ?>) obj).getKey() instanceof DoubleMachineInput input) {
-                    if (StackUtils.equalsWildcard(input.extraStack, extraStack)) {
-                        return true;
-                    }
+            rebuildInputMatchersIfNeeded();
+            List<DoubleMachineInput> matchers = cachedDoubleExtraMatchers.get(extraStack.getItem());
+            if (matchers == null || matchers.isEmpty()) {
+                return false;
+            }
+            for (DoubleMachineInput input : matchers) {
+                if (StackUtils.equalsWildcard(input.extraStack, extraStack)) {
+                    return true;
                 }
             }
             return false;
@@ -380,39 +389,78 @@ public interface IFactory {
             if (stack.isEmpty()) {
                 return false;
             }
-            for (Object obj : recipe.get().entrySet()) {
-                if (((Map.Entry<?, ?>) obj).getKey() instanceof AdvancedMachineInput input) {
-                    if (ItemHandlerHelper.canItemStacksStack(input.itemStack, stack)) {
-                        return true;
-                    }
+            rebuildInputMatchersIfNeeded();
+            List<Object> matchers = cachedInputMatchers.get(stack.getItem());
+            if (matchers == null || matchers.isEmpty()) {
+                return false;
+            }
+            for (Object matcher : matchers) {
+                if (matcher instanceof AdvancedMachineInput input && MachineInput.inputItemMatches(input.itemStack, stack)) {
+                    return true;
                 }
-                if (((Map.Entry<?, ?>) obj).getKey() instanceof ItemStackInput input) {
-                    if (ItemHandlerHelper.canItemStacksStack(input.ingredient, stack)) {
-                        return true;
-                    }
+                if (matcher instanceof ItemStackInput input && MachineInput.inputItemMatches(input.ingredient, stack)) {
+                    return true;
                 }
-                if (((Map.Entry<?, ?>) obj).getKey() instanceof DoubleMachineInput input) {
-                    if (ItemHandlerHelper.canItemStacksStack(input.itemStack, stack)) {
-                        return true;
-                    }
+                if (matcher instanceof DoubleMachineInput input && MachineInput.inputItemMatches(input.itemStack, stack)) {
+                    return true;
                 }
-                if (((Map.Entry<?, ?>) obj).getKey() instanceof InfusionInput input) {
-                    if (ItemHandlerHelper.canItemStacksStack(input.inputStack, stack)) {
-                        return true;
-                    }
+                if (matcher instanceof InfusionInput input && MachineInput.inputItemMatches(input.inputStack, stack)) {
+                    return true;
                 }
-                if (((Map.Entry<?, ?>) obj).getKey() instanceof NucleosynthesizerInput input) {
-                    if (ItemHandlerHelper.canItemStacksStack(input.getSolid(), stack)) {
-                        return true;
-                    }
+                if (matcher instanceof NucleosynthesizerInput input && MachineInput.inputItemMatches(input.getSolid(), stack)) {
+                    return true;
                 }
-                if (((Map.Entry<?, ?>) obj).getKey() instanceof PressurizedInput input) {
-                    if (ItemHandlerHelper.canItemStacksStack(input.getSolid(), stack)) {
-                        return true;
-                    }
+                if (matcher instanceof PressurizedInput input && MachineInput.inputItemMatches(input.getSolid(), stack)) {
+                    return true;
                 }
             }
             return false;
+        }
+
+        private void rebuildInputMatchersIfNeeded() {
+            int recipeSize = recipe.get().size();
+            if (cachedInputMatchers != null && cachedInputMatchersRecipeSize == recipeSize) {
+                return;
+            }
+            Map<Item, List<Object>> rebuiltMatchers = new HashMap<>();
+            Map<Item, List<AdvancedMachineInput>> rebuiltAdvancedMatchers = new HashMap<>();
+            Map<Item, List<DoubleMachineInput>> rebuiltExtraMatchers = new HashMap<>();
+            for (Object obj : recipe.get().entrySet()) {
+                Object key = ((Map.Entry<?, ?>) obj).getKey();
+                if (key instanceof AdvancedMachineInput input) {
+                    addInputMatcher(rebuiltMatchers, input.itemStack, key);
+                    addTypedMatcher(rebuiltAdvancedMatchers, input.itemStack, input);
+                } else if (key instanceof ItemStackInput input) {
+                    addInputMatcher(rebuiltMatchers, input.ingredient, key);
+                } else if (key instanceof DoubleMachineInput input) {
+                    addInputMatcher(rebuiltMatchers, input.itemStack, key);
+                    addTypedMatcher(rebuiltExtraMatchers, input.extraStack, input);
+                } else if (key instanceof InfusionInput input) {
+                    addInputMatcher(rebuiltMatchers, input.inputStack, key);
+                } else if (key instanceof NucleosynthesizerInput input) {
+                    addInputMatcher(rebuiltMatchers, input.getSolid(), key);
+                } else if (key instanceof PressurizedInput input) {
+                    addInputMatcher(rebuiltMatchers, input.getSolid(), key);
+                }
+            }
+            cachedInputMatchers = rebuiltMatchers;
+            cachedAdvancedInputMatchers = rebuiltAdvancedMatchers;
+            cachedDoubleExtraMatchers = rebuiltExtraMatchers;
+            cachedInputMatchersRecipeSize = recipeSize;
+        }
+
+        private static void addInputMatcher(Map<Item, List<Object>> matcherMap, ItemStack ingredient, Object matcher) {
+            if (ingredient.isEmpty()) {
+                return;
+            }
+            matcherMap.computeIfAbsent(ingredient.getItem(), item -> new ArrayList<>()).add(matcher);
+        }
+
+        private static <T> void addTypedMatcher(Map<Item, List<T>> matcherMap, ItemStack ingredient, T matcher) {
+            if (ingredient.isEmpty()) {
+                return;
+            }
+            matcherMap.computeIfAbsent(ingredient.getItem(), item -> new ArrayList<>()).add(matcher);
         }
 
 

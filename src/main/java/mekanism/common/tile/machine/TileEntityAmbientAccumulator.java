@@ -159,7 +159,7 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
         isActive = nbtTags.getBoolean("isActive");
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         collectedGas.read(nbtTags.getCompoundTag("collectedGas"));
     }
 
@@ -176,7 +176,7 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             isActive = dataStream.readBoolean();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             TileUtils.readTankData(dataStream, collectedGas);
         }
     }
@@ -311,5 +311,10 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

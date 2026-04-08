@@ -183,7 +183,7 @@ public class TileEntityFluidicPlenisher extends TileEntityElectricBlock implemen
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             finishedCalc = dataStream.readBoolean();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             TileUtils.readTankData(dataStream, fluidTank);
         }
     }
@@ -231,7 +231,7 @@ public class TileEntityFluidicPlenisher extends TileEntityElectricBlock implemen
         super.readCustomNBT(nbtTags);
         operatingTicks = nbtTags.getInteger("operatingTicks");
         finishedCalc = nbtTags.getBoolean("finishedCalc");
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
 
         if (nbtTags.hasKey("fluidTank")) {
             fluidTank.readFromNBT(nbtTags.getCompoundTag("fluidTank"));

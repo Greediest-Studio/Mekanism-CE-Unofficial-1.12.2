@@ -1,8 +1,6 @@
 package mekanism.common.content.transporter;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.common.Mekanism;
@@ -25,22 +23,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TransporterManager {
 
-    private static Map<Coord4D, Set<TransporterStack>> flowingStacks = new Object2ObjectOpenHashMap<>();
+    private static Map<Coord4D, Set<TransporterStack>> flowingStacks = new ConcurrentHashMap<>();
 
     public static void reset() {
         flowingStacks.clear();
     }
 
     public static void add(TransporterStack stack) {
-        flowingStacks.computeIfAbsent(stack.getDest(), k -> new ObjectOpenHashSet<>()).add(stack);
+        flowingStacks.computeIfAbsent(stack.getDest(), k -> ConcurrentHashMap.newKeySet()).add(stack);
     }
 
     public static void remove(TransporterStack stack) {
         if (stack.hasPath() && stack.getPathType() != Path.NONE) {
-            flowingStacks.get(stack.getDest()).remove(stack);
+            Coord4D dest = stack.getDest();
+            Set<TransporterStack> stacks = flowingStacks.get(dest);
+            if (stacks != null) {
+                stacks.remove(stack);
+                if (stacks.isEmpty()) {
+                    flowingStacks.remove(dest, stacks);
+                }
+            }
         }
     }
 

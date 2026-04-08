@@ -15,6 +15,9 @@ public class PacketEntityMove implements IMessageHandler<EntityMoveMessage, IMes
     @Override
     public IMessage onMessage(EntityMoveMessage message, MessageContext context) {
         EntityPlayer player = PacketHandler.getPlayer(context);
+        if (player == null) {
+            return null;
+        }
         PacketHandler.handlePacket(() -> {
             Entity entity = player.world.getEntityByID(message.entityId);
             if (entity != null) {

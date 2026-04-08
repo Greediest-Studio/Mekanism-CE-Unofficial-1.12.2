@@ -27,6 +27,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.tuple.Pair;
+import org.lwjgl.input.Mouse;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -187,12 +188,9 @@ public abstract class GuiMekanism<CONTAINER extends Container> extends VirtualSl
         focusListeners.removeIf(element -> !element.isOverlay);
         int prevLeft = guiLeft, prevTop = guiTop;
 
-        java.util.function.Consumer<Widget> remove = buttons::remove;
-        /*
-        if (!net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent.Pre(this, this.buttonList))) {
-            this.buttons.clear();
-        }
-         */
+        //Rebuilding on resize/fullscreen toggle must start from a clean element list.
+        //If we keep stale widgets, old and new guiLeft/guiTop coordinate spaces overlap and render/click handling desyncs.
+        this.buttons.clear();
         super.setWorldAndResolution(minecraft, width, height);
         // windows.forEach(window -> window.resize(prevLeft, prevTop, leftPos, topPos));
         prevElements.forEach(e -> {
@@ -312,8 +310,9 @@ public abstract class GuiMekanism<CONTAINER extends Container> extends VirtualSl
         // otherwise, we send it to the current element
         for (int i = buttons.size() - 1; i >= 0; i--) {
             IGuiEventListener listener = buttons.get(i);
-            if (listener.mouseClicked(mouseX, mouseY, button)) {
-                setFocused(listener.mouseClicked(mouseX, mouseY, button));
+            boolean handled = listener.mouseClicked(mouseX, mouseY, button);
+            if (handled) {
+                setFocused(handled);
                 if (button == 0) {
                     // setDragging(true);
                 }
@@ -345,6 +344,22 @@ public abstract class GuiMekanism<CONTAINER extends Container> extends VirtualSl
     public void keyTyped(char c, int keyCode) throws IOException {
         GuiUtils.checkChildren(buttons, child -> child.charTyped(c, keyCode));
         super.keyTyped(c, keyCode);
+    }
+
+    @Override
+    public void handleMouseInput() throws IOException {
+        super.handleMouseInput();
+        int delta = Mouse.getEventDWheel();
+        if (delta != 0) {
+            int mouseX = Mouse.getEventX() * width / mc.displayWidth;
+            int mouseY = height - Mouse.getEventY() * height / mc.displayHeight - 1;
+            //Top-most element first, matching click ordering.
+            for (int i = buttons.size() - 1; i >= 0; i--) {
+                if (buttons.get(i).mouseScrolled(mouseX, mouseY, delta)) {
+                    break;
+                }
+            }
+        }
     }
 
 

@@ -4,10 +4,7 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigurable;
 import mekanism.api.TileNetworkList;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
+import mekanism.api.gas.*;
 import mekanism.common.Mekanism;
 import mekanism.common.base.FluidHandlerWrapper;
 import mekanism.common.base.IComparatorSupport;
@@ -112,12 +109,12 @@ public class TileEntityDynamicValve extends TileEntityDynamicTank implements IFl
 
     @Override
     public boolean canFill(EnumFacing from, @Nonnull FluidStack fluid) {
-        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && !eject;
+        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && !eject && (structure == null || !structure.hasGas());
     }
 
     @Override
     public boolean canDrain(EnumFacing from, @Nullable FluidStack fluid) {
-        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && FluidContainerUtils.canDrain(structure.fluidStored, fluid);
+        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && structure != null && FluidContainerUtils.canDrain(structure.fluidStored, fluid);
     }
 
     @Nonnull
@@ -165,13 +162,15 @@ public class TileEntityDynamicValve extends TileEntityDynamicTank implements IFl
 
     @Override
     public boolean isItemValidForSlot(int slot, @Nonnull ItemStack stack) {
-        //can be filled/emptied
-        return slot == 0 && FluidContainerUtils.isFluidContainer(stack);
+        //can be filled/emptied (fluid or gas container)
+        return slot == 0 && (FluidContainerUtils.isFluidContainer(stack) || stack.getItem() instanceof IGasItem);
     }
 
     @Override
     public int getRedstoneLevel() {
-        return MekanismUtils.redstoneLevelFromContents(fluidTank.getFluidAmount(), fluidTank.getCapacity());
+        int stored = Math.max(fluidTank.getFluidAmount(), gasTank.getGasAmount());
+        int capacity = Math.max(fluidTank.getCapacity(), gasTank.getMaxGas());
+        return MekanismUtils.redstoneLevelFromContents(stored, capacity);
     }
 
     @Override
@@ -186,12 +185,12 @@ public class TileEntityDynamicValve extends TileEntityDynamicTank implements IFl
 
     @Override
     public boolean canReceiveGas(EnumFacing side, Gas type) {
-        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && !eject;
+        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && !eject && (structure == null || !structure.hasFluid());
     }
 
     @Override
     public boolean canDrawGas(EnumFacing side, Gas type) {
-        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && GasUtils.canDrain(structure.gasstored, type);
+        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && structure != null && GasUtils.canDrain(structure.gasstored, type);
     }
 
     @Nonnull
@@ -235,5 +234,10 @@ public class TileEntityDynamicValve extends TileEntityDynamicTank implements IFl
     @Override
     public EnumActionResult onRightClick(EntityPlayer player, EnumFacing side) {
         return EnumActionResult.PASS;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

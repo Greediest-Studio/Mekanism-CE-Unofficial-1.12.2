@@ -43,7 +43,9 @@ public class ItemMekanismPaxel extends ItemTool implements IHasRepairType {
         //TODO: 1.14 Double check the various items to see if their getDestroySpeed short paths changed
         boolean pickaxeShortcut = material == Material.IRON || material == Material.ANVIL || material == Material.ROCK;
         boolean axeShortcut = material == Material.WOOD || material == Material.PLANTS || material == Material.VINE;
-        return pickaxeShortcut || axeShortcut ? this.efficiency : super.getDestroySpeed(stack, state);
+        boolean shovelShortcut = material == Material.GROUND || material == Material.GRASS || material == Material.SAND || material == Material.SNOW
+                                 || material == Material.CRAFTED_SNOW || material == Material.CLAY;
+        return pickaxeShortcut || axeShortcut || shovelShortcut ? this.efficiency : super.getDestroySpeed(stack, state);
     }
 
     @Override

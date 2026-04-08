@@ -67,9 +67,9 @@ public class ItemUpgrade extends ItemMekanism implements IUpgradeItem {
                 }
             }
 
-            if (tile instanceof IUpgradeTile upgradeTile) {
-                TileComponentUpgrade component = upgradeTile.getComponent();
-                if (component.supports(type)) {
+            if (tile instanceof IUpgradeTile upgradeTile && upgradeTile.supportsUpgrades()) {
+                if (upgradeTile.supportsUpgrade(type)) {
+                    TileComponentUpgrade component = upgradeTile.getComponent();
                     if (!world.isRemote && component.getUpgrades(type) < type.getMaxInstalled()) {
                         int added = component.addUpgrades(type, stack.getCount());
                         if (added > 0) {

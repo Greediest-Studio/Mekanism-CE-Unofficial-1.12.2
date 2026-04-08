@@ -23,7 +23,7 @@ public class TileEntityInductionProvider extends TileEntityBasicBlock {
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             InductionProviderTier prevTier = tier;
-            tier = InductionProviderTier.values()[dataStream.readInt()];
+            tier = MekanismUtils.getByIndex(InductionProviderTier.values(), dataStream.readInt(), tier);
             if (prevTier != tier) {
                 MekanismUtils.updateBlock(world, getPos());
             }
@@ -40,7 +40,7 @@ public class TileEntityInductionProvider extends TileEntityBasicBlock {
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        tier = InductionProviderTier.values()[nbtTags.getInteger("tier")];
+        tier = MekanismUtils.getByIndex(InductionProviderTier.values(), nbtTags.getInteger("tier"), tier);
     }
 
     @Override

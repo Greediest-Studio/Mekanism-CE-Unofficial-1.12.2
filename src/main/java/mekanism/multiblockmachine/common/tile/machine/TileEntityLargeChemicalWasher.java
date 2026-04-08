@@ -31,6 +31,8 @@ import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.fluids.*;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TileEntityLargeChemicalWasher extends TileEntityBasicMachine<GasAndFluidInput, GasOutput, WasherRecipe> implements IGasHandler, IFluidHandlerWrapper, ISustainedData, IUpgradeInfoHandler, ITankManager, IAdvancedBoundingBlock {
+public class TileEntityLargeChemicalWasher extends TileEntityBasicMachine<GasAndFluidInput, GasOutput, WasherRecipe> implements IGasHandler, IFluidHandlerWrapper, ISustainedData, IUpgradeInfoHandler, ITankManager, IAdvancedBoundingBlock, ISpecialSelectionWireframeTile {
 
     public FluidTank fluidTank = new FluidTankSync(8192000);
     public GasTank inputTank = new GasTank(8192000);
@@ -342,6 +344,9 @@ public class TileEntityLargeChemicalWasher extends TileEntityBasicMachine<GasAnd
 
     @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
+        if (!canFill(from, resource)) {
+            return 0;
+        }
         return fluidTank.fill(resource, doFill);
     }
 
@@ -659,5 +664,16 @@ public class TileEntityLargeChemicalWasher extends TileEntityBasicMachine<GasAnd
             Mekanism.packetHandler.sendUpdatePacket(this);
             updateDelay = 10;
         }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.multiblockmachine.client.model.machine.ModelLargeChemicalWasher.class;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

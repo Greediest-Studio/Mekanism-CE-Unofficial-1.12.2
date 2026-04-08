@@ -10,6 +10,7 @@ import mekanism.common.tile.*;
 import mekanism.common.tile.factory.TileEntityFactory;
 import mekanism.common.tile.multiblock.TileEntityInductionCell;
 import mekanism.common.tile.multiblock.TileEntityInductionProvider;
+import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
@@ -69,10 +70,14 @@ public class WailaDataProvider implements IWailaDataProvider {
         } else if (tile instanceof TileEntityEnergyCube cube) {
             currenttip.set(0, EnumColor.WHITE + cube.getName());
         } else if (tile instanceof TileEntityBoundingBlock bound) {
-            Coord4D coord = new Coord4D(bound.getPos(), tile.getWorld());
-            //TODO: Switch to a smarter way to get the main tile's name - i.e. block name
-            if (bound.receivedCoords && coord.getTileEntity(tile.getWorld()) instanceof IInventory inventory) {
-                currenttip.set(0, EnumColor.WHITE + inventory.getName());
+            Coord4D coord = new Coord4D(bound.getMainPos(), tile.getWorld());
+            if (bound.receivedCoords) {
+                TileEntity mainTile = coord.getTileEntity(tile.getWorld());
+                if (mainTile instanceof TileEntityContainerBlock container) {
+                    currenttip.set(0, EnumColor.WHITE + container.getName());
+                } else if (mainTile instanceof IInventory inventory) {
+                    currenttip.set(0, EnumColor.WHITE + inventory.getName());
+                }
             }
         }
         return currenttip;

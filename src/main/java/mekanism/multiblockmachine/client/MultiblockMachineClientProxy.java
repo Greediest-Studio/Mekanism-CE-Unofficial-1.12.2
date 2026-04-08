@@ -2,21 +2,25 @@ package mekanism.multiblockmachine.client;
 
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.render.item.ItemLayerWrapper;
+import mekanism.common.util.MekanismUtils;
 import mekanism.multiblockmachine.client.gui.generator.GuiLargeGasGenerator;
 import mekanism.multiblockmachine.client.gui.generator.GuiLargeWindGenerator;
 import mekanism.multiblockmachine.client.gui.machine.GuiLargeChemicalInfuser;
 import mekanism.multiblockmachine.client.gui.machine.GuiLargeChemicalWasher;
 import mekanism.multiblockmachine.client.gui.machine.GuiLargeElectrolyticSeparator;
+import mekanism.multiblockmachine.client.gui.machine.GuiLargeSolarNeutronActivator;
 import mekanism.multiblockmachine.client.render.block.generator.RenderLargeGasGenerator;
 import mekanism.multiblockmachine.client.render.block.generator.RenderLargeWindGenerator;
 import mekanism.multiblockmachine.client.render.block.machine.RenderLargeChemicalInfuser;
 import mekanism.multiblockmachine.client.render.block.machine.RenderLargeChemicalWasher;
 import mekanism.multiblockmachine.client.render.block.machine.RenderLargeElectrolyticSeparator;
+import mekanism.multiblockmachine.client.render.block.machine.RenderLargeSolarNeutronActivator;
 import mekanism.multiblockmachine.client.render.item.generator.RenderLargeGasGeneratorItem;
 import mekanism.multiblockmachine.client.render.item.generator.RenderLargeWindGeneratorItem;
 import mekanism.multiblockmachine.client.render.item.machine.RenderLargeChemicalInfuserItem;
 import mekanism.multiblockmachine.client.render.item.machine.RenderLargeChemicalWasherItem;
 import mekanism.multiblockmachine.client.render.item.machine.RenderLargeElectrolyticSeparatorItem;
+import mekanism.multiblockmachine.client.render.item.machine.RenderLargeSolarNeutronActivatorItem;
 import mekanism.multiblockmachine.common.MekanismMultiblockMachine;
 import mekanism.multiblockmachine.common.MultiblockMachineCommonProxy;
 import mekanism.multiblockmachine.common.registries.MultiblockMachineBlocks;
@@ -26,6 +30,7 @@ import mekanism.multiblockmachine.common.tile.generator.TileEntityLargeWindGener
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeChemicalInfuser;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeChemicalWasher;
 import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeElectrolyticSeparator;
+import mekanism.multiblockmachine.common.tile.machine.TileEntityLargeSolarNeutronActivator;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
@@ -56,6 +61,9 @@ public class MultiblockMachineClientProxy extends MultiblockMachineCommonProxy {
         ClientRegistry.bindTileEntitySpecialRenderer(TileEntityLargeChemicalWasher.class, new RenderLargeChemicalWasher());
         ClientRegistry.bindTileEntitySpecialRenderer(TileEntityLargeWindGenerator.class, new RenderLargeWindGenerator());
         ClientRegistry.bindTileEntitySpecialRenderer(TileEntityLargeGasGenerator.class, new RenderLargeGasGenerator());
+        ClientRegistry.bindTileEntitySpecialRenderer(TileEntityLargeSolarNeutronActivator.class,new RenderLargeSolarNeutronActivator());
+        //提前注册屏幕的贴图，防止在运行游戏的时候卡下
+        MekanismRenderer.bindTexture(MekanismUtils.getResource(MekanismMultiblockMachine.MODID, MekanismUtils.ResourceType.RENDER_MACHINE, "LargeSolarNeutronActivator/SCREEN.png"));
     }
 
     @Override
@@ -69,6 +77,7 @@ public class MultiblockMachineClientProxy extends MultiblockMachineCommonProxy {
         Item.getItemFromBlock(MultiblockMachineBlocks.LargeChemicalWasher).setTileEntityItemStackRenderer(new RenderLargeChemicalWasherItem());
         Item.getItemFromBlock(MultiblockMachineBlocks.LargeWindGenerator).setTileEntityItemStackRenderer(new RenderLargeWindGeneratorItem());
         Item.getItemFromBlock(MultiblockMachineBlocks.LargeGasGenerator).setTileEntityItemStackRenderer(new RenderLargeGasGeneratorItem());
+        Item.getItemFromBlock(MultiblockMachineBlocks.LargeSolarNeutronActivator).setTileEntityItemStackRenderer(new RenderLargeSolarNeutronActivatorItem());
     }
 
     @Override
@@ -78,6 +87,7 @@ public class MultiblockMachineClientProxy extends MultiblockMachineCommonProxy {
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MultiblockMachineBlocks.LargeChemicalWasher), 0, getInventoryMRL("LargeChemicalWasher"));
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MultiblockMachineBlocks.LargeWindGenerator), 0, getInventoryMRL("LargeWindGenerator"));
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MultiblockMachineBlocks.LargeGasGenerator), 0, getInventoryMRL("LargeGasGenerator"));
+        ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(MultiblockMachineBlocks.LargeSolarNeutronActivator),0, getInventoryMRL("LargeSolarNeutronActivator"));
     }
 
     private ModelResourceLocation getInventoryMRL(String type) {
@@ -105,6 +115,9 @@ public class MultiblockMachineClientProxy extends MultiblockMachineCommonProxy {
 
         ModelResourceLocation LargeGasGenerator = getInventoryMRL("LargeGasGenerator");
         modelRegistry.putObject(LargeGasGenerator, RenderLargeGasGeneratorItem.model = new ItemLayerWrapper(modelRegistry.getObject(LargeGasGenerator)));
+
+        ModelResourceLocation LargeSolarNeutronActivator = getInventoryMRL("LargeSolarNeutronActivator");
+        modelRegistry.putObject(LargeSolarNeutronActivator, RenderLargeSolarNeutronActivatorItem.model = new ItemLayerWrapper(modelRegistry.getObject(LargeSolarNeutronActivator)));
     }
 
 
@@ -122,6 +135,7 @@ public class MultiblockMachineClientProxy extends MultiblockMachineCommonProxy {
             case 2 -> new GuiLargeChemicalWasher(player.inventory, (TileEntityLargeChemicalWasher) tileEntity);
             case 3 -> new GuiLargeWindGenerator(player.inventory, (TileEntityLargeWindGenerator) tileEntity);
             case 4 -> new GuiLargeGasGenerator(player.inventory, (TileEntityLargeGasGenerator) tileEntity);
+            case 5 -> new GuiLargeSolarNeutronActivator(player.inventory,(TileEntityLargeSolarNeutronActivator) tileEntity);
             default -> null;
         };
     }

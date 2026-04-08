@@ -2,6 +2,7 @@ package mekanism.common;
 
 
 import mekanism.api.EnumColor;
+import mekanism.api.energy.IEnergizedItem;
 import mekanism.api.gas.GasRegistry;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.OreGas;
@@ -10,7 +11,11 @@ import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.infuse.InfuseType;
 import mekanism.common.block.states.BlockStateMachine;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.content.gear.IModuleContainerItem;
+import mekanism.common.item.armor.ItemMekaSuitBodyArmor;
+import mekanism.common.item.armor.ItemMekaSuitHelmet;
 import mekanism.common.recipe.RecipeHandler;
+import mekanism.common.recipe.inputs.ItemStackInput;
 import mekanism.common.util.StackUtils;
 import net.minecraft.block.BlockCrops;
 import net.minecraft.init.Blocks;
@@ -268,7 +273,7 @@ public class MekanismRecipe {
         }
         //Chemical Washer Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_WASHER)) {
-            RecipeHandler.addChemicalWasherRecipe(new GasStack(MekanismFluids.FissileFuel, 1000), new FluidStack(FluidRegistry.WATER, 1000), new GasStack(MekanismFluids.NuclearWaste, 1));
+            //  RecipeHandler.addChemicalWasherRecipe(new GasStack(MekanismFluids.FissileFuel, 1000), new FluidStack(FluidRegistry.WATER, 1000), new GasStack(MekanismFluids.NuclearWaste, 1));
         }
         //Chemical Dissolution Chamber Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_DISSOLUTION_CHAMBER)) {
@@ -299,10 +304,12 @@ public class MekanismRecipe {
                     new ItemStack(MekanismItems.Substrate, 8), new GasStack(MekanismFluids.Oxygen, 10), 200, 400);
             RecipeHandler.addPRCRecipe(new ItemStack(Items.COAL, 1, OreDictionary.WILDCARD_VALUE), new FluidStack(FluidRegistry.WATER, 100), new GasStack(MekanismFluids.Oxygen, 100),
                     new ItemStack(MekanismItems.OtherDust, 1, 3), new GasStack(MekanismFluids.Hydrogen, 100), 0, 100);
-            RecipeHandler.addPRCRecipe(new ItemStack(MekanismItems.OtherDust, 1, 7), new FluidStack(FluidRegistry.WATER, 10000), new GasStack(MekanismFluids.Plutonium, 1000),
-                    new ItemStack(MekanismItems.PlutoniumPellet, 1), new GasStack(MekanismFluids.SpentNuclearWaste, 1000), 10000, 2000);
-            RecipeHandler.addPRCRecipe(new ItemStack(MekanismItems.OtherDust, 1, 7), new FluidStack(FluidRegistry.WATER, 10000), new GasStack(MekanismFluids.Polonium, 1000),
-                    new ItemStack(MekanismItems.PoloniumPellet, 1), new GasStack(MekanismFluids.SpentNuclearWaste, 1000), 10000, 2000);
+
+            OreDictionary.getOres("dustFluorite").forEach(ore -> {
+                RecipeHandler.addPRCRecipe(StackUtils.size(ore, 1), new FluidStack(FluidRegistry.WATER, 10000), new GasStack(MekanismFluids.Plutonium, 1000), new ItemStack(MekanismItems.PlutoniumPellet, 1), new GasStack(MekanismFluids.SpentNuclearWaste, 1000), 10000, 2000);
+                RecipeHandler.addPRCRecipe(StackUtils.size(ore, 1), new FluidStack(FluidRegistry.WATER, 10000), new GasStack(MekanismFluids.Polonium, 1000), new ItemStack(MekanismItems.PoloniumPellet, 1), new GasStack(MekanismFluids.SpentNuclearWaste, 1000), 10000, 2000);
+            });
+
             RecipeHandler.addPRCRecipe(new ItemStack(MekanismItems.CosmicMatter, 64), FluidRegistry.getFluidStack("liquidsuperheatedsodium", 10000), new GasStack(MekanismFluids.UnstableDimensional, 10000),
                     ItemStack.EMPTY, new GasStack(MekanismFluids.Antimatter, 100), 100000, 24000);
             RecipeHandler.addPRCRecipe(new ItemStack(MekanismItems.ScrapBox, 64), FluidRegistry.getFluidStack("liquidfusionfuel", 10000), new GasStack(MekanismFluids.UnstableDimensional, 10000),
@@ -462,6 +469,11 @@ public class MekanismRecipe {
             } else {
                 RecipeHandler.addRecyclerRecipe(new ItemStack(Blocks.STONE));
             }
+            ItemStack Substrate = new ItemStack(MekanismItems.Substrate);
+            if (RecipeHandler.Recipe.RECYCLER.containsRecipe(Substrate)) {
+                RecipeHandler.Recipe.RECYCLER.remove(RecipeHandler.Recipe.RECYCLER.get().get(new ItemStackInput(Substrate)));
+                RecipeHandler.addRecyclerRecipe(Substrate, 0.5);
+            }
         }
 
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.AMBIENT_ACCUMULATOR) || MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.AMBIENT_ACCUMULATOR_ENERGY)) {
@@ -496,6 +508,50 @@ public class MekanismRecipe {
             }
         }
         return stacks;
+    }
+
+
+    public static void SuperFumoReciperRegister() {
+        ItemStack SuperFumo = new ItemStack(MekanismBlocks.SuperFumo);
+        ItemStack helmet = new ItemStack(MekanismItems.MEKASUIT_HELMET);
+        ItemStack bodyarmor = new ItemStack(MekanismItems.MEKASUIT_BODYARMOR);
+        ItemStack pants = new ItemStack(MekanismItems.MEKASUIT_PANTS);
+        ItemStack boots = new ItemStack(MekanismItems.MEKASUIT_BOOTS);
+        ItemStack tool = new ItemStack(MekanismItems.MEKA_TOOL);
+
+        addAllModule(helmet);
+        addAllModule(bodyarmor);
+        addAllModule(pants);
+        addAllModule(boots);
+        addAllModule(tool);
+
+        addEnergy(helmet);
+        addEnergy(bodyarmor);
+        addEnergy(pants);
+        addEnergy(boots);
+        addEnergy(tool);
+
+        if (helmet.getItem() instanceof ItemMekaSuitHelmet item) {
+            item.setGas(helmet, new GasStack(MekanismFluids.NutritionalPaste, item.getMaxGas(helmet)));
+        }
+        if (bodyarmor.getItem() instanceof ItemMekaSuitBodyArmor item) {
+            item.setGas(bodyarmor, new GasStack(MekanismFluids.Hydrogen, item.getMaxGas(bodyarmor)));
+        }
+
+        GameRegistry.addShapedRecipe(Mekanism.rl("super_fumo"), null, SuperFumo, "A B", " C ", "D E", 'A', helmet, 'B', bodyarmor, 'C', tool, 'D', pants, 'E', boots);
+    }
+
+
+    public static void addAllModule(ItemStack stack) {
+        if (stack.getItem() instanceof IModuleContainerItem item) {
+            item.setAllModule(stack);
+        }
+    }
+
+    public static void addEnergy(ItemStack stack) {
+        if (stack.getItem() instanceof IEnergizedItem item) {
+            item.setEnergy(stack, item.getMaxEnergy(stack));
+        }
     }
 
 

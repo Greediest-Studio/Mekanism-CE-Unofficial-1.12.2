@@ -133,29 +133,35 @@ public abstract class TileEntityContainerBlock extends TileEntityBasicBlock impl
     @Nonnull
     @Override
     public ItemStack decrStackSize(int slotID, int amount) {
+        NonNullListSynchronized<ItemStack> inventory = getInventory();
+        if (inventory == null) {
+            return ItemStack.EMPTY;
+        }
         synchronized (inventory) {
-            if (getInventory() == null) {
-                return ItemStack.EMPTY;
-            }
-            return ItemStackHelper.getAndSplit(getInventory(), slotID, amount);
+            return ItemStackHelper.getAndSplit(inventory, slotID, amount);
         }
     }
 
     @Nonnull
     @Override
     public ItemStack removeStackFromSlot(int slotID) {
+        NonNullListSynchronized<ItemStack> inventory = getInventory();
+        if (inventory == null) {
+            return ItemStack.EMPTY;
+        }
         synchronized (inventory) {
-            if (getInventory() == null) {
-                return ItemStack.EMPTY;
-            }
-            return ItemStackHelper.getAndRemove(getInventory(), slotID);
+            return ItemStackHelper.getAndRemove(inventory, slotID);
         }
     }
 
     @Override
     public void setInventorySlotContents(int slotID, @Nonnull ItemStack itemstack) {
+        NonNullListSynchronized<ItemStack> inventory = getInventory();
+        if (inventory == null) {
+            return;
+        }
         synchronized (inventory) {
-            getInventory().set(slotID, itemstack);
+            inventory.set(slotID, itemstack);
             if (!itemstack.isEmpty() && itemstack.getCount() > getInventoryStackLimit()) {
                 itemstack.setCount(getInventoryStackLimit());
             }

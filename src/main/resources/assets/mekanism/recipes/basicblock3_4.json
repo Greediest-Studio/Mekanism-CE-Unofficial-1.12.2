@@ -1,0 +1,21 @@
+{
+  "result": {
+    "item": "mekanism:basicblock3",
+    "data": 4
+  },
+  "pattern": [
+    " B ",
+    "BCB",
+    " B "
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "B": {
+      "item": "mekanism:basicblock3",
+      "data": 0
+    },
+    "C": {
+      "item": "#CIRCUITULTIMATE"
+    }
+  }
+}

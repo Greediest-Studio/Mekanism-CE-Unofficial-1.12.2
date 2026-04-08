@@ -31,6 +31,41 @@ public class SynchronizedTankData extends SynchronizedData<SynchronizedTankData>
 
     public Set<ValveData> valves = new ObjectOpenHashSet<>();
 
+    public boolean hasFluid() {
+        return fluidStored != null && fluidStored.amount > 0;
+    }
+
+    public boolean hasGas() {
+        return gasstored != null && gasstored.amount > 0;
+    }
+
+    /**
+     * Dynamic Tank in modern Mekanism only allows one stored medium at a time.
+     * Keep the larger stored stack if old data or legacy logic produced both.
+     *
+     * @return True if any state was changed.
+     */
+    public boolean sanitizeStoredSubstances() {
+        boolean changed = false;
+        if (fluidStored != null && fluidStored.amount <= 0) {
+            fluidStored = null;
+            changed = true;
+        }
+        if (gasstored != null && gasstored.amount <= 0) {
+            gasstored = null;
+            changed = true;
+        }
+        if (fluidStored != null && gasstored != null) {
+            if (fluidStored.amount >= gasstored.amount) {
+                gasstored = null;
+            } else {
+                fluidStored = null;
+            }
+            changed = true;
+        }
+        return changed;
+    }
+
     public boolean needsRenderUpdate() {
         if ((fluidStored == null && prevFluid != null) || (fluidStored != null && prevFluid == null)) {
             return true;

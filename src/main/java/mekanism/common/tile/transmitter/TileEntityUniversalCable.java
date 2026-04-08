@@ -198,7 +198,7 @@ public class TileEntityUniversalCable extends TileEntityTransmitter<EnergyAccept
             buffer.amount = 0;
         }
         if (nbtTags.hasKey("tier")) {
-            tier = CableTier.values()[nbtTags.getInteger("tier")];
+            tier = MekanismUtils.getByIndex(CableTier.values(), nbtTags.getInteger("tier"), tier);
         }
     }
 
@@ -348,7 +348,7 @@ public class TileEntityUniversalCable extends TileEntityTransmitter<EnergyAccept
 
     @Override
     public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = CableTier.values()[dataStream.readInt()];
+        tier = MekanismUtils.getByIndex(CableTier.values(), dataStream.readInt(), tier);
         super.handlePacketData(dataStream);
     }
 

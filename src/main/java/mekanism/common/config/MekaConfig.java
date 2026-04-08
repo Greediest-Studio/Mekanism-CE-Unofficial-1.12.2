@@ -51,7 +51,8 @@ public class MekaConfig extends BaseConfig {
     public DoubleOption mekaToolMaxTeleportReach = new DoubleOption(this,  "mekaToolMaxTeleportReach", 100, "Maximum distance a player can teleport with the Meka-Tool.");
     public DoubleOption mekaToolEnergyUsageTeleport = new DoubleOption(this,  "mekaToolEnergyUsageTeleport", 1000, "Cost in Joules of using the Meka-Tool to teleport 10 blocks.");
     public DoubleOption mekaEnergyUsageHealthRegeneration = new DoubleOption(this,  "mekaEnergyUsageHealthRegeneration", 100, "How much energy regeneration is needed for a health regeneration");
-
+    public final DoubleOption mekaFishBaseEnergyCapacity = new DoubleOption(this, "mekaFishBaseEnergyCapacity", 16000000, "Energy capacity (Joules) of the Meka-Fish Rod without any installed upgrades. Quadratically scaled by upgrades.");
+    public final DoubleOption mekaFishBaseChargeRate = new DoubleOption(this, "mekaFishBaseChargeRate", 100000, "Amount (joules) of energy the Meka-Fish Rod can accept per tick. Quadratically scaled by upgrades.");
 
     public final Map<DamageSource, FloatOption> mekaSuitDamageRatios = create();
 

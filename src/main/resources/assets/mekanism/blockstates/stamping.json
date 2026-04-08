@@ -1,32 +1,43 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/crusher/crusherside",
-                  "south": "mekanism:blocks/crusher/crusherback",
-                  "west": "mekanism:blocks/crusher/crusherside",
-                  "sides": "mekanism:blocks/crusher/crusherside",
-                  "front": "mekanism:blocks/crusher/crusherfront",
-                  "up": "mekanism:blocks/crusher/crushertop",
-                  "down": "mekanism:blocks/crusher/crusherbottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "east": "mekanism:blocks/stamping/side",
+      "south": "mekanism:blocks/stamping/back",
+      "west": "mekanism:blocks/stamping/side",
+      "sides": "mekanism:blocks/stamping/side",
+      "front": "mekanism:blocks/stamping/front",
+      "up": "mekanism:blocks/stamping/top",
+      "down": "mekanism:blocks/stamping/bottom"
+    },
+    "model": "mekanism:machine"
+  },
+  "variants": {
+    "facing": {
+      "east": {
+        "y": 90
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/crusher/crushersideon",
-                        "west": "mekanism:blocks/crusher/crushersideon",
-                        "front": "mekanism:blocks/crusher/crusherfronton"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
+      "south": {
+        "y": 180
+      },
+      "north": {},
+      "west": {
+        "y": -90
       }
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "east": "mekanism:blocks/stamping/side_active",
+          "west": "mekanism:blocks/stamping/side_active",
+          "sides": "mekanism:blocks/stamping/side_active",
+          "front": "mekanism:blocks/stamping/front_active"
+        }
+      },
+      "false": {}
+    },
+    "inventory": [
+      {}
+    ]
+  }
 }

@@ -23,7 +23,7 @@ public class RenderReactor extends TileEntitySpecialRenderer<TileEntityReactorCo
 
     @Override
     public void render(TileEntityReactorController tileEntity, double x, double y, double z, float partialTick, int destroyStage, float alpha) {
-        if (tileEntity.isBurning()) {
+        if (tileEntity.isBurning() && tileEntity.shouldRenderPlasmaCore()) {
             GlStateManager.pushMatrix();
             GlStateManager.translate((float) x + 0.5F, (float) y - 1.5F, (float) z + 0.5F);
             bindTexture(MekanismUtils.getResource(ResourceType.RENDER, "EnergyCore.png"));

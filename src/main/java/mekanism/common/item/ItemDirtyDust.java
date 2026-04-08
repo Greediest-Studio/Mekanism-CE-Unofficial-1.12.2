@@ -3,6 +3,7 @@ package mekanism.common.item;
 import mekanism.common.Mekanism;
 import mekanism.common.Resource;
 import mekanism.common.base.IMetaItem;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
@@ -19,7 +20,7 @@ public class ItemDirtyDust extends ItemMekanism implements IMetaItem {
 
     @Override
     public String getTexture(int meta) {
-        return "Dirty" + Resource.values()[meta].getName() + "Dust";
+        return "Dirty" + MekanismUtils.getByIndex(Resource.values(), meta, Resource.IRON).getName() + "Dust";
     }
 
     @Override
@@ -39,9 +40,7 @@ public class ItemDirtyDust extends ItemMekanism implements IMetaItem {
     @Nonnull
     @Override
     public String getTranslationKey(ItemStack item) {
-        if (item.getItemDamage() <= Resource.values().length - 1) {
-            return "item.dirty" + Resource.values()[item.getItemDamage()].getName() + "Dust";
-        }
-        return "Invalid";
+        Resource resource = MekanismUtils.getByIndex(Resource.values(), item.getItemDamage(), null);
+        return resource == null ? "Invalid" : "item.dirty" + resource.getName() + "Dust";
     }
 }

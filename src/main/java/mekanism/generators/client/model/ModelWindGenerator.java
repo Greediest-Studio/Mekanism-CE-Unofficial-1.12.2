@@ -164,7 +164,14 @@ public class ModelWindGenerator extends ModelBase {
     }
 
     public void renderBlock(float size, double angle) {
+        renderBlock(size, angle, true);
+    }
+
+    public void renderBlock(float size, double angle, boolean renderBlades) {
         renderModel(size);
+        if (!renderBlades) {
+            return;
+        }
         if (MekanismConfig.current().client.windGeneratorRotating.val()) {
             setRotation(blade1a, 0F, 0F, getRotation(getAbsoluteAngle(angle)));
             setRotation(blade1b, 0F, 0F, 0.0349066F + getRotation(getAbsoluteAngle(angle)));
@@ -206,6 +213,22 @@ public class ModelWindGenerator extends ModelBase {
         blade1b.render(size);
         blade2b.render(size);
         blade3b.render(size);
+    }
+
+    public void applySelectionBladeAngle(double angle) {
+        if (MekanismConfig.current().client.windGeneratorRotating.val()) {
+            setRotation(blade1a, 0F, 0F, getRotation(getAbsoluteAngle(angle)));
+            setRotation(blade1b, 0F, 0F, 0.0349066F + getRotation(getAbsoluteAngle(angle)));
+
+            setRotation(blade2a, 0F, 0F, getRotation(getAbsoluteAngle(angle - 60)));
+            setRotation(blade2b, 0F, 0F, 0.0349066F + getRotation(getAbsoluteAngle(angle - 60)));
+
+            setRotation(blade3a, 0F, 0F, getRotation(getAbsoluteAngle(angle + 60)));
+            setRotation(blade3b, 0F, 0F, 0.0349066F + getRotation(getAbsoluteAngle(angle + 60)));
+
+            setRotation(bladeCap, 0F, 0F, getRotation(getAbsoluteAngle(angle)));
+            setRotation(bladeCenter, 0F, 0F, getRotation(getAbsoluteAngle(angle)));
+        }
     }
 
     public void renderModel(float size) {

@@ -1,34 +1,26 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryLeft",
-                  "south": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryBack",
-                  "west": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryRight",
-                  "sides": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryRight",
-                  "front": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryFront",
-                  "up": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/ultimate"
+    },
+    "model": "mekanism:factory_rolling"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/ultimate"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryBackOn",
-                        "west": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryRightOn",
-                        "front": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/ultimate/combining/UltimateCombiningFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }

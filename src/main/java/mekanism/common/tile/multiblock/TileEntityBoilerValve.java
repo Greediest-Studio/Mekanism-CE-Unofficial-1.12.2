@@ -13,6 +13,7 @@ import mekanism.common.MekanismFluids;
 import mekanism.common.base.FluidHandlerWrapper;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.IFluidHandlerWrapper;
+import mekanism.common.block.states.BlockStateBasic.BoilerValveModeProperty;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.boiler.*;
 import mekanism.common.integration.computer.IComputerIntegration;
@@ -43,6 +44,9 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     public BoilerGasTank outputTank;
     private int currentRedstoneLevel;
 
+    private PortMode mode = PortMode.INPUT;
+
+    // Legacy field kept for compatibility with old saves and active-texture checks.
     public boolean Eject;
 
     public TileEntityBoilerValve() {
@@ -56,21 +60,27 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     @Override
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
-        Eject = nbtTags.getBoolean("Eject");
+        if (nbtTags.hasKey("boilerValveMode")) {
+            mode = PortMode.byIndex(nbtTags.getInteger("boilerValveMode"));
+        } else {
+            //Old saves only had input/output eject state
+            mode = nbtTags.getBoolean("Eject") ? PortMode.OUTPUT_STEAM : PortMode.INPUT;
+        }
+        updateEjectFlag();
     }
 
     @Override
     public void writeCustomNBT(NBTTagCompound nbtTags) {
         super.writeCustomNBT(nbtTags);
+        nbtTags.setInteger("boilerValveMode", mode.ordinal());
         nbtTags.setBoolean("Eject", Eject);
-
     }
 
     @Override
     public void onUpdateServer() {
         super.onUpdateServer();
-        if (structure != null && structure.upperRenderLocation != null && getPos().getY() >= structure.upperRenderLocation.y - 1) {
-            if (structure.steamStored != null && structure.steamStored.amount > 0 && Eject) {
+        if (structure != null) {
+            if (mode == PortMode.OUTPUT_STEAM && structure.steamStored != null && structure.steamStored.amount > 0) {
                 EmitUtils.forEachSide(getWorld(), getPos(), EnumSet.allOf(EnumFacing.class), (tile, side) -> {
                     if (!(tile instanceof TileEntityBoilerValve)) {
                         IFluidHandler handler = CapabilityUtils.getCapability(tile, CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, side.getOpposite());
@@ -83,7 +93,7 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
                     }
                 });
             }
-            if (outputTank.getGas() != null && outputTank.getGas().getGas() != null && Eject) {
+            if (mode == PortMode.OUTPUT_COOLANT && outputTank.getGas() != null && outputTank.getGas().getGas() != null) {
                 GasStack toSend = outputTank.getGas().copy().withAmount(Math.min(outputTank.getMaxGas(), outputTank.getGasAmount()));
                 outputTank.output(GasUtils.emit(toSend, this, EnumSet.allOf(EnumFacing.class)), true);
             }
@@ -98,42 +108,49 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     @Override
     public FluidTankInfo[] getTankInfo(EnumFacing from) {
         if ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) {
-            if (structure.upperRenderLocation != null && getPos().getY() >= structure.upperRenderLocation.y - 1) {
+            if (mode == PortMode.INPUT) {
+                return new FluidTankInfo[]{waterTank.getInfo()};
+            } else if (mode == PortMode.OUTPUT_STEAM) {
                 return new FluidTankInfo[]{steamTank.getInfo()};
             }
-            return new FluidTankInfo[]{waterTank.getInfo()};
         }
         return PipeUtils.EMPTY;
     }
 
     @Override
     public FluidTankInfo[] getAllTanks() {
-        return new FluidTankInfo[]{steamTank.getInfo(), waterTank.getInfo()};
+        return getTankInfo(null);
     }
 
     @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
+        if (mode != PortMode.INPUT || resource.getFluid() != FluidRegistry.WATER) {
+            return 0;
+        }
         return waterTank.fill(resource, doFill);
     }
 
     @Override
     @Nullable
     public FluidStack drain(EnumFacing from, int maxDrain, boolean doDrain) {
+        if (mode != PortMode.OUTPUT_STEAM) {
+            return null;
+        }
         return steamTank.drain(maxDrain, doDrain);
     }
 
     @Override
     public boolean canFill(EnumFacing from, @Nonnull FluidStack fluid) {
-        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && !Eject) {
-            return structure.upperRenderLocation != null && getPos().getY() < structure.upperRenderLocation.y - 1 && fluid.getFluid() == FluidRegistry.WATER;
+        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && mode == PortMode.INPUT) {
+            return fluid.getFluid() == FluidRegistry.WATER;
         }
         return false;
     }
 
     @Override
     public boolean canDrain(EnumFacing from, @Nullable FluidStack fluid) {
-        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && Eject) {
-            return structure.upperRenderLocation != null && getPos().getY() >= structure.upperRenderLocation.y - 1 && FluidContainerUtils.canDrain(structure.steamStored, fluid);
+        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && mode == PortMode.OUTPUT_STEAM) {
+            return FluidContainerUtils.canDrain(structure.steamStored, fluid);
         }
         return false;
     }
@@ -202,26 +219,32 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null || !canReceiveGas(side, stack.getGas())) {
+            return 0;
+        }
         return inputTank.input(stack, doTransfer);
     }
 
     @Override
     public GasStack drawGas(EnumFacing side, int amount, boolean doTransfer) {
+        if (mode != PortMode.OUTPUT_COOLANT) {
+            return null;
+        }
         return outputTank.output(amount, doTransfer);
     }
 
     @Override
     public boolean canReceiveGas(EnumFacing side, Gas type) {
-        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && !Eject) {
-            return structure.upperRenderLocation != null && getPos().getY() < structure.upperRenderLocation.y - 1 && type == MekanismFluids.SuperheatedSodium;
+        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && mode == PortMode.INPUT) {
+            return type == MekanismFluids.SuperheatedSodium;
         }
         return false;
     }
 
     @Override
     public boolean canDrawGas(EnumFacing side, Gas type) {
-        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && Eject) {
-            return structure.upperRenderLocation != null && getPos().getY() >= structure.upperRenderLocation.y - 1 && GasUtils.canDrain(structure.OutputGas, type);
+        if (((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) && mode == PortMode.OUTPUT_COOLANT) {
+            return GasUtils.canDrain(structure.OutputGas, type);
         }
         return false;
     }
@@ -229,7 +252,14 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     @Nonnull
     @Override
     public GasTankInfo[] getTankInfo() {
-        return ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) ? new GasTankInfo[]{inputTank.getInfo(), outputTank.getInfo()} : IGasHandler.NONE;
+        if ((!isRemote() && structure != null) || (isRemote() && clientHasStructure)) {
+            if (mode == PortMode.INPUT) {
+                return new GasTankInfo[]{inputTank.getInfo()};
+            } else if (mode == PortMode.OUTPUT_COOLANT) {
+                return new GasTankInfo[]{outputTank.getInfo()};
+            }
+        }
+        return IGasHandler.NONE;
     }
 
 
@@ -237,9 +267,10 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     public void handlePacketData(ByteBuf dataStream) {
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            boolean prevEject = Eject;
-            Eject = dataStream.readBoolean();
-            if (prevEject != Eject) {
+            PortMode prevMode = mode;
+            mode = PortMode.byIndex(dataStream.readInt());
+            updateEjectFlag();
+            if (prevMode != mode) {
                 MekanismUtils.updateBlock(world, getPos());
             }
         }
@@ -248,17 +279,29 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     @Override
     public TileNetworkList getNetworkedData(TileNetworkList data) {
         super.getNetworkedData(data);
-        data.add(Eject);
+        data.add(mode.ordinal());
         return data;
     }
 
     @Override
     public EnumActionResult onSneakRightClick(EntityPlayer player, EnumFacing side) {
         if (!isRemote()) {
-            Eject = !Eject;
-            String modeText = " " + (Eject ? EnumColor.DARK_RED : EnumColor.DARK_GREEN) + LangUtils.transOutputInput(Eject) + ".";
+            mode = mode.next();
+            updateEjectFlag();
+            String modeText;
+            switch (mode) {
+                case INPUT:
+                    modeText = LangUtils.localize("gui.input");
+                    break;
+                case OUTPUT_COOLANT:
+                    modeText = LangUtils.localize("gui.output") + " " + LangUtils.localize("gui.coolant");
+                    break;
+                default:
+                    modeText = LangUtils.localize("gui.output") + " " + LangUtils.localize("fluid.steam");
+                    break;
+            }
             player.sendMessage(new TextComponentString(EnumColor.DARK_BLUE + Mekanism.LOG_TAG + " " + EnumColor.GREY +
-                    LangUtils.localize("tooltip.configurator.reactorPortEject") + modeText));
+                    LangUtils.localize("tooltip.configurator.reactorPortEject") + " " + EnumColor.AQUA + modeText));
             Mekanism.packetHandler.sendUpdatePacket(this);
             markNoUpdateSync();
         }
@@ -268,5 +311,45 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IFl
     @Override
     public EnumActionResult onRightClick(EntityPlayer player, EnumFacing side) {
         return EnumActionResult.PASS;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
+    }
+
+    private void updateEjectFlag() {
+        Eject = mode != PortMode.INPUT;
+    }
+
+    public PortMode getMode() {
+        return mode;
+    }
+
+    public BoilerValveModeProperty getRenderMode() {
+        return switch (mode) {
+            case INPUT -> BoilerValveModeProperty.INPUT;
+            case OUTPUT_STEAM -> BoilerValveModeProperty.OUTPUT_STEAM;
+            case OUTPUT_COOLANT -> BoilerValveModeProperty.OUTPUT_COOLANT;
+        };
+    }
+
+    public enum PortMode {
+        INPUT,
+        OUTPUT_STEAM,
+        OUTPUT_COOLANT;
+
+        private static final PortMode[] MODES = values();
+
+        public PortMode next() {
+            return MODES[(ordinal() + 1) % MODES.length];
+        }
+
+        public static PortMode byIndex(int index) {
+            if (index < 0 || index >= MODES.length) {
+                return INPUT;
+            }
+            return MODES[index];
+        }
     }
 }

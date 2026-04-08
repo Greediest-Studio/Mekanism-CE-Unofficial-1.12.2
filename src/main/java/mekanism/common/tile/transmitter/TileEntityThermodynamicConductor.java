@@ -93,7 +93,7 @@ public class TileEntityThermodynamicConductor extends TileEntityTransmitter<IHea
         super.readCustomNBT(nbtTags);
         temperature = nbtTags.getDouble("temperature");
         if (nbtTags.hasKey("tier")) {
-            tier = ConductorTier.values()[nbtTags.getInteger("tier")];
+            tier = MekanismUtils.getByIndex(ConductorTier.values(), nbtTags.getInteger("tier"), tier);
         }
     }
 
@@ -120,7 +120,7 @@ public class TileEntityThermodynamicConductor extends TileEntityTransmitter<IHea
 
     @Override
     public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = ConductorTier.values()[dataStream.readInt()];
+        tier = MekanismUtils.getByIndex(ConductorTier.values(), dataStream.readInt(), tier);
         super.handlePacketData(dataStream);
         temperature = dataStream.readDouble();
     }

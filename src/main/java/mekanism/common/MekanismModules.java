@@ -2,6 +2,7 @@ package mekanism.common;
 
 import mekanism.api.gear.ModuleData;
 import mekanism.common.content.gear.ModuleHelper;
+import mekanism.common.content.gear.mekafishrod.ModuleintelligentUnit;
 import mekanism.common.content.gear.mekasuit.*;
 import mekanism.common.content.gear.mekatool.*;
 import mekanism.common.content.gear.shared.ModuleEnergyUnit;
@@ -59,6 +60,16 @@ public class MekanismModules {
     public static final ModuleData<ModuleHydraulicPropulsionUnit> HYDRAULIC_PROPULSION_UNIT = ModuleHelper.register("hydraulic_propulsion_unit", ModuleHydraulicPropulsionUnit::new, builder -> builder.maxStackSize(4).rarity(EnumRarity.RARE));
     public static final ModuleData<ModuleMagneticAttractionUnit> MAGNETIC_ATTRACTION_UNIT = ModuleHelper.register("magnetic_attraction_unit", ModuleMagneticAttractionUnit::new, builder -> builder.maxStackSize(4).rarity(EnumRarity.RARE).handlesModeChange());
     public static final ModuleData<?> FROST_WALKER_UNIT = ModuleHelper.registerEnchantBased("frost_walker_unit", () -> Enchantments.FROST_WALKER, builder -> builder.maxStackSize(2).rarity(EnumRarity.RARE));
+
+    //fish rod
+    //水下收集模块【提高钓鱼时的幸运度】
+    public static final ModuleData<?> FISHING_COLLECTING_UNIT = ModuleHelper.registerMarker("fishing_collecting_unit", builder -> builder.maxStackSize(10).rarity(EnumRarity.UNCOMMON));
+    //钓饵模块【提升钓鱼速度】
+    public static final ModuleData<?> FISHING_SPEED_UNIT = ModuleHelper.registerMarker("fishing_speed_unit", builder -> builder.maxStackSize(6).rarity(EnumRarity.UNCOMMON));
+    //智能钓鱼模块【当钓鱼上时自动收杆并抛竿】,判断 EntityFishHook.ticksCatchable是否> 0，如果是则收杆
+    public static final ModuleData<ModuleintelligentUnit> FISHING_INTELLIGENT_UNIT = ModuleHelper.register("fishing_intelligent_unit", ModuleintelligentUnit::new, builder -> builder.rarity(EnumRarity.UNCOMMON).handlesModeChange().disabledByDefault());
+    //多重捕捞模块【当钓鱼成功时，能够掉起多个物品或者鱼】，通过ItemFishedEvent修改
+    public static final ModuleData<?> FISHING_MULTIPLE_UNIT = ModuleHelper.registerMarker("fishing_multiple_unit", builder -> builder.maxStackSize(64).rarity(EnumRarity.UNCOMMON));
 
 
 }

@@ -11,6 +11,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 
@@ -107,6 +108,11 @@ public class GuiDisableableButton extends GuiButton {
         return enabledColor;
     }
 
+    @Nullable
+    protected Integer getButtonColorARGB(int mouseX, int mouseY) {
+        return null;
+    }
+
     @Override
     public void drawButton(@Nonnull Minecraft mc, int mouseX, int mouseY, float partialTicks) {
         if (visible) {
@@ -114,6 +120,10 @@ public class GuiDisableableButton extends GuiButton {
             //Ensure the color gets reset. The default GuiButtonImage doesn't so other GuiButton's can have the color leak out of them
             MekanismRenderer.resetColor();
             hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+            Integer buttonColor = getButtonColorARGB(mouseX, mouseY);
+            if (buttonColor != null) {
+                MekanismRenderer.color(buttonColor);
+            }
             int i = getHoverState(hovered);
             int position = i * 20;
             int halfWidthLeft = width / 2;
@@ -129,6 +139,7 @@ public class GuiDisableableButton extends GuiButton {
             drawTexturedModalRect(x, y + halfHeightTop, 0, position + 20 - halfHeightBottom, halfWidthLeft, halfHeightBottom);
             drawTexturedModalRect(x + halfWidthLeft, y, 200 - halfWidthRight, position, halfWidthRight, halfHeightTop);
             drawTexturedModalRect(x + halfWidthLeft, y + halfHeightTop, 200 - halfWidthRight, position + 20 - halfHeightBottom, halfWidthRight, halfHeightBottom);
+            MekanismRenderer.resetColor();
             if (overlay != null && displayString.isEmpty()) {
                 mc.getTextureManager().bindTexture(ButtonIcon);
                 int w = overlay.width;

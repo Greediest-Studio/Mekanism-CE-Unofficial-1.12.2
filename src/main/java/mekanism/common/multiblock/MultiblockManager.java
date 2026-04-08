@@ -75,9 +75,9 @@ public class MultiblockManager<T extends SynchronizedData<T>> {
 
     public void tickSelf(World world) {
         ArrayList<String> idsToKill = new ArrayList<>();
-        Map<String, Set<Coord4D>> tilesToKill = new Object2ObjectOpenHashMap<>();
-        inventories.entrySet().parallelStream().forEach(entry -> {
+        for (Map.Entry<String, MultiblockCache<T>> entry : inventories.entrySet()) {
             String inventoryID = entry.getKey();
+            Set<Coord4D> tilesToKill = new ObjectOpenHashSet<>();
             for (Coord4D obj : entry.getValue().locations) {
                 if (obj.dimensionId != world.provider.getDimension() || !obj.exists(world)) {
                     continue;
@@ -85,25 +85,23 @@ public class MultiblockManager<T extends SynchronizedData<T>> {
                 TileEntity tileEntity = obj.getTileEntity(world);
                 if (!(tileEntity instanceof TileEntityMultiblock<?> multiblock) || multiblock.getManager() != this ||
                         (getStructureId(multiblock) != null && !Objects.equals(getStructureId(multiblock), inventoryID))) {
-                    if (!tilesToKill.containsKey(inventoryID)) {
-                        tilesToKill.put(inventoryID, new ObjectOpenHashSet<>());
-                    }
-                    tilesToKill.get(inventoryID).add(obj);
+                    tilesToKill.add(obj);
                 }
+            }
+            if (!tilesToKill.isEmpty()) {
+                entry.getValue().locations.removeAll(tilesToKill);
             }
             if (entry.getValue().locations.isEmpty()) {
                 idsToKill.add(inventoryID);
             }
-        });
-
-        tilesToKill.forEach((key, value) -> value.forEach(obj -> inventories.get(key).locations.remove(obj)));
-        idsToKill.forEach(inventoryID -> inventories.remove(inventoryID));
+        }
+        idsToKill.forEach(inventories::remove);
 
     }
 
     public void updateCache(TileEntityMultiblock<T> tile) {
+        tile.cachedData.locations.add(Coord4D.get(tile));
         if (!inventories.containsKey(tile.cachedID)) {
-            tile.cachedData.locations.add(Coord4D.get(tile));
             inventories.put(tile.cachedID, tile.cachedData);
         } else {
             inventories.get(tile.cachedID).locations.add(Coord4D.get(tile));

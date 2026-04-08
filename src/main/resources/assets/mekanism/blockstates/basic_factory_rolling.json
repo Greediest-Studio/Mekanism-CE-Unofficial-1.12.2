@@ -1,34 +1,26 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryLeft",
-                  "south": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryBack",
-                  "west": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryRight",
-                  "sides": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryRight",
-                  "front": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryFront",
-                  "up": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/basic"
+    },
+    "model": "mekanism:factory_rolling"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/basic"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryBackOn",
-                        "west": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryRightOn",
-                        "front": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/basic/combining/BasicCombiningFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }

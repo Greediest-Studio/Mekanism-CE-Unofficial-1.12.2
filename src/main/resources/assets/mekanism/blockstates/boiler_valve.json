@@ -1,14 +1,15 @@
 {
       "forge_marker": 1,
       "defaults": {
-            "textures": {"all": "mekanism:blocks/boiler_valve"},
             "model": "mekanism:basic_cube"
       },
       "variants": {
             "normal": [{}],
-            "active": {
-                  "true": {"textures": {"all": "mekanism:blocks/boiler_valve_output"}},
-                  "false": {}},
-            "inventory": [{}]
+            "mode": {
+                  "input": {"textures": {"all": "mekanism:blocks/boiler_valve_input"}},
+                  "output_steam": {"textures": {"all": "mekanism:blocks/boiler_valve_output_steam"}},
+                  "output_coolant": {"textures": {"all": "mekanism:blocks/boiler_valve_output_coolant"}}
+            },
+            "inventory": [{"textures": {"all": "mekanism:blocks/boiler_valve_input"}}]
       }
 }

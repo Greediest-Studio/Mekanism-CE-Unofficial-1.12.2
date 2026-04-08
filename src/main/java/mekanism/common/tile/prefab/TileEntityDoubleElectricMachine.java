@@ -185,4 +185,9 @@ public abstract class TileEntityDoubleElectricMachine<RECIPE extends DoubleMachi
     public boolean getExtraSlot() {
         return inventory.get(1).isEmpty();
     }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return false;
+    }
 }

@@ -484,7 +484,7 @@ public class TileEntityFormulaicAssemblicator extends TileEntityElectricBlock im
         super.readCustomNBT(nbtTags);
         autoMode = nbtTags.getBoolean("autoMode");
         operatingTicks = nbtTags.getInteger("operatingTicks");
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
+        controlType = MekanismUtils.getByIndex(RedstoneControl.values(), nbtTags.getInteger("controlType"), controlType);
         pulseOperations = nbtTags.getInteger("pulseOperations");
         stockControl = nbtTags.getBoolean("stockControl");
     }
@@ -529,7 +529,7 @@ public class TileEntityFormulaicAssemblicator extends TileEntityElectricBlock im
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             autoMode = dataStream.readBoolean();
             operatingTicks = dataStream.readInt();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            controlType = MekanismUtils.getByIndex(RedstoneControl.values(), dataStream.readInt(), controlType);
             isRecipe = dataStream.readBoolean();
             stockControl = dataStream.readBoolean();
             if (dataStream.readBoolean()) {

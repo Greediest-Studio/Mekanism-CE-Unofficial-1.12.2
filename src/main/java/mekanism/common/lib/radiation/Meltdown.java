@@ -2,13 +2,19 @@ package mekanism.common.lib.radiation;
 
 import mekanism.api.NBTConstants;
 import mekanism.common.util.WorldUtils;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
+import net.minecraftforge.event.ForgeEventFactory;
 
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 public class Meltdown {
 
@@ -60,7 +66,7 @@ public class Meltdown {
             int x = nextInt(world.rand, minPos.getX(), maxPos.getX());
             int y = nextInt(world.rand, minPos.getY(), maxPos.getY());
             int z = nextInt(world.rand, minPos.getZ(), maxPos.getZ());
-            world.newExplosion(null, x, y, z, 8, true, true);
+            createExplosion(world, x, y, z, 8, true, true);
         }
 
         if (!WorldUtils.isBlockLoaded(world, minPos) || !WorldUtils.isBlockLoaded(world, maxPos)) {
@@ -70,8 +76,127 @@ public class Meltdown {
         return ticksExisted >= DURATION;
     }
 
+    /**
+     * Creates an explosion and ensures blocks inside our meltdown bounds get destroyed.
+     */
+    private void createExplosion(World world, double x, double y, double z, float radius, boolean causesFire, boolean damagesTerrain) {
+        Explosion explosion = new MeltdownExplosion(world, x, y, z, radius, causesFire, damagesTerrain, multiblockID);
+        List<BlockPos> toBlow = new ArrayList<>();
+        for (int j = 0; j < 16; ++j) {
+            for (int k = 0; k < 16; ++k) {
+                for (int l = 0; l < 16; ++l) {
+                    if (j == 0 || j == 15 || k == 0 || k == 15 || l == 0 || l == 15) {
+                        double d0 = j / 7.5 - 1.0;
+                        double d1 = k / 7.5 - 1.0;
+                        double d2 = l / 7.5 - 1.0;
+                        double d3 = Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
+                        d0 /= d3;
+                        d1 /= d3;
+                        d2 /= d3;
+                        float f = radius * (0.7F + world.rand.nextFloat() * 0.6F);
+                        double d4 = x;
+                        double d6 = y;
+                        double d8 = z;
+
+                        for (; f > 0.0F; f -= 0.22500001F) {
+                            BlockPos pos = new BlockPos(d4, d6, d8);
+                            IBlockState state = world.getBlockState(pos);
+                            if (state.getMaterial() != Material.AIR) {
+                                f -= (state.getBlock().getExplosionResistance(world, pos, null, explosion) + 0.3F) * 0.3F;
+                            }
+                            if (f > 0.0F && minPos.getX() <= d4 && minPos.getY() <= d6 && minPos.getZ() <= d8 && d4 <= maxPos.getX() && d6 <= maxPos.getY() && d8 <= maxPos.getZ()) {
+                                toBlow.add(pos);
+                            }
+                            d4 += d0 * 0.3D;
+                            d6 += d1 * 0.3D;
+                            d8 += d2 * 0.3D;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!ForgeEventFactory.onExplosionStart(world, explosion)) {
+            explosion.doExplosionA();
+            explosion.doExplosionB(true);
+        }
+
+        Collections.shuffle(toBlow, world.rand);
+        List<DropData> drops = new ArrayList<>();
+        for (BlockPos toExplode : toBlow) {
+            IBlockState state = world.getBlockState(toExplode);
+            if (state.getMaterial() != Material.AIR) {
+                Block block = state.getBlock();
+                if (!world.isRemote && world.getGameRules().getBoolean("doTileDrops") && block.canDropFromExplosion(explosion)) {
+                    NonNullList<ItemStack> blockDrops = NonNullList.create();
+                    block.getDrops(blockDrops, world, toExplode, state, 0);
+                    for (ItemStack stack : blockDrops) {
+                        addBlockDrops(drops, stack, toExplode);
+                    }
+                }
+                block.onBlockExploded(world, toExplode, explosion);
+            }
+        }
+        if (!world.isRemote) {
+            for (DropData drop : drops) {
+                if (!drop.stack.isEmpty()) {
+                    Block.spawnAsEntity(world, drop.pos, drop.stack);
+                }
+            }
+        }
+    }
+
+    private static void addBlockDrops(List<DropData> dropPositions, ItemStack stack, BlockPos pos) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        ItemStack toInsert = stack.copy();
+        for (DropData drop : dropPositions) {
+            if (canMerge(drop.stack, toInsert)) {
+                int transfer = Math.min(drop.stack.getMaxStackSize() - drop.stack.getCount(), toInsert.getCount());
+                if (transfer > 0) {
+                    drop.stack.grow(transfer);
+                    toInsert.shrink(transfer);
+                    if (toInsert.isEmpty()) {
+                        return;
+                    }
+                }
+            }
+        }
+        dropPositions.add(new DropData(toInsert, pos));
+    }
+
+    private static boolean canMerge(ItemStack existing, ItemStack stack) {
+        return !existing.isEmpty() && !stack.isEmpty() && ItemStack.areItemsEqual(existing, stack) && ItemStack.areItemStackTagsEqual(existing, stack);
+    }
+
 
     public static int nextInt(Random pRandom, int pMinimum, int pMaximum) {
         return pMinimum >= pMaximum ? pMinimum : pRandom.nextInt(pMaximum - pMinimum + 1) + pMinimum;
+    }
+
+    public static class MeltdownExplosion extends Explosion {
+
+        private final UUID multiblockID;
+
+        private MeltdownExplosion(World world, double x, double y, double z, float radius, boolean causesFire, boolean damagesTerrain, UUID multiblockID) {
+            super(world, null, x, y, z, radius, causesFire, damagesTerrain);
+            this.multiblockID = multiblockID;
+        }
+
+        public UUID getMultiblockID() {
+            return multiblockID;
+        }
+    }
+
+    private static class DropData {
+
+        private final ItemStack stack;
+        private final BlockPos pos;
+
+        private DropData(ItemStack stack, BlockPos pos) {
+            this.stack = stack;
+            this.pos = pos;
+        }
     }
 }

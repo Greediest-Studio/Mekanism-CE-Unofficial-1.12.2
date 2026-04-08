@@ -16,7 +16,7 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 
-public class ItemBlockLargeGasGenerator extends ItemBlockLargeBase {
+public class ItemBlockLargeGasGenerator extends ItemBlockLargeBaseEnergy {
 
     public ItemBlockLargeGasGenerator(Block block) {
         super(block, "LargeGasGenerator");

@@ -5,9 +5,9 @@
             "count": 4
       },
       "pattern": [
-            " I ",
+            "SIS",
             "IGI",
-            " I "
+            "SIS"
       ],
       "type": "forge:ore_shaped",
       "key": {
@@ -16,8 +16,11 @@
                   "type": "forge:ore_dict"
             },
             "I": {
-                  "item": "mekanismgenerators:reactor",
-                  "data": 1
+                  "ore": "ingotLead",
+                  "type": "forge:ore_dict"
+            },
+            "S": {
+                  "item": "mekanism:enrichediron"
             }
       }
 }

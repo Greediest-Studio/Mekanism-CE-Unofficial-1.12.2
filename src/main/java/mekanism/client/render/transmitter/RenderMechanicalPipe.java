@@ -41,6 +41,9 @@ public class RenderMechanicalPipe extends RenderTransmitterBase<TileEntityMechan
         if (MekanismConfig.current().client.opaqueTransmitters.val()) {
             return;
         }
+        if (!shouldRenderTransmitterInterior(pipe, partialTick)) {
+            return;
+        }
 
         float targetScale;
         Fluid fluid;

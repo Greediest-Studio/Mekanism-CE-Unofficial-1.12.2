@@ -14,6 +14,8 @@ import mekanism.generators.common.block.states.BlockStateGenerator.GeneratorType
 import mekanism.generators.common.block.states.BlockStateReactor.ReactorBlockStateMapper;
 import mekanism.generators.common.block.states.BlockStateReactor.ReactorBlockType;
 import mekanism.generators.common.tile.*;
+import mekanism.generators.common.tile.fission.TileEntityFissionReactorCasing;
+import mekanism.generators.common.tile.fission.TileEntityFissionReactorLogicAdapter;
 import mekanism.generators.common.tile.reactor.TileEntityReactorController;
 import mekanism.generators.common.tile.reactor.TileEntityReactorLogicAdapter;
 import mekanism.generators.common.tile.turbine.TileEntityTurbineCasing;
@@ -70,11 +72,13 @@ public class GeneratorsClientProxy extends GeneratorsCommonProxy {
         registerItemRender(GeneratorsItems.MODULE_GEOTHERMAL_GENERATOR);
 
         Item.getItemFromBlock(GeneratorsBlocks.Generator).setTileEntityItemStackRenderer(new RenderGeneratorItem());
+        Item.getItemFromBlock(GeneratorsBlocks.Generator2).setTileEntityItemStackRenderer(new RenderGeneratorItem());
     }
 
     @Override
     public void registerBlockRenders() {
         ModelLoader.setCustomStateMapper(GeneratorsBlocks.Generator, generatorMapper);
+        ModelLoader.setCustomStateMapper(GeneratorsBlocks.Generator2, generatorMapper);
         ModelLoader.setCustomStateMapper(GeneratorsBlocks.Reactor, reactorMapper);
         ModelLoader.setCustomStateMapper(GeneratorsBlocks.ReactorGlass, reactorMapper);
 
@@ -131,6 +135,9 @@ public class GeneratorsClientProxy extends GeneratorsCommonProxy {
             case 12 -> new GuiReactorFuel(player.inventory, (TileEntityReactorController) tileEntity);
             case 13 -> new GuiReactorStats(player.inventory, (TileEntityReactorController) tileEntity);
             case 15 -> new GuiReactorLogicAdapter(player.inventory, (TileEntityReactorLogicAdapter) tileEntity);
+            case 16 -> new GuiFissionReactor(player.inventory, (TileEntityFissionReactorCasing) tileEntity);
+            case 17 -> new GuiFissionReactorStats(player.inventory, (TileEntityFissionReactorCasing) tileEntity);
+            case 18 -> new GuiFissionReactorLogicAdapter(player.inventory, (TileEntityFissionReactorLogicAdapter) tileEntity);
             default -> null;
         };
 

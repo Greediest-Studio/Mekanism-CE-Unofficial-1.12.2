@@ -7,6 +7,7 @@ import mekanism.common.PacketHandler;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.lib.radiation.RadiationManager;
 import mekanism.common.network.PacketRadiationData.PacketRadiationDataMessage;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -79,7 +80,7 @@ public class PacketRadiationData implements IMessageHandler<PacketRadiationDataM
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            type = RadiationPacketType.values()[dataStream.readInt()];
+            type = MekanismUtils.getByIndex(RadiationPacketType.values(), dataStream.readInt(), RadiationPacketType.ENVIRONMENTAL);
             radiation = dataStream.readDouble();
         }
 

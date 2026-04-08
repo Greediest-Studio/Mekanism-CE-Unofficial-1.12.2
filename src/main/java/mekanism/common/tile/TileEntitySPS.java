@@ -164,6 +164,9 @@ public class TileEntitySPS extends TileEntityMachine implements IGasHandler, ISi
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (canReceiveGas(side, stack.getGas())) {
             return inputTank.receive(stack, doTransfer);
         }
@@ -304,5 +307,10 @@ public class TileEntitySPS extends TileEntityMachine implements IGasHandler, ISi
     @Override
     public int getBlockGuiID(Block block, int metadata) {
         return BlockStateMachine.MachineType.get(block, metadata) != null ? BlockStateMachine.MachineType.get(block, metadata).guiId : -1;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

@@ -13,14 +13,21 @@ import javax.annotation.Nonnull;
 public class TileEntitySuperchargedCoil extends TileEntityEffectsBlock {
 
     public TileEntitySuperchargedCoil() {
-        super("machine.laser", "SuperchargedCoil", 0);
+        super("machine.laser", "SuperchargedCoil", 1_000_000_000D);
         inventory = NonNullListSynchronized.withSize(0, ItemStack.EMPTY);
     }
 
+    @Override
+    public void onUpdateServer() {
+        super.onUpdateServer();
+        if (getActive()) {
+            setActive(false);
+        }
+    }
 
     @Override
     public boolean sideIsConsumer(EnumFacing side) {
-        return side == facing.getOpposite();
+        return false;
     }
 
     @Override

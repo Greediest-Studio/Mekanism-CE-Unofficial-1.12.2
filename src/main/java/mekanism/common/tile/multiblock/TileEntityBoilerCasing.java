@@ -63,12 +63,6 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
                 prevWaterScale = (9 * prevWaterScale + targetScale) / 10;
             }
         }
-        if (structure != null && clientHasStructure && isRendering) {
-            float targetScale = (float) (structure.InputGas != null ? structure.InputGas.amount : 0) / clientWaterCapacity;
-            if (Math.abs(prevWaterScale - targetScale) > 0.01) {
-                prevWaterScale = (9 * prevWaterScale + targetScale) / 10;
-            }
-        }
         if (!clientHasStructure || !isRendering) {
             valveViewing.forEach(data -> {
                 TileEntityBoilerCasing tileEntity = (TileEntityBoilerCasing) data.location.getTileEntity(world);
@@ -123,21 +117,28 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
                 double[] d = structure.simulateHeat();
                 structure.applyTemperatureChange();
                 structure.lastEnvironmentLoss = d[1];
-                if (structure.InputGas != null) {
-                    int OutputAmount = structure.OutputGas != null ? structure.OutputGas.amount : 0;
-                    double heatAvailable = structure.getTemp();
-                    structure.lastMaxBoil = (int) Math.floor(heatAvailable / SynchronizedBoilerData.getHeatEnthalpy());
-                    int amountToBoil = Math.min(structure.lastMaxBoil, structure.InputGas.amount);
-                    amountToBoil = Math.min(amountToBoil, (structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK) - OutputAmount);
-                    structure.InputGas.amount -= amountToBoil;
-                    if (structure.OutputGas == null) {
-                        structure.OutputGas = new GasStack(MekanismFluids.Sodium, amountToBoil);
-                    } else {
-                        structure.OutputGas.amount += amountToBoil;
-                    }
-                    if (structure.OutputGas.amount != structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK) {
-                        structure.temperature += (amountToBoil * SynchronizedBoilerData.getHeatEnthalpy()) / structure.locations.size();
-                        structure.lastBoilRate = amountToBoil;
+                if (structure.InputGas != null && structure.InputGas.getGas() == MekanismFluids.SuperheatedSodium &&
+                    (structure.OutputGas == null || structure.OutputGas.getGas() == MekanismFluids.Sodium)) {
+                    int outputAmount = structure.OutputGas != null ? structure.OutputGas.amount : 0;
+                    int outputCapacity = structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK;
+
+                    //Match higher-version behavior: cool a fraction of heated coolant and scale it down at high case temperatures.
+                    int amountToCool = Math.round((float) (SynchronizedBoilerData.COOLANT_COOLING_EFFICIENCY * structure.InputGas.amount));
+                    amountToCool = Math.round((float) (amountToCool * (1 - structure.temperature / SynchronizedBoilerData.HEATED_COOLANT_TEMP)));
+                    amountToCool = Math.max(0, amountToCool);
+                    amountToCool = Math.min(amountToCool, structure.InputGas.amount);
+                    amountToCool = Math.min(amountToCool, outputCapacity - outputAmount);
+                    if (amountToCool > 0) {
+                        structure.InputGas.amount -= amountToCool;
+                        if (structure.InputGas.amount <= 0) {
+                            structure.InputGas = null;
+                        }
+                        if (structure.OutputGas == null) {
+                            structure.OutputGas = new GasStack(MekanismFluids.Sodium, amountToCool);
+                        } else {
+                            structure.OutputGas.amount += amountToCool;
+                        }
+                        structure.temperature += (amountToCool * SynchronizedBoilerData.getHeatEnthalpy()) / structure.locations.size();
                     }
                 }
 

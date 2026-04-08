@@ -4,8 +4,11 @@ import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.MachineInput;
 import mekanism.common.recipe.machines.MachineRecipe;
 import mekanism.common.recipe.outputs.MachineOutput;
+import mekanism.generators.client.gui.GuiFissionReactor;
 import mekanism.generators.client.gui.GuiGasGenerator;
 import mekanism.generators.client.gui.GuiReactorHeat;
+import mekanism.generators.client.jei.machine.other.FissionReactorRecipeCategory;
+import mekanism.generators.client.jei.machine.other.FissionReactorRecipeWrapper;
 import mekanism.generators.client.jei.machine.other.FusionCoolingRecipeWrapper;
 import mekanism.generators.client.jei.machine.other.GasStackFlueToEnergyRecipeWrapper;
 import mekanism.generators.common.block.states.BlockStateGenerator;
@@ -13,10 +16,24 @@ import mekanism.generators.common.block.states.BlockStateReactor;
 import mezz.jei.api.IModRegistry;
 import mezz.jei.api.recipe.IRecipeWrapperFactory;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 
 public class GeneratorRecipeRegistryHelper {
+
+    public static void registerFissionReactor(IModRegistry registry) {
+        registry.addRecipes(Arrays.asList(
+                FissionReactorRecipeWrapper.waterCooled(),
+                FissionReactorRecipeWrapper.sodiumCooled()
+        ), FissionReactorRecipeCategory.UID);
+        registry.addRecipeClickArea(GuiFissionReactor.class, 45, 17, 105, 56, FissionReactorRecipeCategory.UID);
+        registry.addRecipeCatalyst(BlockStateGenerator.GeneratorType.FISSION_REACTOR_CASING.getStack(), FissionReactorRecipeCategory.UID);
+        registry.addRecipeCatalyst(BlockStateGenerator.GeneratorType.FISSION_REACTOR_PORT.getStack(), FissionReactorRecipeCategory.UID);
+        registry.addRecipeCatalyst(BlockStateGenerator.GeneratorType.FISSION_REACTOR_LOGIC_ADAPTER.getStack(), FissionReactorRecipeCategory.UID);
+        registry.addRecipeCatalyst(BlockStateGenerator.GeneratorType.FISSION_FUEL_ASSEMBLY.getStack(), FissionReactorRecipeCategory.UID);
+        registry.addRecipeCatalyst(BlockStateGenerator.GeneratorType.CONTROL_ROD_ASSEMBLY.getStack(), FissionReactorRecipeCategory.UID);
+    }
 
 
     public static void registerFusionCooling(IModRegistry registry) {

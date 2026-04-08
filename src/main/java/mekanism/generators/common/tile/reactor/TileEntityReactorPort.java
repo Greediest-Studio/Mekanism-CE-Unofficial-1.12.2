@@ -90,13 +90,13 @@ public class TileEntityReactorPort extends TileEntityReactorBlock implements IFl
 
     @Override
     public int fill(EnumFacing from, @Nonnull FluidStack resource, boolean doFill) {
-        return getReactor().getWaterTank().fill(resource, doFill);
+        return getReactor() == null ? 0 : getReactor().getWaterTank().fill(resource, doFill);
     }
 
     @Override
     @Nullable
     public FluidStack drain(EnumFacing from, int maxDrain, boolean doDrain) {
-        return getReactor().getSteamTank().drain(maxDrain, doDrain);
+        return getReactor() == null ? null : getReactor().getSteamTank().drain(maxDrain, doDrain);
     }
 
     @Override
@@ -124,6 +124,9 @@ public class TileEntityReactorPort extends TileEntityReactorBlock implements IFl
 
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
+        if (stack == null || stack.getGas() == null) {
+            return 0;
+        }
         if (getReactor() != null) {
             if (stack.getGas() == MekanismFluids.Deuterium) {
                 return getReactor().getDeuteriumTank().receive(stack, doTransfer);
@@ -372,5 +375,10 @@ public class TileEntityReactorPort extends TileEntityReactorBlock implements IFl
             getReactor().setPlasmaTemp(1_000_000_000);
         }
         return EnumActionResult.PASS;
+    }
+
+    @Override
+    protected boolean shouldDumpRadiation() {
+        return true;
     }
 }

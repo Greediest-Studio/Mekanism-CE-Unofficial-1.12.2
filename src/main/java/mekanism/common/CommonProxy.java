@@ -288,6 +288,8 @@ public class CommonProxy implements IGuiProvider {
             case 75 -> new ContainerModificationStation(player.inventory, (TileEntityModificationStation) tileEntity);
             case 76 -> new ContainerSPS(player.inventory, (TileEntityContainerBlock) tileEntity);
             case 77 -> new ModuleTweakerContainer(player.inventory);
+            case 78 -> new ContainerSPS(player.inventory, (TileEntityContainerBlock) tileEntity);
+            case 79 -> new ContainerDimensionalStabilizer(player.inventory, (TileEntityDimensionalStabilizer) tileEntity);
             default -> null;
         };
     }

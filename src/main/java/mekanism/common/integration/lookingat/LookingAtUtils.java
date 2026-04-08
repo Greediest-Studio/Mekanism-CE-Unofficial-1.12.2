@@ -7,6 +7,7 @@ import mekanism.api.gas.IGasHandler;
 import mekanism.common.MekanismLang;
 import mekanism.common.base.FluidHandlerWrapper;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.tile.TileEntityAdvancedBoundingBlock;
 import mekanism.common.tile.base.TileEntitySynchronized;
 import mekanism.common.util.CapabilityUtils;
 import net.minecraft.tileentity.TileEntity;
@@ -29,19 +30,27 @@ public class LookingAtUtils {
 
     public static void addInfo(LookingAtHelper info, @Nonnull TileEntity tile, boolean displayTanks, boolean displayFluidTanks) {
         IStrictEnergyStorage energyCapability = CapabilityUtils.getCapability(tile, Capabilities.ENERGY_STORAGE_CAPABILITY, null);
-        if (energyCapability != null) {
+        if (energyCapability != null && energyCapability.getMaxEnergy() > 0) {
             displayEnergy(info, energyCapability);
+        } else if (tile instanceof TileEntityAdvancedBoundingBlock block && block.getInv() != null && block.getInv().getMaxEnergy() > 0) {
+            displayEnergy(info, block.getInv());
+        } else if (tile instanceof IStrictEnergyStorage strictEnergyStorage && strictEnergyStorage.getMaxEnergy() > 0) {
+            displayEnergy(info, strictEnergyStorage);
         }
         if (displayTanks) {
             if (displayFluidTanks && tile instanceof TileEntitySynchronized) {
                 IFluidHandler fluidCapability = CapabilityUtils.getCapability(tile, CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null);
                 if (fluidCapability != null) {
                     displayFluid(info, fluidCapability);
+                } else if (tile instanceof IFluidHandler handler) {
+                    displayFluid(info, handler);
                 }
-                IGasHandler gasCapability = CapabilityUtils.getCapability(tile, Capabilities.GAS_HANDLER_CAPABILITY, null);
-                if (gasCapability != null) {
-                    displayGas(info, gasCapability);
-                }
+            }
+            IGasHandler gasCapability = CapabilityUtils.getCapability(tile, Capabilities.GAS_HANDLER_CAPABILITY, null);
+            if (gasCapability != null) {
+                displayGas(info, gasCapability);
+            } else if (tile instanceof IGasHandler handler) {
+                displayGas(info, handler);
             }
         }
     }

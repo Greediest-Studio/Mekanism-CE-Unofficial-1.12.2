@@ -7,6 +7,7 @@ import mekanism.client.render.bloom.BloomRenderSecurityDesk;
 import mekanism.common.Mekanism;
 import mekanism.common.PacketHandler;
 import mekanism.common.base.IBoundingBlock;
+import mekanism.common.base.ISpecialSelectionWireframeTile;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
@@ -22,19 +23,33 @@ import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.InventoryUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.NonNullListSynchronized;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
 
-public class TileEntitySecurityDesk extends TileEntityContainerBlock implements IBoundingBlock, IFrequencyHandler {
+public class TileEntitySecurityDesk extends TileEntityContainerBlock implements IBoundingBlock, IFrequencyHandler, ISpecialSelectionWireframeTile {
 
     private static final int[] SLOTS = {0, 1};
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_SOUTH = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(180.0D, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_WEST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(90.0D, 0.5D, 0.5D, 0.5D)
+    };
+    private static final ISpecialSelectionWireframeTile.SelectionTransform[] SELECTION_ROTATE_EAST = {
+            ISpecialSelectionWireframeTile.SelectionTransform.rotateY(270.0D, 0.5D, 0.5D, 0.5D)
+    };
 
     public UUID ownerUUID;
     public String clientOwner;
@@ -138,7 +153,7 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
                 }
             } else if (type == 3) {
                 if (frequency != null) {
-                    frequency.securityMode = SecurityMode.values()[dataStream.readInt()];
+                    frequency.securityMode = MekanismUtils.getByIndex(SecurityMode.values(), dataStream.readInt(), frequency.securityMode);
                     Mekanism.packetHandler.sendToAll(new SecurityUpdateMessage(SecurityPacket.UPDATE, ownerUUID, new SecurityData(frequency)));
                 }
             }
@@ -168,7 +183,7 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
     public void readCustomNBT(NBTTagCompound nbtTags) {
         super.readCustomNBT(nbtTags);
         if (nbtTags.hasKey("ownerUUID")) {
-            ownerUUID = UUID.fromString(nbtTags.getString("ownerUUID"));
+            ownerUUID = MekanismUtils.parseUUID(nbtTags.getString("ownerUUID"));
         }
         if (nbtTags.hasKey("frequency")) {
             frequency = new SecurityFrequency(nbtTags.getCompoundTag("frequency"));
@@ -269,5 +284,27 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
                 new BloomRenderSecurityDesk(this);
             }
         }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public Class<?> getSelectionWireframeModelClass() {
+        return mekanism.client.model.ModelSecurityDesk.class;
+    }
+
+    @Override
+    public boolean shouldApplyDefaultSelectionWireframeFacingRotation(IBlockState state, IBlockAccess world, BlockPos pos) {
+        return false;
+    }
+
+    @Override
+    public ISpecialSelectionWireframeTile.SelectionTransform[] getSelectionWireframeTransforms(IBlockState state, IBlockAccess world, BlockPos pos) {
+        EnumFacing currentFacing = facing == null ? EnumFacing.NORTH : facing;
+        return switch (currentFacing) {
+            case SOUTH -> SELECTION_ROTATE_SOUTH;
+            case WEST -> SELECTION_ROTATE_WEST;
+            case EAST -> SELECTION_ROTATE_EAST;
+            default -> SelectionTransform.EMPTY;
+        };
     }
 }

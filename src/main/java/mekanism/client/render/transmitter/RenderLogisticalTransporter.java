@@ -60,6 +60,9 @@ public class RenderLogisticalTransporter extends RenderTransmitterBase<TileEntit
         if (MekanismConfig.current().client.opaqueTransmitters.val()) {
             return;
         }
+        if (!shouldRenderTransmitterInterior(transporter, partialTick)) {
+            return;
+        }
         //Keep track of if we had to push. Makes it so that we don't have to push and pop if we end up doing no rendering
         boolean pushed = false;
         Collection<TransporterStack> inTransit = transporter.getTransmitter().getTransit();

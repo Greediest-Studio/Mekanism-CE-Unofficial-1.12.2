@@ -76,6 +76,10 @@ public class BlockBounding extends Block {
 
     @Override
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ) {
+        if (world.isRemote) {
+            // Always consume client-side interaction so empty-hand clicks still reach the server.
+            return true;
+        }
         BlockPos mainPos = getMainBlockPos(world, pos);
         if (mainPos == null) {
             return false;

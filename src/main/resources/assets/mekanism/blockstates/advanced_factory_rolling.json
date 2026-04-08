@@ -1,34 +1,26 @@
 {
-      "forge_marker": 1,
-      "defaults": {
-            "textures": {
-                  "east": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryLeft",
-                  "south": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryBack",
-                  "west": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryRight",
-                  "sides": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryRight",
-                  "front": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryFront",
-                  "up": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryTop",
-                  "down": "mekanism:blocks/factory/factory_bottom"
-            },
-            "model": "mekanism:machine"
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "led": "mekanism:blocks/models/factory/led/advanced"
+    },
+    "model": "mekanism:factory_rolling"
+  },
+  "variants": {
+    "facing": {
+      "east": {"y": 90},
+      "south": {"y": 180},
+      "north": {},
+      "west": {"y": -90}
+    },
+    "active": {
+      "true": {
+        "textures": {
+          "led": "mekanism:blocks/models/factory/led/active/advanced"
+        }
       },
-      "variants": {
-            "facing": {
-                  "east": {"y": 90},
-                  "south": {"y": 180},
-                  "north": {},
-                  "west": {"y": -90}
-            },
-            "active": {
-                  "true": {"textures": {
-                        "east": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryLeftOn",
-                        "south": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryBackOn",
-                        "west": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryRightOn",
-                        "front": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryFrontOn",
-                        "up": "mekanism:blocks/factory/advanced/combining/AdvancedCombiningFactoryTopOn"
-                  }},
-                  "false": {}
-            },
-            "inventory": [{}]
-      }
+      "false": {}
+    },
+    "inventory": [{}]
+  }
 }

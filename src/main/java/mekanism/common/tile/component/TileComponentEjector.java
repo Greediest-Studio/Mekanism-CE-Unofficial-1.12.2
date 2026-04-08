@@ -411,7 +411,7 @@ public class TileComponentEjector implements ITileComponent {
         if (inputColor == -1) {
             return null;
         }
-        return TransporterUtils.colors.get(inputColor);
+        return MekanismUtils.getByIndex(TransporterUtils.colors, inputColor, null);
     }
 
     private int getColorIndex(EnumColor color) {

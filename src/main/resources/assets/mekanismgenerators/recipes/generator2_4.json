@@ -1,0 +1,23 @@
+{
+  "result": {
+    "item": "mekanismgenerators:generator2",
+    "data": 4,
+    "count": 1
+  },
+  "pattern": [
+    " R ",
+    "ECE",
+    " R "
+  ],
+  "type": "mekanism:ore_shaped",
+  "key": {
+    "C": {
+      "item": "mekanismgenerators:generator2",
+      "data": 0
+    },
+    "E": {"item": "#CIRCUITELITE"},
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  }
+}

@@ -17,6 +17,7 @@ import mekanism.common.transmitters.grid.EnergyNetwork;
 import mekanism.common.transmitters.grid.FluidNetwork;
 import mekanism.common.transmitters.grid.GasNetwork;
 import mekanism.common.util.CapabilityUtils;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -181,7 +182,7 @@ public class PacketTransmitterUpdate implements IMessageHandler<TransmitterUpdat
 
         @Override
         public void fromBytes(ByteBuf dataStream) {
-            packetType = PacketType.values()[dataStream.readInt()];
+            packetType = MekanismUtils.getByIndex(PacketType.values(), dataStream.readInt(), PacketType.UPDATE);
             coord4D = Coord4D.read(dataStream);
             if (packetType == PacketType.UPDATE) {
                 newNetwork = dataStream.readBoolean();

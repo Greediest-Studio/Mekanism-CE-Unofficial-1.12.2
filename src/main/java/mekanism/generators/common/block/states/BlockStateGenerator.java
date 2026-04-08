@@ -9,6 +9,7 @@ import mekanism.generators.common.GeneratorsBlocks;
 import mekanism.generators.common.MekanismGenerators;
 import mekanism.generators.common.block.BlockGenerator;
 import mekanism.generators.common.tile.*;
+import mekanism.generators.common.tile.fission.*;
 import mekanism.generators.common.tile.turbine.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
@@ -36,14 +37,15 @@ import java.util.function.Supplier;
 public class BlockStateGenerator extends ExtendedBlockState {
 
     public static final PropertyBool activeProperty = PropertyBool.create("active");
+    public static final PropertyEnum<FissionPortModeProperty> fissionPortModeProperty = PropertyEnum.create("mode", FissionPortModeProperty.class);
 
     public BlockStateGenerator(BlockGenerator block, PropertyEnum<?> typeProperty) {
-        super(block, new IProperty[]{BlockStateFacing.facingProperty, typeProperty, activeProperty}, new IUnlistedProperty[]{});
+        super(block, new IProperty[]{BlockStateFacing.facingProperty, typeProperty, activeProperty, fissionPortModeProperty}, new IUnlistedProperty[]{});
     }
 
     public enum GeneratorBlock {
-        GENERATOR_BLOCK_1;
-      //  GENERATOR_BLOCK_2;
+        GENERATOR_BLOCK_1,
+        GENERATOR_BLOCK_2;
 
         PropertyEnum<GeneratorType> generatorTypeProperty;
 
@@ -57,7 +59,7 @@ public class BlockStateGenerator extends ExtendedBlockState {
         public Block getBlock() {
             return switch (this) {
                 case GENERATOR_BLOCK_1 -> GeneratorsBlocks.Generator;
-              //  case GENERATOR_BLOCK_2 -> GeneratorsBlocks.Generator2;
+                case GENERATOR_BLOCK_2 -> GeneratorsBlocks.Generator2;
             };
         }
     }
@@ -76,10 +78,11 @@ public class BlockStateGenerator extends ExtendedBlockState {
         TURBINE_VALVE(GeneratorBlock.GENERATOR_BLOCK_1, 11, "TurbineValve", -1, -1, TileEntityTurbineValve::new, false, BlockStateUtils.NO_ROTATION, false, true),
         TURBINE_VENT(GeneratorBlock.GENERATOR_BLOCK_1, 12, "TurbineVent", -1, -1, TileEntityTurbineVent::new, false, BlockStateUtils.NO_ROTATION, false),
         SATURATING_CONDENSER(GeneratorBlock.GENERATOR_BLOCK_1, 13, "SaturatingCondenser", -1, -1, TileEntitySaturatingCondenser::new, false, BlockStateUtils.NO_ROTATION, false),
-       /* FISSION_REACTOR_CASING(GeneratorBlock.GENERATOR_BLOCK_2,0,"fission_reactor_casing",-1,-1, TileEntityFissionCasing::new,false,BlockStateUtils.NO_ROTATION, false),
-        FISSION_REACTOR_PORT(GeneratorBlock.GENERATOR_BLOCK_2,1,"fission_reactor_port",-1,-1, TileEntityFissionValve::new,false,BlockStateUtils.NO_ROTATION, false),
-        FISSION_FUEL_ASSEMBLY(GeneratorBlock.GENERATOR_BLOCK_2,2,"fission_fuel_assembly",-1,-1, TileEntityFissionFuelAssembly::new,false,BlockStateUtils.NO_ROTATION, false),
-        CONTROL_ROD_ASSEMBLY(GeneratorBlock.GENERATOR_BLOCK_2,3,"control_rod_assembly",-1,-1, TileEntityControlRodAssembly::new,false,BlockStateUtils.NO_ROTATION, false)*/;
+        FISSION_REACTOR_CASING(GeneratorBlock.GENERATOR_BLOCK_2, 0, "FissionReactorCasing", -1, -1, TileEntityFissionReactorCasing::new, false, BlockStateUtils.NO_ROTATION, false),
+        FISSION_REACTOR_PORT(GeneratorBlock.GENERATOR_BLOCK_2, 1, "FissionReactorPort", -1, -1, TileEntityFissionReactorPort::new, false, BlockStateUtils.NO_ROTATION, false),
+        FISSION_FUEL_ASSEMBLY(GeneratorBlock.GENERATOR_BLOCK_2, 2, "FissionFuelAssembly", -1, -1, TileEntityFissionFuelAssembly::new, false, BlockStateUtils.NO_ROTATION, false),
+        CONTROL_ROD_ASSEMBLY(GeneratorBlock.GENERATOR_BLOCK_2, 3, "ControlRodAssembly", -1, -1, TileEntityControlRodAssembly::new, false, BlockStateUtils.NO_ROTATION, false),
+        FISSION_REACTOR_LOGIC_ADAPTER(GeneratorBlock.GENERATOR_BLOCK_2, 4, "FissionReactorLogicAdapter", -1, -1, TileEntityFissionReactorLogicAdapter::new, false, BlockStateUtils.NO_ROTATION, false, true);
 
 
         private static final List<GeneratorType> GENERATORS_FOR_CONFIG;
@@ -162,7 +165,7 @@ public class BlockStateGenerator extends ExtendedBlockState {
 
         @Override
         public boolean isEnabled() {
-            if (meta > WIND_GENERATOR.meta) {
+            if (!GENERATORS_FOR_CONFIG.contains(this)) {
                 return true;
             }
             return MekanismConfig.current().generators.generatorsManager.isEnabled(this);
@@ -182,7 +185,7 @@ public class BlockStateGenerator extends ExtendedBlockState {
         }
 
         public ItemStack getStack() {
-            return new ItemStack(GeneratorsBlocks.Generator, 1, meta);
+            return new ItemStack(blockType.getBlock(), 1, meta);
         }
 
         public boolean canRotateTo(EnumFacing side) {
@@ -226,6 +229,14 @@ public class BlockStateGenerator extends ExtendedBlockState {
                 builder.append("=");
                 builder.append(facing.getName());
             }
+            if (type == GeneratorType.FISSION_REACTOR_PORT) {
+                if (builder.length() > 0) {
+                    builder.append(",");
+                }
+                builder.append(fissionPortModeProperty.getName());
+                builder.append("=");
+                builder.append(state.getValue(fissionPortModeProperty).getName());
+            }
 
             if (builder.length() == 0) {
                 builder.append("normal");
@@ -233,6 +244,17 @@ public class BlockStateGenerator extends ExtendedBlockState {
             ResourceLocation baseLocation = new ResourceLocation(MekanismGenerators.MODID, nameOverride != null ? nameOverride : type.getName());
 
             return new ModelResourceLocation(baseLocation, builder.toString());
+        }
+    }
+
+    public enum FissionPortModeProperty implements IStringSerializable {
+        INPUT,
+        OUTPUT_COOLANT,
+        OUTPUT_WASTE;
+
+        @Override
+        public String getName() {
+            return name().toLowerCase(Locale.ROOT);
         }
     }
 }

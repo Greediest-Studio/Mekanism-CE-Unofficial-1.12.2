@@ -1,6 +1,5 @@
 package mekanism.client.gui;
 
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import mekanism.api.EnumColor;
 import mekanism.client.gui.element.GuiElement;
 import mekanism.client.render.MekanismRenderer;
@@ -22,16 +21,18 @@ import org.lwjgl.input.Mouse;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @SideOnly(Side.CLIENT)
 public abstract class GuiMekanism extends GuiContainer implements IGuiWrapper {
 
 
     private final ResourceLocation Base = MekanismUtils.getResource(MekanismUtils.ResourceType.GUI, "Base.png");
-    private Set<GuiElement> guiElements = new ReferenceOpenHashSet<>();
+    private Set<GuiElement> guiElements = new LinkedHashSet<>();
     private boolean atuoBG = true;
+    private List<String> queuedTooltip;
+    private int queuedTooltipX;
+    private int queuedTooltipY;
     public static int maxZOffset;
     public GuiMekanism(Container container) {
         super(container);
@@ -145,16 +146,22 @@ public abstract class GuiMekanism extends GuiContainer implements IGuiWrapper {
 
     @Override
     public void displayTooltip(String s, int x, int y) {
-        drawHoveringText(s, x, y);
-        //Fix unwanted lighting changes made by drawHoveringText
-        RenderHelper.disableStandardItemLighting();
+        if (s == null || s.isEmpty()) {
+            return;
+        }
+        queuedTooltip = Collections.singletonList(s);
+        queuedTooltipX = x;
+        queuedTooltipY = y;
     }
 
     @Override
     public void displayTooltips(List<String> list, int xAxis, int yAxis) {
-        drawHoveringText(list, xAxis, yAxis);
-        //Fix unwanted lighting changes made by drawHoveringText
-        RenderHelper.disableStandardItemLighting();
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        queuedTooltip = new ArrayList<>(list);
+        queuedTooltipX = xAxis;
+        queuedTooltipY = yAxis;
     }
 
     @Override
@@ -195,8 +202,14 @@ public abstract class GuiMekanism extends GuiContainer implements IGuiWrapper {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        queuedTooltip = null;
         this.drawDefaultBackground();
         super.drawScreen(mouseX, mouseY, partialTicks);
+        if (queuedTooltip != null && !queuedTooltip.isEmpty()) {
+            drawHoveringText(queuedTooltip, queuedTooltipX + guiLeft, queuedTooltipY + guiTop);
+            //Fix unwanted lighting changes made by drawHoveringText
+            RenderHelper.disableStandardItemLighting();
+        }
         this.renderHoveredToolTip(mouseX, mouseY);
     }
 

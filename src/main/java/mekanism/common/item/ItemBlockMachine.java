@@ -53,6 +53,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
@@ -146,7 +147,7 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
     public String getTranslationKey(ItemStack itemstack) {
         if (MachineType.get(itemstack) != null) {
             MachineType type = MachineType.get(itemstack);
-            if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+            if (type.isFactory()) {
                 BaseTier tier = type.factoryTier.getBaseTier();
                 RecipeType recipeType = getRecipeTypeOrNull(itemstack);
                 if (recipeType != null) {
@@ -162,7 +163,10 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
     @Override
     public String getItemStackDisplayName(@Nonnull ItemStack itemstack) {
         MachineType type = MachineType.get(itemstack);
-        if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+        if (type == null) {
+            return super.getItemStackDisplayName(itemstack);
+        }
+        if (type.isFactory()) {
             BaseTier tier = type.factoryTier.getBaseTier();
             RecipeType recipeType = getRecipeTypeOrNull(itemstack);
             if (recipeType != null) {
@@ -220,7 +224,7 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
                         list.add(EnumColor.RED + "(" + LangUtils.localize("gui.overridden") + ")");
                     }
                 }
-                if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+                if (type.isFactory()) {
                     RecipeType recipeType = getRecipeTypeOrNull(itemstack);
                     if (recipeType != null) {
                         list.add(EnumColor.INDIGO + LangUtils.localize("tooltip.recipeType") + ": " + EnumColor.GREY + recipeType.getLocalizedName());
@@ -335,7 +339,10 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
 
             if (tileEntity instanceof IRedstoneControl redstoneControl) {
                 if (ItemDataUtils.hasData(stack, "controlType")) {
-                    redstoneControl.setControlType(RedstoneControl.values()[ItemDataUtils.getInt(stack, "controlType")]);
+                    int controlType = ItemDataUtils.getInt(stack, "controlType");
+                    if (controlType >= 0 && controlType < RedstoneControl.values().length) {
+                        redstoneControl.setControlType(RedstoneControl.values()[controlType]);
+                    }
                 }
             }
 
@@ -480,7 +487,7 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
     @Override
     public RecipeType getRecipeTypeOrNull(ItemStack itemStack) {
         int recipeType = getRecipeType(itemStack);
-        if (recipeType < RecipeType.values().length) {
+        if (recipeType >= 0 && recipeType < RecipeType.values().length) {
             return RecipeType.values()[recipeType];
         }
         return null;
@@ -553,7 +560,8 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
         if (itemStack.getCount() > 1) {
             return 0;
         }
-        if (!MachineType.get(itemStack).isElectric) {
+        MachineType machineType = MachineType.get(itemStack);
+        if (machineType == null || !machineType.isElectric) {
             return 0;
         }
         return ItemDataUtils.getDouble(itemStack, "energyStored");
@@ -564,7 +572,8 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
         if (itemStack.getCount() > 1) {
             return;
         }
-        if (!MachineType.get(itemStack).isElectric) {
+        MachineType machineType = MachineType.get(itemStack);
+        if (machineType == null || !machineType.isElectric) {
             return;
         }
         if (amount == 0) {
@@ -581,6 +590,9 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
     @Override
     public double getMaxEnergy(ItemStack itemStack) {
         MachineType machineType = MachineType.get(itemStack);
+        if (machineType == null) {
+            return 0;
+        }
         if (machineType.isFactory()) {
             RecipeType recipeType = getRecipeTypeOrNull(itemStack);
             int tierProcess = machineType.factoryTier.processes;
@@ -600,7 +612,8 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
 
     @Override
     public boolean canReceive(ItemStack itemStack) {
-        return MachineType.get(itemStack).isElectric && itemStack.getCount() == 1;
+        MachineType machineType = MachineType.get(itemStack);
+        return machineType != null && machineType.isElectric && itemStack.getCount() == 1;
     }
 
     @Override
@@ -723,7 +736,11 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
         if (!itemstack.hasTagCompound()) {
             return BaseTier.BASIC;
         }
-        return BaseTier.values()[itemstack.getTagCompound().getInteger("tier")];
+        int tier = itemstack.getTagCompound().getInteger("tier");
+        if (tier >= 0 && tier < BaseTier.values().length) {
+            return BaseTier.values()[tier];
+        }
+        return BaseTier.BASIC;
     }
 
     @Override
@@ -737,7 +754,11 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
     @Override
     public UUID getOwnerUUID(ItemStack stack) {
         if (ItemDataUtils.hasData(stack, "ownerUUID")) {
-            return UUID.fromString(ItemDataUtils.getString(stack, "ownerUUID"));
+            try {
+                return UUID.fromString(ItemDataUtils.getString(stack, "ownerUUID"));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
         }
         return null;
     }
@@ -756,7 +777,11 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
         if (!MekanismConfig.current().general.allowProtection.val()) {
             return SecurityMode.PUBLIC;
         }
-        return SecurityMode.values()[ItemDataUtils.getInt(stack, "security")];
+        int security = ItemDataUtils.getInt(stack, "security");
+        if (security >= 0 && security < SecurityMode.values().length) {
+            return SecurityMode.values()[security];
+        }
+        return SecurityMode.PUBLIC;
     }
 
     @Override
@@ -771,6 +796,9 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
     @Override
     public boolean hasSecurity(ItemStack stack) {
         MachineType type = MachineType.get(stack);
+        if (type == null) {
+            return false;
+        }
         return type != MachineType.LASER && type != MachineType.CHARGEPAD && type != MachineType.TELEPORTER && type != MachineType.QUANTUM_ENTANGLOPORTER && type != MachineType.INDUSTRIAL_ALARM;
 
     }
@@ -835,7 +863,7 @@ public class ItemBlockMachine extends ItemBlock implements IEnergizedItem, ISpec
         if (MachineType.get(stack) == MachineType.FLUID_TANK) {
             return new TextComponentGroup(TextFormatting.GRAY).translation("mekanism.tooltip.portableTank.bucketMode", LangUtils.onOffColoured(getBucketMode(stack)));
         }
-        return null;
+        return new TextComponentString("");
     }
 
 }

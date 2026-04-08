@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.IBoundingBlock;
 import mekanism.common.base.ITileNetwork;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.network.PacketDataRequest.DataRequestMessage;
@@ -13,6 +14,7 @@ import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
 
@@ -21,7 +23,10 @@ import javax.annotation.Nonnull;
 /**
  * Multi-block used by wind turbines, solar panels, and other machines
  */
-public class TileEntityBoundingBlock extends TileEntity implements ITileNetwork {
+public class TileEntityBoundingBlock extends TileEntity implements ITileNetwork, ITickable {
+
+    private static final int VALIDATION_RATE = 20;
+    private static final int NO_MAIN_COORDS_GRACE_TICKS = 100;
 
     public boolean receivedCoords;
     public int prevPower;
@@ -30,8 +35,8 @@ public class TileEntityBoundingBlock extends TileEntity implements ITileNetwork 
 
     public void setMainLocation(BlockPos pos) {
         receivedCoords = pos != null;
+        mainPos = pos == null ? BlockPos.ORIGIN : pos;
         if (!world.isRemote) {
-            mainPos = pos;
             Mekanism.packetHandler.sendUpdatePacket(this);
         }
     }
@@ -54,9 +59,32 @@ public class TileEntityBoundingBlock extends TileEntity implements ITileNetwork 
 
     public TileEntity getMainTile() {
         if (receivedCoords && world.isBlockLoaded(getMainPos())) {
-            return world.getTileEntity(getMainPos());
+            TileEntity tile = world.getTileEntity(getMainPos());
+            if (!world.isRemote && !(tile instanceof IBoundingBlock)) {
+                world.setBlockToAir(getPos());
+                return null;
+            }
+            return tile;
         }
         return null;
+    }
+
+    @Override
+    public void update() {
+        if (world.isRemote) {
+            return;
+        }
+        ticker++;
+        if (ticker % VALIDATION_RATE != 0) {
+            return;
+        }
+        if (!receivedCoords) {
+            if (ticker >= NO_MAIN_COORDS_GRACE_TICKS) {
+                world.setBlockToAir(getPos());
+            }
+            return;
+        }
+        getMainTile();
     }
 
     public void onNeighborChange(Block block) {

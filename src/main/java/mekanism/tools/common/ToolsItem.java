@@ -163,7 +163,10 @@ public enum ToolsItem {
         for (ToolsItem toolsItem : values()) {
             if (!toolsItem.getItemStack().isEmpty()) {
                 ResourceLocation registryName = toolsItem.getItem().getRegistryName();
-                toolsItem.updateItem(ForgeRegistries.ITEMS.getValue(registryName));
+                Item remappedItem = ForgeRegistries.ITEMS.getValue(registryName);
+                if (remappedItem != null) {
+                    toolsItem.updateItem(remappedItem);
+                }
             }
         }
     }

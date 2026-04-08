@@ -24,6 +24,8 @@ public class SynchronizedBoilerData extends SynchronizedData<SynchronizedBoilerD
     public static double CASING_INSULATION_COEFFICIENT = 1;
     public static double CASING_INVERSE_CONDUCTION_COEFFICIENT = 1;
     public static double BASE_BOIL_TEMP = 100 - (TemperatureUnit.AMBIENT.zeroOffset - TemperatureUnit.CELSIUS.zeroOffset);
+    public static double HEATED_COOLANT_TEMP = 100_000D;
+    public static double COOLANT_COOLING_EFFICIENCY = 0.4;
 
     public FluidStack waterStored;
     public FluidStack prevWater;

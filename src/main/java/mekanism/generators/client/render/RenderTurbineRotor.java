@@ -28,6 +28,9 @@ public class RenderTurbineRotor extends TileEntitySpecialRenderer<TileEntityTurb
         if (tileEntity.getMultiblock() != null && !internalRender) {
             return;
         }
+        if (!tileEntity.shouldRenderRotorModel()) {
+            return;
+        }
 
         GlStateManager.pushMatrix();
         bindTexture(MekanismGeneratorUtils.getResource(ResourceType.RENDER, "Turbine.png"));

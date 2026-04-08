@@ -9,6 +9,7 @@ import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.generators.common.block.states.BlockStateGenerator.GeneratorType;
 import mekanism.generators.common.inventory.container.*;
 import mekanism.generators.common.tile.*;
+import mekanism.generators.common.tile.fission.*;
 import mekanism.generators.common.tile.reactor.*;
 import mekanism.generators.common.tile.turbine.*;
 import net.minecraft.entity.player.EntityPlayer;
@@ -39,6 +40,11 @@ public class GeneratorsCommonProxy implements IGuiProvider {
         registerTileEntity(TileEntityElectromagneticCoil.class, "electromagnetic_coil");
         registerTileEntity(TileEntityGasGenerator.class, "gas_generator");
         registerTileEntity(TileEntityHeatGenerator.class, "heat_generator");
+        registerTileEntity(TileEntityFissionReactorCasing.class, "fission_reactor_casing");
+        registerTileEntity(TileEntityFissionReactorPort.class, "fission_reactor_port");
+        registerTileEntity(TileEntityFissionFuelAssembly.class, "fission_fuel_assembly");
+        registerTileEntity(TileEntityControlRodAssembly.class, "control_rod_assembly");
+        registerTileEntity(TileEntityFissionReactorLogicAdapter.class, "fission_reactor_logic_adapter");
         registerTileEntity(TileEntityReactorController.class, "reactor_controller");
         registerTileEntity(TileEntityReactorFrame.class, "reactor_frame");
         registerTileEntity(TileEntityReactorGlass.class, "reactor_glass");
@@ -109,6 +115,7 @@ public class GeneratorsCommonProxy implements IGuiProvider {
             case 7 -> new ContainerNull(player, (TileEntityTurbineCasing) tileEntity);
             case 10 -> new ContainerReactorController(player.inventory, (TileEntityReactorController) tileEntity);
             case 11, 12, 13, 15 -> new ContainerNull(player, (TileEntityContainerBlock) tileEntity);
+            case 16, 17, 18 -> new ContainerNull(player, (TileEntityContainerBlock) tileEntity);
             default -> null;
         };
 

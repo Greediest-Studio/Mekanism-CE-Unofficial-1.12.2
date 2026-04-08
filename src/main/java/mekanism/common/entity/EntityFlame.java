@@ -240,7 +240,7 @@ public class EntityFlame extends Entity implements IEntityAdditionalSpawnData {
 
     @Override
     protected void readEntityFromNBT(@Nonnull NBTTagCompound nbtTags) {
-        mode = ItemFlamethrower.FlamethrowerMode.values()[nbtTags.getInteger("mode")];
+        mode = MekanismUtils.getByIndex(ItemFlamethrower.FlamethrowerMode.values(), nbtTags.getInteger("mode"), mode);
     }
 
     @Override
@@ -255,6 +255,6 @@ public class EntityFlame extends Entity implements IEntityAdditionalSpawnData {
 
     @Override
     public void readSpawnData(ByteBuf dataStream) {
-        mode = ItemFlamethrower.FlamethrowerMode.values()[dataStream.readInt()];
+        mode = MekanismUtils.getByIndex(ItemFlamethrower.FlamethrowerMode.values(), dataStream.readInt(), mode);
     }
 }
