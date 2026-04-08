@@ -17,7 +17,6 @@ import mekanism.common.tile.laser.TileEntityLaserAmplifier;
 import mekanism.common.tile.laser.TileEntityLaserTractorBeam;
 import mekanism.common.tile.machine.*;
 import mekanism.common.util.LangUtils;
-import mekanism.common.util.ModelKey;
 import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyBool;
@@ -44,9 +43,6 @@ public class BlockStateMachine extends ExtendedBlockState {
     public static final PropertyBool activeProperty = PropertyBool.create("active");
     public static final PropertyEnum<BaseTier> tierProperty = PropertyEnum.create("tier", BaseTier.class);
     public static final PropertyEnum<RecipeType> recipeProperty = PropertyEnum.create("recipe", RecipeType.class);
-
-    private static final Map<String, ResourceLocation> RESOURCE_CACHE = new HashMap<>();
-    private static final Map<ModelKey, ModelResourceLocation> MODEL_CACHE = new WeakHashMap<>();
 
     public BlockStateMachine(BlockMachine block, PropertyEnum<?> typeProperty) {
         super(block, new IProperty[]{BlockStateFacing.facingProperty, typeProperty, activeProperty, tierProperty, recipeProperty}, new IUnlistedProperty[]{});
@@ -481,9 +477,9 @@ public class BlockStateMachine extends ExtendedBlockState {
             }
 
             if (type.hasRotations()) {
-                facingState = state.getValue(BlockStateFacing.facingProperty);
-                if (!type.canRotateTo(facingState)) {
-                    facingState = EnumFacing.NORTH;
+                EnumFacing facing = state.getValue(BlockStateFacing.facingProperty);
+                if (!type.canRotateTo(facing)) {
+                    facing = EnumFacing.NORTH;
                 }
                 facingVal = facing;
                 if (builder.length() > 0) builder.append(",");
@@ -494,8 +490,9 @@ public class BlockStateMachine extends ExtendedBlockState {
                 recipeVal = state.getValue(recipeProperty);
                 nameOverride = type.getName() + "_" + recipeVal.getName();
             }
-            if (variantBuilder.length() == 0) {
-                variantBuilder.append("normal");
+
+            if (builder.length() == 0) {
+                builder.append("normal");
             }
 
             int key = makeKey(type, facingVal, activeVal, recipeVal);
