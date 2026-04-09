@@ -2,7 +2,6 @@ package mekanism.coremod;
 
 
 import net.minecraft.launchwrapper.IClassTransformer;
-import net.minecraft.launchwrapper.Launch;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -15,37 +14,6 @@ import static mekanism.coremod.MekanismCoremod.runtimeDeobfEnabled;
 import static org.objectweb.asm.Opcodes.*;
 
 public class MekanismCoreTransformer implements IClassTransformer {
-
-    private static final class SafeClassWriter extends ClassWriter {
-
-        private SafeClassWriter(int flags) {
-            super(flags);
-        }
-
-        @Override
-        protected String getCommonSuperClass(String type1, String type2) {
-            try {
-                ClassLoader classLoader = Launch.classLoader != null ? Launch.classLoader : getClass().getClassLoader();
-                Class<?> class1 = Class.forName(type1.replace('/', '.'), false, classLoader);
-                Class<?> class2 = Class.forName(type2.replace('/', '.'), false, classLoader);
-                if (class1.isAssignableFrom(class2)) {
-                    return type1;
-                }
-                if (class2.isAssignableFrom(class1)) {
-                    return type2;
-                }
-                if (class1.isInterface() || class2.isInterface()) {
-                    return "java/lang/Object";
-                }
-                do {
-                    class1 = class1.getSuperclass();
-                } while (class1 != null && !class1.isAssignableFrom(class2));
-                return class1 == null ? "java/lang/Object" : class1.getName().replace('.', '/');
-            } catch (Throwable ignored) {
-                return "java/lang/Object";
-            }
-        }
-    }
 
     protected static class ObfSafeName {
         final String deobf, srg;
@@ -243,13 +211,13 @@ public class MekanismCoreTransformer implements IClassTransformer {
 
         ClassNode classNode = new ClassNode();
         ClassReader classReader = new ClassReader(classBytes);
-        classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
+        classReader.accept(classNode, 0);
 
         Iterator<MethodNode> methods = classNode.methods.iterator();
 
         transformer.transform(methods);
 
-        ClassWriter cw = new SafeClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        ClassWriter cw = new ClassWriter(0);
         classNode.accept(cw);
         mainLogger.info("Transforming " + className + " Finished.");
         return cw.toByteArray();
