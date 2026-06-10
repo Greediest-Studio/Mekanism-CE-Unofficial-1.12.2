@@ -33,6 +33,8 @@ import java.util.List;
 
 public class LaserManager {
 
+    public static final int MAX_LASER_HARVEST_LEVEL = 4;
+
     public static LaserInfo fireLaser(TileEntity from, EnumFacing direction, double energy, World world) {
         return fireLaser(new Pos3D(from).centre().translate(direction, 0.501), direction, energy, world);
     }
@@ -98,6 +100,10 @@ public class LaserManager {
         }
 
         IBlockState state = blockCoord.getBlockState(world);
+        if (!canLaserDig(blockCoord, state, world, null)) {
+            return null;
+        }
+
         Block blockHit = state.getBlock();
         EntityPlayer dummy = Mekanism.proxy.getDummyPlayer((WorldServer) world, laserPos).get();
         BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(world, blockCoord.getPos(), state, dummy);
@@ -116,6 +122,29 @@ public class LaserManager {
         world.setBlockToAir(blockCoord.getPos());
         world.playEvent(WorldEvents.BREAK_BLOCK_EFFECTS, blockCoord.getPos(), Block.getStateId(state));
         return ret;
+    }
+
+    public static boolean canLaserDig(Coord4D blockCoord, World world, EnumFacing sideHit) {
+        return canLaserDig(blockCoord, blockCoord.getBlockState(world), world, sideHit);
+    }
+
+    public static boolean canLaserDig(Coord4D blockCoord, IBlockState state, World world, EnumFacing sideHit) {
+        if (state.getBlockHardness(world, blockCoord.getPos()) < 0) {
+            return false;
+        }
+        TileEntity tileHit = blockCoord.getTileEntity(world);
+        if (isReceptor(tileHit, sideHit) && !getReceptor(tileHit, sideHit).canLasersDig()) {
+            return false;
+        }
+        return getHarvestLevel(state) <= MAX_LASER_HARVEST_LEVEL;
+    }
+
+    private static int getHarvestLevel(IBlockState state) {
+        try {
+            return state.getBlock().getHarvestLevel(state);
+        } catch (Throwable ignored) {
+            return -1;
+        }
     }
 
     public static RayTraceResult fireLaserClient(TileEntity from, EnumFacing direction, double energy, World world) {

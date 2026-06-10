@@ -10,7 +10,6 @@ import mekanism.common.util.InventoryUtils;
 import mekanism.common.util.NonNullListSynchronized;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.common.capabilities.Capability;
@@ -40,9 +39,8 @@ public class TileEntityLaser extends TileEntityEffectsBlock {
             }
             if (hitCoord != null) {
                 IBlockState blockHit = hitCoord.getBlockState(world);
-                TileEntity tileHit = hitCoord.getTileEntity(world);
                 float hardness = blockHit.getBlockHardness(world, hitCoord.getPos());
-                if (!(hardness < 0 || (LaserManager.isReceptor(tileHit, mop.sideHit) && !LaserManager.getReceptor(tileHit, mop.sideHit).canLasersDig()))) {
+                if (LaserManager.canLaserDig(hitCoord, blockHit, world, mop.sideHit)) {
                     diggingProgress += MekanismConfig.current().usage.laser.val();
                     if (diggingProgress < hardness * MekanismConfig.current().general.laserEnergyNeededPerHardness.val()) {
                         Mekanism.proxy.addHitEffects(hitCoord, mop);
@@ -66,9 +64,8 @@ public class TileEntityLaser extends TileEntityEffectsBlock {
             }
             if (hitCoord != null) {
                 IBlockState blockHit = hitCoord.getBlockState(world);
-                TileEntity tileHit = hitCoord.getTileEntity(world);
                 float hardness = blockHit.getBlockHardness(world, hitCoord.getPos());
-                if (!(hardness < 0 || (LaserManager.isReceptor(tileHit, info.movingPos.sideHit) && !LaserManager.getReceptor(tileHit, info.movingPos.sideHit).canLasersDig()))) {
+                if (LaserManager.canLaserDig(hitCoord, blockHit, world, info.movingPos.sideHit)) {
                     diggingProgress += MekanismConfig.current().usage.laser.val();
                     if (diggingProgress >= hardness * MekanismConfig.current().general.laserEnergyNeededPerHardness.val()) {
                         LaserManager.breakBlock(hitCoord, true, world, pos);
